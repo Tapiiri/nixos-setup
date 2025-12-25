@@ -1,84 +1,32 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/usr/bin/env -S python3
+"""Executable entrypoint for `import-dotfiles`.
 
-# Import existing user config into this repo's dotfiles/ tree.
-#
-# This is the reverse direction of `setup-links.sh`.
-# - setup-links: repo -> system (via symlinks)
-# - import-dotfiles: system -> repo (via copies)
-#
-# Safety:
-# - Won't overwrite existing files/dirs in dotfiles/.
-# - Prints what it did.
+The implementation lives in `scripts_py.import_dotfiles` for unit testing.
+"""
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-DOT_HOME="${REPO_ROOT}/dotfiles/home"
-DOT_CONFIG="${REPO_ROOT}/dotfiles/config"
+from __future__ import annotations
 
-mkdir -p "$DOT_HOME" "$DOT_CONFIG"
+import sys
+from pathlib import Path
 
-usage() {
-  cat <<USAGE
-Usage: $(basename "$0") [--from-home NAME ...] [--from-config NAME ...]
 
-Examples:
-  $(basename "$0") --from-home bashrc
-  $(basename "$0") --from-config git gh environment.d
+def _bootstrap_repo_root_on_syspath() -> None:
+    exe = Path(__file__).resolve()
+    cur = exe.parent.parent
 
-This copies:
-  ~/.<NAME>          -> dotfiles/home/<NAME>
-  ~/.config/<NAME>   -> dotfiles/config/<NAME>
-USAGE
-  exit "${1:-0}"
-}
+    for _ in range(8):
+        if (cur / "flake.nix").is_file() and (cur / "scripts_py").is_dir():
+            sys.path.insert(0, str(cur))
+            return
+        if cur.parent == cur:
+            return
+        cur = cur.parent
 
-if [[ $# -eq 0 ]]; then
-  usage 0
-fi
 
-copy_one() {
-  local src="$1" dst="$2"
-  if [[ ! -e "$src" ]]; then
-    echo "[WARN] Missing source, skipping: $src" >&2
-    return 0
-  fi
-  if [[ -e "$dst" ]]; then
-    echo "[SKIP] Already exists in repo: $dst" >&2
-    return 0
-  fi
+_bootstrap_repo_root_on_syspath()
 
-  mkdir -p "$(dirname "$dst")"
-  cp -a "$src" "$dst"
-  echo "[OK] Imported $src -> $dst"
-}
+from scripts_py.import_dotfiles import main  # noqa: E402
 
-mode=""
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    -h|--help)
-      usage 0
-      ;;
-    --from-home)
-      mode="home"; shift
-      ;;
-    --from-config)
-      mode="config"; shift
-      ;;
-    --)
-      shift; break
-      ;;
-    *)
-      if [[ -z "$mode" ]]; then
-        echo "Unknown argument (missing --from-home/--from-config?): $1" >&2
-        usage 1
-      fi
-      name="$1"
-      if [[ "$mode" == "home" ]]; then
-        copy_one "$HOME/.${name}" "$DOT_HOME/${name}"
-      else
-        copy_one "$HOME/.config/${name}" "$DOT_CONFIG/${name}"
-      fi
-      shift
-      ;;
-  esac
-done
+
+if __name__ == "__main__":
+    raise SystemExit(main())
