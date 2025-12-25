@@ -13,8 +13,15 @@ Create or update symlinks from this repository to standard locations.
 Options:
   --host HOST          Host directory name under hosts/ to use. Defaults to the
                       current hostname from /etc/hostname when available.
-  --root-helper PATH   Command to call for root-owned targets. It receives the
-                      source path followed by the target path.
+  --root-helper CMD    Privilege helper used for root-owned targets. For common
+                      helpers like `sudo`/`doas`, the script will run:
+                        ln -sfn SOURCE TARGET
+                      under that helper.
+
+                      Examples:
+                        --root-helper sudo
+                        --root-helper doas
+                        --root-helper 'sudo --'
   -h, --help           Show this help message.
 USAGE
   exit "${1:-0}"
@@ -23,6 +30,31 @@ USAGE
 log_info() { echo "[INFO] $*"; }
 log_warn() { echo "[WARN] $*" >&2; }
 log_error() { echo "[ERROR] $*" >&2; }
+
+run_root_helper() {
+  local root_helper="$1" source="$2" target="$3"
+
+  # Back-compat and convenience: `--root-helper sudo` is common, but
+  # `sudo SRC DST` would try to execute SRC as a command. For sudo, we
+  # instead run the intended privileged operation explicitly.
+  if [[ "$root_helper" == "sudo" ]]; then
+    sudo ln -sfn "$source" "$target"
+    return
+  fi
+
+  # Generic helper contract:
+  # - If helper is exactly `doas`, run `doas ln -sfn SRC DST`.
+  # - Otherwise treat it as a command/prefix that can run an explicit command.
+  #   Example: --root-helper 'sudo --' or --root-helper 'doas' or
+  #   --root-helper 'env -i sudo --'
+  if [[ "$root_helper" == "doas" ]]; then
+    doas ln -sfn "$source" "$target"
+    return
+  fi
+
+  # shellcheck disable=SC2086
+  $root_helper ln -sfn "$source" "$target"
+}
 
 nearest_existing_path() {
   local path="$1"
@@ -83,7 +115,7 @@ process_mapping() {
   if [[ "$owner_uid" -eq 0 ]]; then
     if [[ -n "$root_helper" ]]; then
       log_info "Delegating root-owned target to helper: $target"
-      "$root_helper" "$source" "$target"
+      run_root_helper "$root_helper" "$source" "$target"
     else
       log_warn "Skipping root-owned target: $target"
       log_warn "To link manually, run (as root): ln -sfn $source $target"
