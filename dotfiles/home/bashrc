@@ -6,6 +6,41 @@
 # If you use Home Manager for Bash configuration, consider moving most of this
 # into your home-manager module instead.
 
+# --- Home Manager integration -------------------------------------------------
+#
+# This repo symlinks this file to ~/.bashrc, while Home Manager may also manage
+# Bash settings. To keep both worlds working together:
+# - Load Home Manager session variables (PATH, locale, etc.)
+# - Load Home Manager's generated bash init (which contains `bashrcExtra`, etc.)
+#
+# Both are optional and safe to source.
+if [ -f "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" ]; then
+	. "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"
+fi
+
+if [ -f "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" ]; then
+	# Prefer the profile entrypoint when available.
+	# It sets up $HOME_MANAGER_* variables and points to the actual generated init.
+	:
+fi
+
+# Home Manager may generate a dedicated bash init file under ~/.nix-profile.
+# The exact path can vary slightly across HM versions, so check common locations.
+for hm_bashrc in \
+	"$HOME/.nix-profile/etc/profile.d/hm-bashrc.sh" \
+	"$HOME/.nix-profile/etc/profile.d/hm-bash.sh" \
+	"$HOME/.nix-profile/etc/profile.d/hm-bashrc" \
+	"$HOME/.nix-profile/share/bash/home-manager.sh" \
+	"$HOME/.nix-profile/share/home-manager/bashrc" \
+	"$HOME/.config/home-manager/current-home/etc/profile.d/hm-bashrc.sh"; do
+	if [ -f "$hm_bashrc" ]; then
+		. "$hm_bashrc"
+		break
+	fi
+done
+
+# --- End Home Manager integration --------------------------------------------
+
 # Load VS Code shell integration when inside VS Code (matches the current system bashrc)
 [[ "${TERM_PROGRAM-}" == "vscode" ]] && . "$(code --locate-shell-integration-path bash)"
 

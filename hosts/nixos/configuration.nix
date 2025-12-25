@@ -90,6 +90,10 @@
   };
 
   home-manager = {
+    # If a file already exists in $HOME and Home Manager wants to manage it
+    # (e.g. ~/.bashrc from programs.bash), back it up instead of failing the
+    # activation.
+    backupFileExtension = "backup";
     extraSpecialArgs = {
       inherit inputs;
       flakeRoot = inputs.self;
