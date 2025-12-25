@@ -54,8 +54,8 @@ link_user_owned() {
 
   if [[ -L "$target" ]]; then
     local resolved
-    resolved="$(readlink -f "$target")"
-    if [[ "$resolved" == "$source" ]]; then
+    resolved="$(readlink -f "$target" 2>/dev/null)" || resolved=""
+    if [[ -n "$resolved" && "$resolved" == "$source" ]]; then
       log_info "Already linked: $target -> $source"
       return
     fi
