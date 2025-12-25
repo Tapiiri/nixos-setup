@@ -6,6 +6,15 @@
   home.username = "tapiiri";
   home.homeDirectory = "/home/tapiiri";
 
+  # Ensure scripts linked to ~/.local/bin are discoverable.
+  home.sessionPath = [ "$HOME/.local/bin" ];
+
+  # Some setups won't propagate home.sessionPath into hm-session-vars.sh
+  # (it should, but this makes it unambiguous).
+  home.sessionVariables = {
+    PATH = "$HOME/.local/bin:$PATH";
+  };
+
   programs.git = {
     package = pkgs.gitAndTools.gitFull;
     enable = true;
@@ -14,10 +23,7 @@
   };
 
   programs.gh = {
-    # Ensure scripts linked to ~/.local/bin are discoverable.
-    home.sessionPath = [ "$HOME/.local/bin" ];
-
-   enable = true;
+    enable = true;
   };
   
   programs.vscode = {
@@ -30,6 +36,18 @@
 
   programs.firefox = {
     enable = true;
+  };
+
+  # Make sure Home Manager's session variables (including home.sessionPath)
+  # are actually loaded by interactive/login shells.
+  programs.bash = {
+    enable = true;
+    profileExtra = ''
+      # Load Home Manager session variables (PATH, locale, etc.)
+      if [ -f "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" ]; then
+        . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"
+      fi
+    '';
   };
 
 
