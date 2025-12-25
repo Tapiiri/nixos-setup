@@ -8,7 +8,6 @@
   imports =
     [ 
       ./hardware-configuration.nix
-      inputs.home-manager.nixosModules.default
     ];
 
   # Bootloader.
@@ -96,9 +95,6 @@
       tapiiri = import ./home.nix;
     };
   };
-
-  # Install firefox.
-  programs.firefox.enable = true;
 
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;

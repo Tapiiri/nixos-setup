@@ -25,6 +25,10 @@
    enable = true;
   };
 
+  programs.firefox = {
+    enable = true;
+  };
+
 
   # Add Node.js (latest LTS) with npm for Next.js development
   home.packages = with pkgs; [
