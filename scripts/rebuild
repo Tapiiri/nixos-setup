@@ -27,9 +27,13 @@ while [[ $# -gt 0 ]]; do
       usage 1
       ;;
     *)
+      if [[ -n "${HOSTNAME}" ]]; then
+        echo "Multiple hostnames provided: '${HOSTNAME}' and '$1'" >&2
+        usage 1
+      fi
       HOSTNAME="$1"
       shift
-      break
+      continue
       ;;
   esac
   shift
