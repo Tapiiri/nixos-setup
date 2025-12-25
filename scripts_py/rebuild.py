@@ -1,22 +1,12 @@
 from __future__ import annotations
 
 import argparse
-import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Protocol, Sequence
+from typing import Sequence
 
-
-class Runner(Protocol):
-    def exec(self, argv: Sequence[str]) -> "NoReturn":  # pragma: no cover
-        """Replace current process with argv[0]."""
-
-
-class OsExecRunner:
-    def exec(self, argv: Sequence[str]) -> "NoReturn":
-        os.execvp(argv[0], list(argv))
-        raise AssertionError("os.execvp returned")
+from scripts_py.utils import OsExecRunner, Runner
 
 
 @dataclass(frozen=True)

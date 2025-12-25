@@ -1,51 +1,34 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/usr/bin/env -S python3
+"""Executable entrypoint for `devshell`.
 
-# Enter the repo's dev-only flake shell interactively.
-# After this, you can just run: pytest
+This script is intended to be runnable as a normal executable (including when
+symlinked into a PATH directory). The implementation lives in
+`scripts_py.devshell` for unit testing.
+"""
 
-_script_path() {
-	# Resolve symlinks so this works when installed as ~/.local/bin/devshell -> <repo>/scripts/devshell
-	# `readlink -f` is available on GNU coreutils (Linux).
-	readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}"
-}
+from __future__ import annotations
 
-_find_repo_root() {
-	local start="$1"
-	local cur
-	cur="$(cd "${start}" && pwd)"
-	for _ in 1 2 3 4 5 6 7 8; do
-		if [[ -f "${cur}/flake.nix" && -d "${cur}/scripts_py" && -d "${cur}/dev" ]]; then
-			echo "${cur}"
-			return 0
-		fi
-		[[ "${cur}" == "/" ]] && break
-		cur="$(dirname "${cur}")"
-	done
-	return 1
-}
+import sys
+from pathlib import Path
 
-script_real="$(_script_path)"
-repo_root="$(_find_repo_root "$(dirname "${script_real}")/.." || true)"
 
-if [[ -z "${repo_root}" ]]; then
-	echo "devshell: couldn't locate repo root (expected flake.nix + scripts_py + dev/)" >&2
-	echo "devshell: invoked as: ${BASH_SOURCE[0]} (resolved: ${script_real})" >&2
-	exit 1
-fi
+def _bootstrap_repo_root_on_syspath() -> None:
+    exe = Path(__file__).resolve()
+    cur = exe.parent.parent
 
-# Support both:
-# - interactive: ./scripts/devshell
-# - one-shot:    ./scripts/devshell -c 'pytest -q'
-if [[ "${1-}" == "-c" ]]; then
-	shift
-	cmd="${1-}"
-	if [[ -z "${cmd}" ]]; then
-		echo "usage: $0 -c '<command>'" >&2
-		exit 2
-	fi
-	shift || true
-	exec nix develop "${repo_root}/dev" -c bash -lc "${cmd}" "$@"
-fi
+    for _ in range(8):
+        if (cur / "flake.nix").is_file() and (cur / "scripts_py").is_dir() and (cur / "dev").is_dir():
+            sys.path.insert(0, str(cur))
+            return
+        if cur.parent == cur:
+            return
+        cur = cur.parent
 
-exec nix develop "${repo_root}/dev" "$@"
+
+_bootstrap_repo_root_on_syspath()
+
+from scripts_py.devshell import main  # noqa: E402
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

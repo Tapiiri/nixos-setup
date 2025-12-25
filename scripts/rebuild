@@ -14,38 +14,26 @@ import sys
 from pathlib import Path
 
 
-def _find_repo_root(start: Path) -> Path | None:
-    """Walk upwards from `start` until we find a directory containing `flake.nix`."""
+def _bootstrap_repo_root_on_syspath() -> None:
+    """Add repo root to sys.path so we can import scripts_py.*
 
-    cur = start
+    This entrypoint must not depend on importing `scripts_py` before it has fixed
+    sys.path.
+    """
+
+    exe = Path(__file__).resolve()
+    cur = exe.parent.parent
+
     for _ in range(8):
         if (cur / "flake.nix").is_file() and (cur / "scripts_py").is_dir():
-            return cur
+            sys.path.insert(0, str(cur))
+            return
         if cur.parent == cur:
-            break
+            return
         cur = cur.parent
-    return None
 
 
-def _bootstrap_import_path() -> None:
-    exe = Path(__file__).resolve()
-    # Common cases:
-    # - running from repo: <repo>/scripts/rebuild
-    # - symlinked from ~/.local/bin -> <repo>/scripts/rebuild
-    # - copied into PATH alongside scripts_py/ (rare)
-    candidates = [exe.parent.parent, exe.parent, exe]
-
-    repo_root = None
-    for c in candidates:
-        repo_root = _find_repo_root(c) or repo_root
-        if repo_root:
-            break
-
-    if repo_root and str(repo_root) not in sys.path:
-        sys.path.insert(0, str(repo_root))
-
-
-_bootstrap_import_path()
+_bootstrap_repo_root_on_syspath()
 
 from scripts_py.rebuild import main  # noqa: E402
 

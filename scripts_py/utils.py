@@ -1,0 +1,78 @@
+from __future__ import annotations
+
+import os
+import sys
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Iterable, Protocol, Sequence
+
+
+# How far upwards we search when trying to locate the repo root.
+FIND_UPWARDS_LIMIT = 8
+
+
+class Runner(Protocol):
+    def exec(self, argv: Sequence[str]) -> "NoReturn":  # pragma: no cover
+        """Replace the current process with argv[0] and arguments."""
+
+
+class OsExecRunner:
+    def exec(self, argv: Sequence[str]) -> "NoReturn":
+        os.execvp(argv[0], list(argv))
+        raise AssertionError("os.execvp returned")
+
+
+@dataclass(frozen=True)
+class RepoMarkers:
+    """Files/dirs that must exist for a directory to be considered the repo root."""
+
+    files: tuple[str, ...] = ("flake.nix",)
+    dirs: tuple[str, ...] = ("scripts_py",)
+
+
+def _has_markers(path: Path, markers: RepoMarkers) -> bool:
+    return all((path / f).is_file() for f in markers.files) and all(
+        (path / d).is_dir() for d in markers.dirs
+    )
+
+
+def find_upwards(start: Path, *, markers: RepoMarkers) -> Path | None:
+    """Walk upwards from start until we find a directory that matches markers."""
+
+    cur = start.resolve()
+    for _ in range(FIND_UPWARDS_LIMIT):
+        if _has_markers(cur, markers):
+            return cur
+        if cur.parent == cur:
+            break
+        cur = cur.parent
+    return None
+
+
+def bootstrap_repo_import_path(
+    *,
+    script_file: str | Path,
+    markers: RepoMarkers,
+    extra_candidates: Iterable[Path] = (),
+) -> Path | None:
+    """Ensure repo root is on sys.path so `import scripts_py.*` works.
+
+    This is intended for small executable entrypoints under `scripts/` that may
+    be symlinked into ~/.local/bin.
+
+    Returns the detected repo root if found.
+    """
+
+    exe = Path(script_file).resolve()
+    candidates = [exe.parent.parent, exe.parent, exe, *list(extra_candidates)]
+
+    repo_root: Path | None = None
+    for c in candidates:
+        repo_root = find_upwards(c, markers=markers) or repo_root
+        if repo_root:
+            break
+
+    if repo_root and str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
+    return repo_root
