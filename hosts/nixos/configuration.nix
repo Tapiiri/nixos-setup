@@ -90,7 +90,10 @@
   };
 
   home-manager = {
-    extraSpecialArgs = { inherit inputs;};
+    extraSpecialArgs = {
+      inherit inputs;
+      flakeRoot = inputs.self;
+    };
     users = {
       tapiiri = import ./home.nix;
     };
