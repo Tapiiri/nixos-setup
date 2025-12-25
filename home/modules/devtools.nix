@@ -2,6 +2,9 @@
 
 let
   inherit (lib) mkEnableOption mkIf;
+  # Pin Python explicitly so scripts/tests use a known interpreter.
+  py = pkgs.python313;
+  pyPkgs = py.pkgs;
 in
 {
   imports = [
@@ -15,11 +18,18 @@ in
     programs.vscode.enable = true;
 
     # Development tooling.
+    #
+    # Note: We pin Python explicitly (instead of pkgs.python3) so:
+    # - repo scripts run with a known interpreter version
+    # - unit tests and linters come from the same interpreter set
     home.packages = with pkgs; [
       nodejs_latest
-      python3
       ffmpeg-full
-      python3Packages.ffmpeg-python
+      # Pinned Python + repo script tooling.
+      py
+      pyPkgs.ffmpeg-python
+      pyPkgs.pytest
+      pyPkgs.ruff
     ];
   };
 }
