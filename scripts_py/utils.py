@@ -7,6 +7,18 @@ from pathlib import Path
 from typing import Iterable, Protocol, Sequence
 
 
+def log_info(msg: str, *, out) -> None:
+    print(f"[INFO] {msg}", file=out)
+
+
+def log_warn(msg: str, *, err) -> None:
+    print(f"[WARN] {msg}", file=err)
+
+
+def log_error(msg: str, *, err) -> None:
+    print(f"[ERROR] {msg}", file=err)
+
+
 # How far upwards we search when trying to locate the repo root.
 FIND_UPWARDS_LIMIT = 8
 

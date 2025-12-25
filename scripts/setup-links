@@ -1,32 +1,30 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S python3
+"""Executable entrypoint for `setup-links`.
 
-"""Executable wrapper for setup-links.
+The implementation lives in `scripts_py.setup_links` for unit testing.
 
-This file intentionally bootstraps sys.path so it can import from `scripts_py`
-even when called via a symlink or installed somewhere on $PATH.
+This wrapper bootstraps sys.path so it works when symlinked/installed on $PATH
+(and in "different cwd" situations).
 """
 
 from __future__ import annotations
 
 import sys
-from pathlib import Path
 
 
-def _find_repo_root(start: Path) -> Path:
-    cur = start.resolve()
-    while True:
-        if (cur / "flake.nix").is_file() and (cur / "scripts_py").is_dir():
-            return cur
-        if cur.parent == cur:
-            raise RuntimeError("Could not locate repo root (missing flake.nix/scripts_py).")
-        cur = cur.parent
+def _bootstrap() -> None:
+    from pathlib import Path
+
+    here = Path(__file__).resolve()
+    sys.path.insert(0, str(here.parent.parent))
+
+    from scripts_py.utils import RepoMarkers, bootstrap_repo_import_path
+
+    bootstrap_repo_import_path(script_file=here, markers=RepoMarkers())
 
 
 def main() -> int:
-    script_path = Path(__file__).resolve()
-    repo_root = _find_repo_root(script_path.parent)
-    sys.path.insert(0, str(repo_root))
-
+    _bootstrap()
     from scripts_py.setup_links import main as impl_main
 
     return int(impl_main(sys.argv[1:]))

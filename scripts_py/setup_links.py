@@ -8,6 +8,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Protocol, Sequence
 
+from scripts_py.utils import log_error, log_info, log_warn
+
 
 class RootCommandRunner(Protocol):
     def run(self, argv: Sequence[str]) -> int:  # pragma: no cover
@@ -46,7 +48,7 @@ def _read_hostname(path: Path = Path("/etc/hostname")) -> str | None:
 
 def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     p = argparse.ArgumentParser(
-        prog="setup-links.sh",
+        prog=Path(sys.argv[0]).name,
         add_help=True,
         description=(
             "Create or update symlinks from this repository to standard locations.\n"
@@ -99,18 +101,6 @@ def compute_config(
         root_helper=root_helper,
         home=home,
     )
-
-
-def log_info(msg: str, *, out) -> None:
-    print(f"[INFO] {msg}", file=out)
-
-
-def log_warn(msg: str, *, err) -> None:
-    print(f"[WARN] {msg}", file=err)
-
-
-def log_error(msg: str, *, err) -> None:
-    print(f"[ERROR] {msg}", file=err)
 
 
 def ensure_parent_dir(target: Path, *, out) -> None:

@@ -11,29 +11,21 @@ import path here.
 from __future__ import annotations
 
 import sys
-from pathlib import Path
 
 
-def _bootstrap_repo_root_on_syspath() -> None:
-    """Add repo root to sys.path so we can import scripts_py.*
+def _bootstrap() -> None:
+    # Bootstrapping cannot import scripts_py until sys.path is fixed.
+    from pathlib import Path
 
-    This entrypoint must not depend on importing `scripts_py` before it has fixed
-    sys.path.
-    """
+    here = Path(__file__).resolve()
+    sys.path.insert(0, str(here.parent.parent))
 
-    exe = Path(__file__).resolve()
-    cur = exe.parent.parent
+    from scripts_py.utils import RepoMarkers, bootstrap_repo_import_path
 
-    for _ in range(8):
-        if (cur / "flake.nix").is_file() and (cur / "scripts_py").is_dir():
-            sys.path.insert(0, str(cur))
-            return
-        if cur.parent == cur:
-            return
-        cur = cur.parent
+    bootstrap_repo_import_path(script_file=here, markers=RepoMarkers())
 
 
-_bootstrap_repo_root_on_syspath()
+_bootstrap()
 
 from scripts_py.rebuild import main  # noqa: E402
 

@@ -9,23 +9,23 @@ symlinked into a PATH directory). The implementation lives in
 from __future__ import annotations
 
 import sys
-from pathlib import Path
 
 
-def _bootstrap_repo_root_on_syspath() -> None:
-    exe = Path(__file__).resolve()
-    cur = exe.parent.parent
+def _bootstrap() -> None:
+    from pathlib import Path
 
-    for _ in range(8):
-        if (cur / "flake.nix").is_file() and (cur / "scripts_py").is_dir() and (cur / "dev").is_dir():
-            sys.path.insert(0, str(cur))
-            return
-        if cur.parent == cur:
-            return
-        cur = cur.parent
+    here = Path(__file__).resolve()
+    sys.path.insert(0, str(here.parent.parent))
+
+    from scripts_py.utils import RepoMarkers, bootstrap_repo_import_path
+
+    bootstrap_repo_import_path(
+        script_file=here,
+        markers=RepoMarkers(files=("flake.nix",), dirs=("scripts_py", "dev")),
+    )
 
 
-_bootstrap_repo_root_on_syspath()
+_bootstrap()
 
 from scripts_py.devshell import main  # noqa: E402
 
