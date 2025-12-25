@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Enter the repo's dev-only flake shell interactively.
+# After this, you can just run: pytest
+
+_script_path() {
+	# Resolve symlinks so this works when installed as ~/.local/bin/devshell -> <repo>/scripts/devshell
+	# `readlink -f` is available on GNU coreutils (Linux).
+	readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}"
+}
+
+_find_repo_root() {
+	local start="$1"
+	local cur
+	cur="$(cd "${start}" && pwd)"
+	for _ in 1 2 3 4 5 6 7 8; do
+		if [[ -f "${cur}/flake.nix" && -d "${cur}/scripts_py" && -d "${cur}/dev" ]]; then
+			echo "${cur}"
+			return 0
+		fi
+		[[ "${cur}" == "/" ]] && break
+		cur="$(dirname "${cur}")"
+	done
+	return 1
+}
+
+script_real="$(_script_path)"
+repo_root="$(_find_repo_root "$(dirname "${script_real}")/.." || true)"
+
+if [[ -z "${repo_root}" ]]; then
+	echo "devshell: couldn't locate repo root (expected flake.nix + scripts_py + dev/)" >&2
+	echo "devshell: invoked as: ${BASH_SOURCE[0]} (resolved: ${script_real})" >&2
+	exit 1
+fi
+
+# Support both:
+# - interactive: ./scripts/devshell
+# - one-shot:    ./scripts/devshell -c 'pytest -q'
+if [[ "${1-}" == "-c" ]]; then
+	shift
+	cmd="${1-}"
+	if [[ -z "${cmd}" ]]; then
+		echo "usage: $0 -c '<command>'" >&2
+		exit 2
+	fi
+	shift || true
+	exec nix develop "${repo_root}/dev" -c bash -lc "${cmd}" "$@"
+fi
+
+exec nix develop "${repo_root}/dev" "$@"

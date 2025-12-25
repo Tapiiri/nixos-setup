@@ -23,6 +23,27 @@ If you prefer pytest locally, you can add it in `home/modules/devtools.nix` (alr
 
 - `pytest -q`
 
+If you run into `ModuleNotFoundError: No module named 'pytest'` even though `pytest` is on PATH, you're typically picking up a `pytest` launcher that points at a different Python than the one in your current shell session.
+
+Most reliable options:
+
+- Use the interpreter module form:
+	- `python -m pytest -q`
+- Or use the repo's dev-only flake shell (pins Python + pytest together without touching the NixOS flake outputs):
+	- `nix develop ./dev -c pytest -q`
+
+If you want an interactive shell (so you can just type `pytest` afterwards), enter it first and then run commands normally:
+
+- `nix develop ./dev`
+- then: `pytest -q`
+
+There's also a convenience wrapper script:
+
+- `./scripts/devshell`
+- then: `pytest -q`
+
+Optional: if you use `direnv`, you can add an `.envrc` that auto-enters the dev shell on `cd`.
+
 ### PATH troubleshooting (why `rebuild` isn't found)
 
 Scripts from `scripts/` are linked into `~/.local/bin` by `scripts/setup-links.sh`.
