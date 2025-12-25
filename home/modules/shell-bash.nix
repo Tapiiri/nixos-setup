@@ -17,6 +17,18 @@ in
           . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"
         fi
       '';
+
+      # Many terminals (including VS Code's integrated terminal) start an
+      # interactive *non-login* shell by default, which won't read
+      # ~/.bash_profile or profileExtra.
+      #
+      # Sourcing hm-session-vars.sh here makes `home.sessionPath` (e.g.
+      # ~/.local/bin) reliably available.
+      bashrcExtra = ''
+        if [ -f "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" ]; then
+          . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"
+        fi
+      '';
     };
   };
 }
