@@ -9,6 +9,7 @@
   # will fail during `nix flake check` / rebuild.
   imports = [
     (flakeRoot + "/home/modules/git.nix")
+    (flakeRoot + "/home/modules/gh.nix")
     (flakeRoot + "/home/modules/devtools.nix")
     (flakeRoot + "/home/modules/browsers.nix")
     (flakeRoot + "/home/modules/shell-bash.nix")

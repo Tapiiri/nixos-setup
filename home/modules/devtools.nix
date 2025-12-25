@@ -4,10 +4,14 @@ let
   inherit (lib) mkEnableOption mkIf;
 in
 {
+  imports = [
+    ./gh.nix
+  ];
+
   options.my.devtools.enable = mkEnableOption "Developer tools (gh, vscode, language runtimes)";
 
   config = mkIf config.my.devtools.enable {
-    programs.gh.enable = true;
+    my.gh.enable = true;
     programs.vscode.enable = true;
 
     # Development tooling.
