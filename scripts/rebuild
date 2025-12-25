@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<USAGE
+Usage: $(basename "$0") [HOSTNAME] [-- <nixos-rebuild args>]
+
+Run nixos-rebuild switch for the given host using the repository flake.
+If HOSTNAME is omitted, the current hostname from /etc/hostname is used.
+USAGE
+  exit "${1:-0}"
+}
+
+HOSTNAME=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -h|--help)
+      usage 0
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -*)
+      echo "Unknown option: $1" >&2
+      usage 1
+      ;;
+    *)
+      if [[ -n "${HOSTNAME}" ]]; then
+        echo "Multiple hostnames provided: '${HOSTNAME}' and '$1'" >&2
+        usage 1
+      fi
+      HOSTNAME="$1"
+      shift
+      continue
+      ;;
+  esac
+  shift
+done
+
+if [[ -z "$HOSTNAME" && -r /etc/hostname ]]; then
+  HOSTNAME="$(tr -d ' \t\r\n' </etc/hostname)"
+fi
+
+if [[ -z "${HOSTNAME}" ]]; then
+  echo "Host name is required and could not be inferred from /etc/hostname" >&2
+  exit 1
+fi
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+if [[ ! -f "${REPO_ROOT}/flake.nix" ]]; then
+  echo "Could not find flake.nix in ${REPO_ROOT}" >&2
+  exit 1
+fi
+
+cmd=("nixos-rebuild" "switch" "--flake" "${REPO_ROOT}/.#${HOSTNAME}")
+
+if [[ $# -gt 0 ]]; then
+  cmd+=("$@")
+fi
+
+echo "Running: ${cmd[*]}" >&2
+exec "${cmd[@]}"
