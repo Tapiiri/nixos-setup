@@ -1,6 +1,13 @@
 { flakeRoot, ... }:
 
 {
+  my = {
+    git.enable = true;
+    devtools.enable = true;
+    browsers.enable = true;
+    shell.bash.enable = true;
+  };
+
   # Home Manager module hub.
   #
   # Convention:
@@ -9,9 +16,6 @@
   #   (`browsers.nix`, `devtools.nix`, `desktop-gnome.nix`, ...).
   imports = [
     (flakeRoot + "/home/modules/core.nix")
-    (flakeRoot + "/home/modules/git.nix")
-    (flakeRoot + "/home/modules/devtools.nix")
-    (flakeRoot + "/home/modules/browsers.nix")
-    (flakeRoot + "/home/modules/shell-bash.nix")
+    (flakeRoot + "/home/modules/default.nix")
   ];
 }

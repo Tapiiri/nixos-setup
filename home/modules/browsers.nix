@@ -1,7 +1,13 @@
-{ ... }:
+{ config, lib, ... }:
 
+let
+  inherit (lib) mkEnableOption mkIf;
+in
 {
-  # Grouped module: “browsers” manages a set of related programs.
-  programs.firefox.enable = true;
-  programs.google-chrome.enable = true;
+  options.my.browsers.enable = mkEnableOption "Browsers (firefox + google-chrome)";
+
+  config = mkIf config.my.browsers.enable {
+    programs.firefox.enable = true;
+    programs.google-chrome.enable = true;
+  };
 }

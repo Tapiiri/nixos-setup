@@ -1,14 +1,21 @@
-{ pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
+let
+  inherit (lib) mkEnableOption mkIf;
+in
 {
-  programs.gh.enable = true;
-  programs.vscode.enable = true;
+  options.my.devtools.enable = mkEnableOption "Developer tools (gh, vscode, language runtimes)";
 
-  # Development tooling.
-  home.packages = with pkgs; [
-    nodejs_latest
-    python3
-    ffmpeg-full
-    python3Packages.ffmpeg-python
-  ];
+  config = mkIf config.my.devtools.enable {
+    programs.gh.enable = true;
+    programs.vscode.enable = true;
+
+    # Development tooling.
+    home.packages = with pkgs; [
+      nodejs_latest
+      python3
+      ffmpeg-full
+      python3Packages.ffmpeg-python
+    ];
+  };
 }
