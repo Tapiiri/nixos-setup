@@ -42,6 +42,7 @@ class TestSetupLinks(unittest.TestCase):
             tdp = Path(td)
             repo = tdp / "repo"
             (repo / "hosts" / "myhost").mkdir(parents=True)
+            (repo / "flake.nix").write_text("# marker\n", encoding="utf-8")
 
             # We pass script_path under scripts_py and patch compute_repo_root by aligning layout.
             (repo / "scripts_py").mkdir(parents=True)

@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Sequence
 
-from scripts_py.utils import OsExecRunner, Runner
+from scripts_py.utils import OsExecRunner, Runner, read_hostname, repo_root_from_script_path
 
 
 @dataclass(frozen=True)
@@ -17,15 +17,6 @@ class RebuildConfig:
 
 
 DEFAULT_SYSTEM_FLAKE_DIR = Path("/etc/nixos")
-
-
-def _read_hostname(path: Path = Path("/etc/hostname")) -> str | None:
-    try:
-        raw = path.read_text(encoding="utf-8")
-    except OSError:
-        return None
-    host = "".join(ch for ch in raw if ch not in " \t\r\n")
-    return host or None
 
 
 def parse_args(argv: Sequence[str]) -> tuple[argparse.Namespace, list[str]]:
@@ -65,20 +56,15 @@ def parse_args(argv: Sequence[str]) -> tuple[argparse.Namespace, list[str]]:
     return args, list(rest)
 
 
-def compute_repo_root(script_path: Path) -> Path:
-    # scripts/rebuild -> repo root
-    return script_path.resolve().parent.parent
-
-
 def compute_config(
     *,
     args: argparse.Namespace,
     script_path: Path,
     hostname_path: Path = Path("/etc/hostname"),
 ) -> RebuildConfig:
-    repo_root = compute_repo_root(script_path)
+    repo_root = repo_root_from_script_path(script_path)
 
-    hostname = args.hostname or _read_hostname(hostname_path)
+    hostname = args.hostname or read_hostname(hostname_path)
     if not hostname:
         raise ValueError("Host name is required and could not be inferred from /etc/hostname")
 

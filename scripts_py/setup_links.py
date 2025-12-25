@@ -8,7 +8,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Protocol, Sequence
 
-from scripts_py.utils import log_error, log_info, log_warn
+from scripts_py.utils import (
+    log_error,
+    log_info,
+    log_warn,
+    read_hostname,
+    repo_root_from_script_path,
+)
 
 
 class RootCommandRunner(Protocol):
@@ -37,15 +43,6 @@ class SetupConfig:
     home: Path
 
 
-def _read_hostname(path: Path = Path("/etc/hostname")) -> str | None:
-    try:
-        raw = path.read_text(encoding="utf-8")
-    except OSError:
-        return None
-    host = "".join(ch for ch in raw if ch not in " \t\r\n")
-    return host or None
-
-
 def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     p = argparse.ArgumentParser(
         prog=Path(sys.argv[0]).name,
@@ -67,10 +64,6 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     return p.parse_args(list(argv))
 
 
-def compute_repo_root(script_path: Path) -> Path:
-    return script_path.resolve().parent.parent
-
-
 def compute_config(
     *,
     args: argparse.Namespace,
@@ -78,11 +71,11 @@ def compute_config(
     home: Path | None = None,
     hostname_path: Path = Path("/etc/hostname"),
 ) -> SetupConfig:
-    repo_root = compute_repo_root(script_path)
+    repo_root = repo_root_from_script_path(script_path)
     if home is None:
         home = Path.home()
 
-    hostname = args.host or _read_hostname(hostname_path)
+    hostname = args.host or read_hostname(hostname_path)
     if not hostname:
         raise ValueError("Host name is required and could not be inferred. Use --host.")
 

@@ -8,6 +8,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Sequence
 
+from scripts_py.utils import repo_root_from_script_path
+
 
 @dataclass(frozen=True)
 class ImportPaths:
@@ -17,13 +19,8 @@ class ImportPaths:
     home_dir: Path
 
 
-def compute_repo_root(script_path: Path) -> Path:
-    # scripts/import-dotfiles -> repo root
-    return script_path.resolve().parent.parent
-
-
 def compute_paths(*, script_path: Path, home_dir: Path | None = None) -> ImportPaths:
-    repo_root = compute_repo_root(script_path)
+    repo_root = repo_root_from_script_path(script_path)
     if home_dir is None:
         home_dir = Path.home()
     return ImportPaths(

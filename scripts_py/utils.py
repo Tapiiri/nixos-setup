@@ -88,3 +88,49 @@ def bootstrap_repo_import_path(
         sys.path.insert(0, str(repo_root))
 
     return repo_root
+
+
+def repo_root_from_script_path(
+    script_path: Path,
+    *,
+    markers: RepoMarkers = RepoMarkers(),
+) -> Path:
+    """Determine the repo root for an implementation module.
+
+    Our convention:
+    - implementation modules live under <repo>/scripts_py/*.py
+    - wrappers live under <repo>/scripts/*
+
+    So the fast path is script_path.parent.parent. We still validate using
+    markers, and fall back to a marker-based upward search to handle odd
+    installs/copies.
+    """
+
+    script_path = script_path.resolve()
+    candidates = [script_path.parent.parent, script_path.parent]
+    for c in candidates:
+        root = find_upwards(c, markers=markers)
+        if root:
+            return root
+
+    root = find_upwards(script_path, markers=markers)
+    if root:
+        return root
+
+    raise FileNotFoundError(
+        f"Could not locate repo root from {script_path} (expected markers: {markers})."
+    )
+
+
+def read_hostname(path: Path = Path("/etc/hostname")) -> str | None:
+    """Read hostname from a file, trimming whitespace.
+
+    Returns None if the file can't be read or results in an empty hostname.
+    """
+
+    try:
+        raw = path.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    host = "".join(ch for ch in raw if ch not in " \t\r\n")
+    return host or None
