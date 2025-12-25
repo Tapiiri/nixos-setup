@@ -1,0 +1,14 @@
+# Managed by: nixos-setup (dotfiles/home/bashrc)
+# Target: ~/.bashrc
+#
+# This file is a starting point. Add your aliases, env vars, and shell config here.
+#
+# If you use Home Manager for Bash configuration, consider moving most of this
+# into your home-manager module instead.
+
+# Load VS Code shell integration when inside VS Code (matches the current system bashrc)
+[[ "${TERM_PROGRAM-}" == "vscode" ]] && . "$(code --locate-shell-integration-path bash)"
+
+# User customizations
+# export EDITOR=nvim
+# alias ll='ls -alF'

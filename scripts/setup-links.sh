@@ -193,6 +193,25 @@ for path in "${REPO_ROOT}/scripts"/*; do
   fi
 done
 
+# Dotfiles management
+#
+# Conventions:
+# - dotfiles/home/* -> ${HOME}/.*  (or nested paths)
+#
+# Note: this repo primarily uses Home Manager/Nix (Model A) as the source of
+# truth for ~/.config/* files. Keep dotfiles here for things you explicitly
+# want to manage as raw files.
+DOTFILES_HOME_DIR="${REPO_ROOT}/dotfiles/home"
+
+if [[ -d "$DOTFILES_HOME_DIR" ]]; then
+  shopt -s nullglob
+  for path in "${DOTFILES_HOME_DIR}"/*; do
+    base="$(basename "$path")"
+    MAPPINGS+=("${path}:::${HOME}/.${base}")
+  done
+  shopt -u nullglob
+fi
+
 if [[ ${#MAPPINGS[@]} -eq 0 ]]; then
   log_warn "No mappings found to process."
   exit 0
