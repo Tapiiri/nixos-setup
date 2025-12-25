@@ -14,6 +14,9 @@
   };
 
   programs.gh = {
+    # Ensure scripts linked to ~/.local/bin are discoverable.
+    home.sessionPath = [ "$HOME/.local/bin" ];
+
    enable = true;
   };
   

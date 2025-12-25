@@ -3,20 +3,41 @@ set -euo pipefail
 
 usage() {
   cat <<USAGE
-Usage: $(basename "$0") [HOSTNAME] [-- <nixos-rebuild args>]
+Usage: $(basename "$0") [--dev] [--flake PATH] [HOSTNAME] [-- <nixos-rebuild args>]
 
 Run nixos-rebuild switch for the given host using the repository flake.
 If HOSTNAME is omitted, the current hostname from /etc/hostname is used.
+
+By default the flake is assumed to live in a root-owned location (a stable
+system path), so rebuilding still works even if your development checkout is
+somewhere else.
+
+Options:
+  --dev            Use this repo checkout as the flake source.
+  --flake PATH     Override flake directory to use.
 USAGE
   exit "${1:-0}"
 }
 
 HOSTNAME=""
+USE_DEV=0
+FLAKE_DIR=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -h|--help)
       usage 0
+      ;;
+    --dev)
+      USE_DEV=1
+      ;;
+    --flake)
+      FLAKE_DIR="${2:-}"
+      if [[ -z "$FLAKE_DIR" ]]; then
+        echo "--flake requires a PATH argument" >&2
+        usage 1
+      fi
+      shift
       ;;
     --)
       shift
@@ -50,12 +71,26 @@ fi
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-if [[ ! -f "${REPO_ROOT}/flake.nix" ]]; then
-  echo "Could not find flake.nix in ${REPO_ROOT}" >&2
+DEFAULT_SYSTEM_FLAKE_DIR="/etc/nixos"
+
+if [[ -z "$FLAKE_DIR" ]]; then
+  if [[ "$USE_DEV" -eq 1 ]]; then
+    FLAKE_DIR="$REPO_ROOT"
+  else
+    FLAKE_DIR="$DEFAULT_SYSTEM_FLAKE_DIR"
+  fi
+fi
+
+if [[ ! -f "${FLAKE_DIR}/flake.nix" ]]; then
+  echo "Could not find flake.nix in ${FLAKE_DIR}" >&2
+  if [[ "$USE_DEV" -eq 0 && -f "${REPO_ROOT}/flake.nix" ]]; then
+    echo "Hint: either link your flake into ${DEFAULT_SYSTEM_FLAKE_DIR} or rerun with --dev." >&2
+    echo "      (You can also explicitly set it with --flake PATH.)" >&2
+  fi
   exit 1
 fi
 
-cmd=("nixos-rebuild" "switch" "--flake" "${REPO_ROOT}/.#${HOSTNAME}")
+cmd=("nixos-rebuild" "switch" "--flake" "${FLAKE_DIR}/.#${HOSTNAME}")
 
 if [[ $# -gt 0 ]]; then
   cmd+=("$@")
