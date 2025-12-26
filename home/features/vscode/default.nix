@@ -68,9 +68,7 @@
 
   vscodeManagedSettingsJson = builtins.toJSON vscodeNixSettings;
 
-  vscodeSettingsActivationScript = pkgs.substituteAll {
-    name = "activation-vscode-settings.sh";
-    src = ./activation-vscode-settings.sh.tpl;
+  vscodeSettingsActivationScript = pkgs.replaceVars ./activation-vscode-settings.sh.tpl {
     SETTINGS_TEMPLATE = "${vscodeSettingsTemplate}";
     MANAGED_SETTINGS_JSON = vscodeManagedSettingsJson;
     JQ_BIN = "${pkgs.jq}/bin/jq";
