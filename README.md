@@ -76,6 +76,7 @@ If `/etc/nixos` is itself a Git repository and you symlink in directories like
 `home/` or `hosts/`, Git will see them as **untracked paths** in `/etc/nixos`.
 Nix treats flake sources as Git trees and will error out with messages like:
 
+
 - `Path 'home' in the repository "/etc/nixos" is not tracked by Git.`
 
 ### Recommended fix: local mirror + root-owned /etc/nixos clone
@@ -120,3 +121,37 @@ Optional flags:
 Prefer running `rebuild` as your normal user. The script will do the sync step
 as your user (for GitHub access) and invoke `sudo nixos-rebuild ...` internally
 for the privileged part.
+
+### Cleaning up an old git-worktree-based setup
+
+If you previously tried to manage `/etc/nixos` as a git worktree of your dev
+checkout, you may have leftover worktree metadata under your repo (often owned
+by root), which can cause permission errors even after switching to mirror mode.
+
+From your **dev checkout** (this repo), you can clean it up like this:
+
+```bash
+# Show registered worktrees
+git worktree list
+
+# If /etc/nixos is still registered as a worktree, remove it from the repo's
+# worktree registry (this does NOT delete /etc/nixos contents by itself).
+git worktree remove --force /etc/nixos
+
+# Prune stale worktree entries
+git worktree prune
+```
+
+If you still have permission problems because `.git/worktrees/*` is owned by
+root from earlier experiments:
+
+```bash
+# Inspect ownership
+ls -la .git/worktrees || true
+
+# If needed, remove the stale worktree admin dirs (be careful; this affects worktree tracking)
+sudo rm -rf .git/worktrees
+```
+
+After that, `rebuild --mirror` should not rely on worktrees and the permission
+mismatch problems should stop.

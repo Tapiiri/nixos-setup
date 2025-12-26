@@ -33,17 +33,11 @@ class TestRebuild(unittest.TestCase):
         self.assertEqual(args.hostname, "myhost")
         self.assertEqual(rest, ["--show-trace", "-L"])
 
-    def test_parse_args_supports_sync_flags(self):
-        args, _rest = parse_args(["--sync", "--sync-ref", "origin/main", "myhost"])
+    def test_parse_args_defaults_for_mirror_flags(self):
+        args, _rest = parse_args(["myhost"])
         self.assertEqual(args.hostname, "myhost")
-        self.assertTrue(args.sync)
-        self.assertEqual(args.sync_ref, "origin/main")
-        self.assertFalse(args.sync_checkout)
         self.assertFalse(args.mirror)
         self.assertFalse(args.offline_ok)
-
-        args2, _rest2 = parse_args(["--no-sync", "myhost"])
-        self.assertFalse(args2.sync)
 
     def test_parse_args_supports_mirror_flags(self):
         args, _rest = parse_args(["--mirror", "--offline-ok", "--mirror-dir", "/x/mirror.git", "myhost"])
@@ -73,8 +67,6 @@ class TestRebuild(unittest.TestCase):
 
             self.assertEqual(cfg.hostname, "testhost")
             self.assertEqual(cfg.flake_dir, repo_root)
-            self.assertFalse(cfg.sync_etc_nixos)
-            self.assertFalse(cfg.sync_checkout)
             self.assertFalse(cfg.use_mirror)
             self.assertTrue(str(cfg.mirror_dir).endswith("/var/lib/nixos-setup/mirror.git"))
             self.assertFalse(cfg.offline_ok)
@@ -99,9 +91,6 @@ class TestRebuild(unittest.TestCase):
             hostname="h",
             flake_dir=Path("/etc/nixos"),
             repo_root=Path("/x"),
-            sync_etc_nixos=True,
-            sync_ref="origin/main",
-            sync_checkout=False,
             use_mirror=False,
             mirror_dir=Path("/var/lib/nixos-setup/mirror.git"),
             offline_ok=False,
