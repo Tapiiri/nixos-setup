@@ -146,6 +146,10 @@
     # If a file already exists in $HOME and Home Manager wants to manage it
     # (e.g. ~/.bashrc from programs.bash), back it up instead of failing the
     # activation.
+    # Home Manager refuses to overwrite existing backups. Keep this as a stable
+    # suffix and ensure managed files don't trigger repeated backups.
+    # (VS Code settings.json is handled by our activation script, so it should
+    # not require HM backups on subsequent rebuilds.)
     backupFileExtension = "backup";
     extraSpecialArgs = {
       inherit inputs;

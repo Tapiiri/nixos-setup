@@ -92,14 +92,21 @@ in {
       # Allow VS Code to manage extensions directory (mutable)
       mutableExtensionsDir = true;
 
-      # Install extensions using the new profiles syntax
-      # but don't set userSettings (we manage via activation script)
+      # Install extensions using the new profiles syntax.
       profiles.default.extensions = [nixIdeExt];
+
+      # IMPORTANT: Do NOT set userSettings here.
+      # Home Manager's VS Code module writes settings.json as a symlink into the
+      # Nix store, which makes it read-only for VS Code.
+      #
+      # We manage settings.json ourselves via the activation script below.
     };
 
     # Use an activation script to merge our base settings with any existing user settings
     # This allows VS Code to modify settings.json while we provide defaults
-    home.activation.vscodeSettings = lib.hm.dag.entryAfter ["writeBoundary"] ''
+    # Run early so we can rotate any old backups and ensure settings.json is
+    # writable before other activation steps.
+    home.activation.vscodeSettings = lib.hm.dag.entryBefore ["checkLinkTargets"] ''
       # Delegate the actual activation logic to a real template file rendered by Nix.
       # shellcheck source=/dev/null
       source "${vscodeSettingsActivationScript}"
