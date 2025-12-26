@@ -217,8 +217,40 @@ def root_ensure_etc_nixos_clone(*, mirror_dir: Path, etc_dir: Path, stderr) -> i
     return int(cp.returncode)
 
 
-def root_update_from_mirror(*, etc_dir: Path, ref: str, stderr) -> int:
-    """Fast-forward /etc/nixos from its origin (the local mirror)."""
+def root_set_origin_to_mirror(*, etc_dir: Path, mirror_dir: Path, stderr) -> int:
+    """Force /etc/nixos 'origin' to point at the local mirror.
+
+    This prevents root operations from ever trying to contact GitHub directly.
+    """
+
+    # Get current origin (best-effort).
+    cur = subprocess.run(
+        ["sudo", "git", "-C", str(etc_dir), "remote", "get-url", "origin"],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    current = (cur.stdout or "").strip()
+    desired = str(mirror_dir)
+
+    if current == desired:
+        return 0
+
+    if current:
+        print(f"Updating /etc/nixos origin: {current} -> {desired}", file=stderr)
+    else:
+        print(f"Setting /etc/nixos origin to {desired}", file=stderr)
+
+    cp = subprocess.run(["sudo", "git", "-C", str(etc_dir), "remote", "set-url", "origin", desired], text=True)
+    return int(cp.returncode)
+
+
+def root_update_from_mirror(*, etc_dir: Path, mirror_dir: Path, ref: str, stderr) -> int:
+    """Fast-forward /etc/nixos from the local mirror (no network)."""
+
+    rc = root_set_origin_to_mirror(etc_dir=etc_dir, mirror_dir=mirror_dir, stderr=stderr)
+    if rc != 0:
+        return rc
 
     # Ensure we have latest from mirror (no network).
     cp = subprocess.run(["sudo", "git", "-C", str(etc_dir), "fetch", "--prune", "origin"], text=True)
@@ -405,7 +437,12 @@ def main(argv: Sequence[str] | None = None, *, runner: Runner | None = None, std
                     return rc
 
                 # Always update checkout in mirror mode (root fast-forward only).
-                rc = root_update_from_mirror(etc_dir=DEFAULT_SYSTEM_FLAKE_DIR, ref=cfg.sync_ref, stderr=stderr)
+                rc = root_update_from_mirror(
+                    etc_dir=DEFAULT_SYSTEM_FLAKE_DIR,
+                    mirror_dir=cfg.mirror_dir,
+                    ref=cfg.sync_ref,
+                    stderr=stderr,
+                )
                 if rc != 0:
                     if cfg.offline_ok:
                         print("/etc/nixos update failed; continuing with existing checkout.", file=stderr)

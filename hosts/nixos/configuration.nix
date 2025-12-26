@@ -99,7 +99,10 @@
   # Create the mirror parent directory at boot with stable ownership.
   # (The bare mirror repo itself is created by `rebuild --mirror` on first run.)
   systemd.tmpfiles.rules = [
+    # Ensure group write bit is actually set (directory mode must include g+w)
+    # so users in `nixos-setup` can create the bare mirror.
     "d /var/lib/nixos-setup 2775 root nixos-setup - -"
+    "z /var/lib/nixos-setup 2775 root nixos-setup - -"
   ];
 
   # Allow members of nixos-setup to run the specific privileged operations that

@@ -11,6 +11,8 @@ from scripts_py.rebuild import (
     build_nixos_rebuild_command,
     compute_config,
     parse_args,
+    root_set_origin_to_mirror,
+    root_update_from_mirror,
 )
 
 
@@ -118,6 +120,74 @@ class TestRebuild(unittest.TestCase):
             self.assertEqual(build_exec_command(base)[:2], ["sudo", "nixos-rebuild"])
         with patch("os.geteuid", return_value=0):
             self.assertEqual(build_exec_command(base), base)
+
+    def test_root_set_origin_to_mirror_sets_origin_url(self):
+        from unittest.mock import patch
+
+        calls: list[list[str]] = []
+
+        def fake_run(argv, **kwargs):
+            calls.append(list(argv))
+            # `remote get-url origin` returns a GitHub SSH URL
+            if argv[:6] == ["sudo", "git", "-C", "/etc/nixos", "remote", "get-url"]:
+                return type(
+                    "CP",
+                    (),
+                    {"returncode": 0, "stdout": "git@github.com:Tapiiri/nixos-setup.git\n", "stderr": ""},
+                )()
+            return type("CP", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+
+        with patch("subprocess.run", side_effect=fake_run):
+            rc = root_set_origin_to_mirror(
+                etc_dir=Path("/etc/nixos"),
+                mirror_dir=Path("/var/lib/nixos-setup/mirror.git"),
+                stderr=None,
+            )
+
+        self.assertEqual(rc, 0)
+        self.assertIn(
+            [
+                "sudo",
+                "git",
+                "-C",
+                "/etc/nixos",
+                "remote",
+                "set-url",
+                "origin",
+                "/var/lib/nixos-setup/mirror.git",
+            ],
+            calls,
+        )
+
+    def test_root_update_from_mirror_fetches_origin_no_github(self):
+        from unittest.mock import patch
+
+        calls: list[list[str]] = []
+
+        def fake_run(argv, **kwargs):
+            calls.append(list(argv))
+            # origin already points to local mirror
+            if argv[:6] == ["sudo", "git", "-C", "/etc/nixos", "remote", "get-url"]:
+                return type(
+                    "CP",
+                    (),
+                    {"returncode": 0, "stdout": "/var/lib/nixos-setup/mirror.git\n", "stderr": ""},
+                )()
+            return type("CP", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+
+        with patch("subprocess.run", side_effect=fake_run):
+            rc = root_update_from_mirror(
+                etc_dir=Path("/etc/nixos"),
+                mirror_dir=Path("/var/lib/nixos-setup/mirror.git"),
+                ref="origin/main",
+                stderr=None,
+            )
+
+        self.assertEqual(rc, 0)
+        flat = "\n".join(" ".join(c) for c in calls)
+        self.assertNotIn("github.com", flat)
+        self.assertIn("fetch --prune origin", flat)
+        self.assertIn("merge --ff-only origin/main", flat)
 
     def test_entrypoint_bootstraps_when_symlinked(self):
         """Simulate PATH installation: symlink entrypoint outside repo.
