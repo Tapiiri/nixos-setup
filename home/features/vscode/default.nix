@@ -46,8 +46,8 @@
   # User-specific settings that VS Code may modify at runtime.
   # To capture VS Code's runtime changes and integrate them here,
   # run: ./scripts/sync-vscode-settings
-  # This will generate vscode-user-settings.nix with any new settings.
-  vscodeUserSettingsPath = ./vscode-user-settings.nix;
+  # This will generate user-settings.nix with any new settings.
+  vscodeUserSettingsPath = ./user-settings.nix;
   vscodeUserSettings =
     if builtins.pathExists vscodeUserSettingsPath
     then (import vscodeUserSettingsPath).userSettings

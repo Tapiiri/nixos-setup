@@ -92,7 +92,7 @@ VS Code makes changes → Writes to settings.json → Changes persist!
 ┌──────────────────────────────────────────────────────────────┐
 │ 4. Optional: Sync to Nix (for multi-machine setup)          │
 │    Run: ./scripts/sync-vscode-settings                        │
-│    Captures user settings in vscode-user-settings.nix        │
+│    Captures user settings in user-settings.nix               │
 │    Commit to share preferences across machines               │
 └──────────────────────────────────────────────────────────────┘
 ```
@@ -124,17 +124,17 @@ If you want to share your VS Code preferences across multiple machines, you can 
 This will:
 1. Read your current VS Code settings from `~/.config/Code/User/settings.json`
 2. Filter out the structural settings managed by home-manager
-3. Generate `home/modules/vscode-user-settings.nix` with your user preferences
-4. The file is automatically imported by `vscode.nix`
+3. Generate `home/features/vscode/user-settings.nix` with your user preferences
+4. The file is automatically imported by `home/features/vscode/default.nix`
 
 ### Review and Commit
 
 ```bash
 # Review what changed
-git diff home/modules/vscode-user-settings.nix
+git diff home/features/vscode/user-settings.nix
 
 # Commit if you want to preserve these settings
-git add home/modules/vscode-user-settings.nix
+git add home/features/vscode/user-settings.nix
 git commit -m "Update VS Code user preferences"
 
 # Rebuild to apply (though this isn't strictly necessary since
@@ -144,7 +144,7 @@ git commit -m "Update VS Code user preferences"
 
 ## Configuration
 
-The current setup in `vscode.nix`:
+The current setup in `home/features/vscode/default.nix`:
 
 ```nix
 # Structural settings (always managed by home-manager)
@@ -161,8 +161,8 @@ vscodeNixSettings = {
 
 # User settings (synced from VS Code)
 vscodeUserSettings = 
-  if builtins.pathExists ./vscode-user-settings.nix
-  then (import ./vscode-user-settings.nix).userSettings
+  if builtins.pathExists ./user-settings.nix
+  then (import ./user-settings.nix).userSettings
   else {};
 
 # Both are merged together
@@ -171,7 +171,7 @@ allVscodeSettings = vscodeNixSettings // vscodeUserSettings;
 
 ### Adding More Structural Settings
 
-Edit `home/modules/vscode.nix` and add to `vscodeNixSettings`:
+Edit `home/features/vscode/default.nix` and add to `vscodeNixSettings`:
 
 ```nix
 vscodeNixSettings = {
@@ -234,7 +234,7 @@ For single-machine use, you can just let VS Code manage everything!
 
 ### Multi-Machine Setup
 
-The generated `vscode-user-settings.nix` is machine-agnostic:
+The generated `user-settings.nix` is machine-agnostic:
 - Sync settings on your main machine
 - Commit to git
 - Other machines get the same user preferences
