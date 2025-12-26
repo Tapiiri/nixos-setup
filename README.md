@@ -93,6 +93,15 @@ High level steps:
 After that, `sudo rebuild` will evaluate the exact tracked contents of this
 repo via `/etc/nixos`.
 
+### Running rebuild (no sudo)
+
+Once your `/etc/nixos` is a worktree, prefer running:
+
+- `rebuild`
+
+The script will sync `/etc/nixos` using your normal user's Git/SSH credentials
+and then invoke `sudo nixos-rebuild ...` internally for the privileged part.
+
 Note: `setup-links` is still useful for user-owned targets (dotfiles,
 `~/.local/bin`, Home Manager config), but `/etc/nixos` itself is best managed
 as the worktree.

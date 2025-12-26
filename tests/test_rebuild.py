@@ -5,7 +5,13 @@ import unittest
 import os
 from pathlib import Path
 
-from scripts_py.rebuild import RebuildConfig, build_nixos_rebuild_command, compute_config, parse_args
+from scripts_py.rebuild import (
+    RebuildConfig,
+    build_exec_command,
+    build_nixos_rebuild_command,
+    compute_config,
+    parse_args,
+)
 
 
 def write_hostname(tmp_dir: Path, value: str) -> Path:
@@ -24,6 +30,16 @@ class TestRebuild(unittest.TestCase):
         self.assertTrue(args.dev)
         self.assertEqual(args.hostname, "myhost")
         self.assertEqual(rest, ["--show-trace", "-L"])
+
+    def test_parse_args_supports_sync_flags(self):
+        args, _rest = parse_args(["--sync", "--sync-ref", "origin/main", "myhost"])
+        self.assertEqual(args.hostname, "myhost")
+        self.assertTrue(args.sync)
+        self.assertEqual(args.sync_ref, "origin/main")
+        self.assertFalse(args.sync_checkout)
+
+        args2, _rest2 = parse_args(["--no-sync", "myhost"])
+        self.assertFalse(args2.sync)
 
     def test_compute_config_infers_hostname_and_dev_flake(self):
         with tempfile.TemporaryDirectory() as td:
@@ -47,6 +63,8 @@ class TestRebuild(unittest.TestCase):
 
             self.assertEqual(cfg.hostname, "testhost")
             self.assertEqual(cfg.flake_dir, repo_root)
+            self.assertFalse(cfg.sync_etc_nixos)
+            self.assertFalse(cfg.sync_checkout)
 
     def test_compute_config_errors_when_flake_missing(self):
         with tempfile.TemporaryDirectory() as td:
@@ -64,10 +82,28 @@ class TestRebuild(unittest.TestCase):
                 compute_config(args=ns, script_path=script_path, hostname_path=tmp_path / "hostname")
 
     def test_build_command_shape(self):
-        cfg = RebuildConfig(hostname="h", flake_dir=Path("/etc/nixos"), repo_root=Path("/x"))
+        cfg = RebuildConfig(
+            hostname="h",
+            flake_dir=Path("/etc/nixos"),
+            repo_root=Path("/x"),
+            sync_etc_nixos=True,
+            sync_ref="origin/main",
+            sync_checkout=False,
+        )
         cmd = build_nixos_rebuild_command(cfg, ["--show-trace"])
         self.assertEqual(cmd[:4], ["nixos-rebuild", "switch", "--flake", "/etc/nixos/.#h"])
         self.assertEqual(cmd[4:], ["--show-trace"])
+
+    def test_build_exec_command_adds_sudo_when_not_root(self):
+        # We can't rely on the test runner uid always being non-root, so test
+        # both branches by patching os.geteuid.
+        from unittest.mock import patch
+
+        base = ["nixos-rebuild", "switch"]
+        with patch("os.geteuid", return_value=1000):
+            self.assertEqual(build_exec_command(base)[:2], ["sudo", "nixos-rebuild"])
+        with patch("os.geteuid", return_value=0):
+            self.assertEqual(build_exec_command(base), base)
 
     def test_entrypoint_bootstraps_when_symlinked(self):
         """Simulate PATH installation: symlink entrypoint outside repo.
