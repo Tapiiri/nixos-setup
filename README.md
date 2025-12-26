@@ -76,7 +76,6 @@ If `/etc/nixos` is itself a Git repository and you symlink in directories like
 `home/` or `hosts/`, Git will see them as **untracked paths** in `/etc/nixos`.
 Nix treats flake sources as Git trees and will error out with messages like:
 
-
 - `Path 'home' in the repository "/etc/nixos" is not tracked by Git.`
 
 ### Recommended fix: local mirror + root-owned /etc/nixos clone
@@ -123,6 +122,50 @@ Optional flags:
 - `--mirror-dir <path>`: override mirror location
 - `--offline-ok`: proceed if fetching from GitHub fails (uses last fetched mirror)
 - `--no-mirror`: disable mirror sync even when rebuilding from `/etc/nixos`
+
+#### Dev mode (`--dev`) and offline workflow
+
+The `--dev` flag is intended for working on this repo directly (your dev checkout)
+while still using the mirror + `/etc/nixos` clone setup.
+
+When you combine `--dev` with `--offline-ok`, you get an extra offline-friendly
+fallback:
+
+- `rebuild --dev --offline-ok` will still *try* to fetch into the mirror first.
+- If that fetch fails (e.g. you're offline), it will push your local dev repo's
+	current `main` into the local mirror, and then update `/etc/nixos` from that.
+
+This lets you iterate locally and still rebuild against `/etc/nixos` even when
+you have no network, as long as your local dev checkout has the commits you want.
+
+#### Offline rebuilds
+
+The mirror workflow is designed so that **root never needs network access**.
+However, if you're fully offline, the *user-side* fetch into the mirror will
+fail.
+
+To rebuild while offline, run:
+
+```bash
+rebuild --offline-ok
+```
+
+Behavior:
+
+- `rebuild` will attempt to update the bare mirror (`/var/lib/nixos-setup/mirror.git`).
+- If fetching fails and `--offline-ok` was provided, it continues.
+- It then uses whatever is already in `/etc/nixos` (the last successfully
+	synced state) to do `nixos-rebuild`.
+
+Important notes:
+
+- Offline rebuilds will only work if you have **already bootstrapped** `/etc/nixos`
+	at least once (so it exists as a git clone), and you have fetched at least
+	once previously.
+- To prepare for offline use, do a normal online sync first (e.g. run `rebuild`
+	once while connected).
+- If `/etc/nixos` is missing or not a valid git clone, the initial bootstrap
+	requires access to the mirror and typically one online run.
 
 ### Running rebuild (no sudo)
 

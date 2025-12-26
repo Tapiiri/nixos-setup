@@ -39,13 +39,13 @@ def parse_args(argv: Sequence[str]) -> tuple[argparse.Namespace, list[str]]:
             "somewhere else."
         ),
     )
-    parser.add_argument("--dev", action="store_true", help="Use this repo checkout as the flake source")
+    parser.add_argument("--dev", action="store_true", help="Use the development repo checkout as the flake source")
     parser.add_argument("--flake", type=Path, help="Override flake directory to use")
     parser.add_argument(
         "--mirror",
         action="store_true",
         help=(
-            "Explicitly enable mirror sync (default when rebuilding from /etc/nixos). "
+            "Explicitly enable mirror sync (on by default when rebuilding from /etc/nixos). "
             "Fetch from GitHub as the user into the mirror, then fast-forward /etc/nixos from it."
         ),
     )
@@ -62,7 +62,7 @@ def parse_args(argv: Sequence[str]) -> tuple[argparse.Namespace, list[str]]:
         "--mirror-dir",
         type=Path,
         default=DEFAULT_MIRROR_DIR,
-        help=f"Path to bare mirror repository (default: {DEFAULT_MIRROR_DIR})",
+        help=f"Path to bare mirror repository (default: {DEFAULT_MIRROR_DIR}). Be sure that both the user and root can access it.",
     )
     parser.add_argument(
         "--offline-ok",
@@ -177,6 +177,34 @@ def mirror_fetch(*, mirror_dir: Path, stderr) -> int:
     return int(cp.returncode)
 
 
+def mirror_push_from_dev(*, repo_root: Path, mirror_dir: Path, branch: str, stderr) -> int:
+    """Push current dev repo state into the local bare mirror.
+
+    This is useful for offline operation: if we can't fetch from GitHub but the
+    user has local commits, we can still update the mirror from the dev checkout.
+
+    Contract:
+    - Does not require network access.
+    - Requires that the user can write to mirror_dir.
+    - Pushes refs/heads/<branch> -> refs/heads/<branch>.
+    """
+
+    cp = run_cp(["git", "-C", str(repo_root), "rev-parse", "--verify", f"refs/heads/{branch}"])
+    if cp.returncode != 0:
+        if cp.stderr:
+            print(cp.stderr.rstrip(), file=stderr)
+        print(f"Dev repo does not have local branch '{branch}' to push.", file=stderr)
+        return int(cp.returncode or 1)
+
+    print(f"Offline fallback: pushing dev branch '{branch}' to mirror", file=stderr)
+    cp = run_cp(["git", "-C", str(repo_root), "push", str(mirror_dir), f"refs/heads/{branch}:refs/heads/{branch}"])
+    if cp.stdout:
+        print(cp.stdout.rstrip(), file=stderr)
+    if cp.stderr:
+        print(cp.stderr.rstrip(), file=stderr)
+    return int(cp.returncode)
+
+
 def root_ensure_etc_nixos_clone(*, mirror_dir: Path, etc_dir: Path, stderr) -> int:
     """Ensure /etc/nixos exists as a root-owned clone of the mirror."""
 
@@ -278,7 +306,11 @@ def main(argv: Sequence[str] | None = None, *, runner: Runner | None = None, std
         args, passthrough = parse_args(argv)
         cfg = compute_config(args=args, script_path=Path(__file__))
 
-        # Optional sync step for /etc/nixos (mirror mode only).
+        # In dev mode, if offline-ok is set, allow pushing local dev state into
+        # the mirror so /etc/nixos can still be updated from it.
+        dev_offline_push = bool(args.dev) and bool(args.offline_ok)
+
+        # Sync step for /etc/nixos (mirror mode only).
         # Sync should happen as the invoking user (SSH keys, agents, etc).
         if cfg.use_mirror and cfg.flake_dir == DEFAULT_SYSTEM_FLAKE_DIR:
             # Use a local bare mirror under /var/lib to avoid root needing SSH.
@@ -296,7 +328,18 @@ def main(argv: Sequence[str] | None = None, *, runner: Runner | None = None, std
             rc = mirror_fetch(mirror_dir=cfg.mirror_dir, stderr=stderr)
             if rc != 0:
                 if cfg.offline_ok:
-                    print("Mirror fetch failed (offline?). Continuing without updates.", file=stderr)
+                    print("Mirror fetch failed (offline?).", file=stderr)
+                    if dev_offline_push:
+                        push_rc = mirror_push_from_dev(
+                            repo_root=cfg.repo_root,
+                            mirror_dir=cfg.mirror_dir,
+                            branch="main",
+                            stderr=stderr,
+                        )
+                        if push_rc != 0:
+                            print("Offline push-to-mirror failed; continuing without updates.", file=stderr)
+                    else:
+                        print("Continuing without updates.", file=stderr)
                 else:
                     return rc
 

@@ -14,6 +14,7 @@ from scripts_py.rebuild import (
     root_set_origin_to_mirror,
     root_ensure_etc_nixos_clone,
     root_update_from_mirror,
+    mirror_push_from_dev,
 )
 
 
@@ -239,6 +240,26 @@ class TestRebuild(unittest.TestCase):
         flat = "\n".join(" ".join(c) for c in calls)
         self.assertIn("sudo mv --", flat)
         self.assertIn("sudo git clone /var/lib/nixos-setup/mirror.git", flat)
+
+    def test_mirror_push_from_dev_pushes_branch_to_mirror(self):
+        from unittest.mock import patch
+
+        calls: list[list[str]] = []
+
+        def fake_run(argv, **kwargs):
+            calls.append(list(argv))
+            # rev-parse ok
+            if argv[:5] == ["git", "-C", "/repo", "rev-parse", "--verify"]:
+                return type("CP", (), {"returncode": 0, "stdout": "deadbeef\n", "stderr": ""})()
+            # push ok
+            return type("CP", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+
+        with patch("subprocess.run", side_effect=fake_run):
+            rc = mirror_push_from_dev(repo_root=Path("/repo"), mirror_dir=Path("/mirror.git"), branch="main", stderr=None)
+
+        self.assertEqual(rc, 0)
+        flat = "\n".join(" ".join(c) for c in calls)
+        self.assertIn("git -C /repo push /mirror.git refs/heads/main:refs/heads/main", flat)
 
     def test_entrypoint_bootstraps_when_symlinked(self):
         """Simulate PATH installation: symlink entrypoint outside repo.
