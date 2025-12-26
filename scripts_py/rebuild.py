@@ -45,8 +45,17 @@ def parse_args(argv: Sequence[str]) -> tuple[argparse.Namespace, list[str]]:
         "--mirror",
         action="store_true",
         help=(
-            "Use a local bare mirror (recommended for root-owned /etc/nixos). "
+            "Explicitly enable mirror sync (default when rebuilding from /etc/nixos). "
             "Fetch from GitHub as the user into the mirror, then fast-forward /etc/nixos from it."
+        ),
+    )
+    parser.add_argument(
+        "--no-mirror",
+        dest="no_mirror",
+        action="store_true",
+        help=(
+            "Disable mirror sync even when rebuilding from /etc/nixos. "
+            "Use this only if you know /etc/nixos is already up to date."
         ),
     )
     parser.add_argument(
@@ -81,6 +90,8 @@ def parse_args(argv: Sequence[str]) -> tuple[argparse.Namespace, list[str]]:
         idx = list(argv).index("--")
         rest = list(argv)[idx + 1 :]
 
+    # Stash whether --flake was explicitly provided (argparse doesn't expose that directly).
+    args._flake_explicit = "--flake" in argv  # type: ignore[attr-defined]
     return args, list(rest)
 
 
@@ -113,11 +124,18 @@ def compute_config(
             msg = msg + "\n" + hint
         raise FileNotFoundError(msg)
 
+    # Mirror sync is the default when rebuilding from the system flake dir.
+    # Note: if user explicitly overrides --flake, we still want mirror sync by
+    # default because the intent is generally still "use the system-style flow",
+    # not "use worktree".
+    default_mirror = (not args.dev) and not bool(getattr(args, "no_mirror", False))
+    use_mirror = bool(args.mirror) or (default_mirror and not bool(getattr(args, "no_mirror", False)))
+
     return RebuildConfig(
         hostname=hostname,
         flake_dir=flake_dir,
         repo_root=repo_root,
-        use_mirror=bool(args.mirror),
+        use_mirror=use_mirror,
         mirror_dir=Path(args.mirror_dir),
         offline_ok=bool(args.offline_ok),
     )

@@ -40,6 +40,10 @@ class TestRebuild(unittest.TestCase):
         self.assertFalse(args.mirror)
         self.assertFalse(args.offline_ok)
 
+        # New opt-out flag
+        args2, _rest2 = parse_args(["--no-mirror", "myhost"])
+        self.assertTrue(args2.no_mirror)
+
     def test_parse_args_supports_mirror_flags(self):
         args, _rest = parse_args(["--mirror", "--offline-ok", "--mirror-dir", "/x/mirror.git", "myhost"])
         self.assertTrue(args.mirror)
@@ -71,6 +75,35 @@ class TestRebuild(unittest.TestCase):
             self.assertFalse(cfg.use_mirror)
             self.assertTrue(str(cfg.mirror_dir).endswith("/var/lib/nixos-setup/mirror.git"))
             self.assertFalse(cfg.offline_ok)
+
+    def test_compute_config_defaults_to_mirror_when_not_dev(self):
+        with tempfile.TemporaryDirectory() as td:
+            tmp_path = Path(td)
+
+            # Arrange: fake repo root with flake.nix
+            repo_root = tmp_path / "repo"
+            repo_root.mkdir()
+            (repo_root / "flake.nix").write_text("{}", encoding="utf-8")
+
+            # Place a fake script under repo_root/scripts_py
+            script_dir = repo_root / "scripts_py"
+            script_dir.mkdir()
+            script_path = script_dir / "rebuild.py"
+            script_path.write_text("#", encoding="utf-8")
+
+            # Also fake a flake dir with flake.nix
+            etc_dir = tmp_path / "etc-nixos"
+            etc_dir.mkdir()
+            (etc_dir / "flake.nix").write_text("{}", encoding="utf-8")
+
+            hostname_path = write_hostname(tmp_path, "testhost\n")
+            ns, _rest = parse_args(["--flake", str(etc_dir)])
+            cfg = compute_config(args=ns, script_path=script_path, hostname_path=hostname_path)
+            self.assertTrue(cfg.use_mirror)
+
+            ns2, _rest2 = parse_args(["--flake", str(etc_dir), "--no-mirror"])
+            cfg2 = compute_config(args=ns2, script_path=script_path, hostname_path=hostname_path)
+            self.assertFalse(cfg2.use_mirror)
 
     def test_compute_config_errors_when_flake_missing(self):
         with tempfile.TemporaryDirectory() as td:

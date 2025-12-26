@@ -109,12 +109,20 @@ the bare mirror (if missing) and bootstrap `/etc/nixos` as a clone of the mirror
 
 Prefer running:
 
+- `rebuild`
+
+By default, when rebuilding from `/etc/nixos`, `rebuild` will sync `/etc/nixos`
+via the local mirror.
+
+You can still run mirror sync explicitly:
+
 - `rebuild --mirror`
 
 Optional flags:
 
 - `--mirror-dir <path>`: override mirror location
 - `--offline-ok`: proceed if fetching from GitHub fails (uses last fetched mirror)
+- `--no-mirror`: disable mirror sync even when rebuilding from `/etc/nixos`
 
 ### Running rebuild (no sudo)
 
