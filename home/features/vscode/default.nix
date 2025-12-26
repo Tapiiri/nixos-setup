@@ -26,6 +26,12 @@
     # Format on save globally.
     "editor.formatOnSave" = true;
 
+    # Syntax highlighting for activation-script templates.
+    # VS Code doesn't know what `*.tpl` is by default.
+    "files.associations" = {
+      "*.sh.tpl" = "shellscript";
+    };
+
     # Use alejandra for Nix formatting.
     "[nix]" = {
       "editor.defaultFormatter" = "jnoortheen.nix-ide";
