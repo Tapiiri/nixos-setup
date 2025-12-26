@@ -1,9 +1,11 @@
-{ config, lib, pkgs, ... }:
-
-let
-  inherit (lib) mkEnableOption mkIf;
-in
 {
+  config,
+  lib,
+  pkgs,
+  ...
+}: let
+  inherit (lib) mkEnableOption mkIf;
+in {
   options.my.git.enable = mkEnableOption "Git (programs.git)";
 
   config = mkIf config.my.git.enable {
@@ -12,6 +14,12 @@ in
       enable = true;
       userName = "Ilmari Tarpila";
       userEmail = "ilmari@tarpia.fi";
+
+      extraConfig = {
+        safe.directory = [
+          "/etc/nixos"
+        ];
+      };
     };
   };
 }
