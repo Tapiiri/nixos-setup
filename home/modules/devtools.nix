@@ -15,6 +15,7 @@ in
 
   config = mkIf config.my.devtools.enable {
     my.gh.enable = true;
+    my.vscode.enable = true;
     programs.vscode.enable = true;
 
     # Development tooling.
@@ -25,6 +26,9 @@ in
     home.packages = with pkgs; [
       nodejs_latest
       ffmpeg-full
+      # Nix tooling used by VS Code (nix-ide expects these to exist).
+      nil
+      alejandra
       # Pinned Python + repo script tooling.
       py
       pyPkgs.ffmpeg-python
