@@ -11,6 +11,12 @@ This feature keeps VS Code configuration **co-located** under `home/features/vsc
   - Uses an activation script to ensure structural settings are present in:
     - `~/.config/Code/User/settings.json`
 
+- `activation-vscode-settings.sh.tpl`
+  - Bash template used by home-manager activation.
+  - Rendered by Nix (substitution) so `default.nix` doesn’t embed the script.
+  - Copies a generated JSON template into `settings.json` on first init and enforces
+    managed keys via `jq` merge on subsequent activations (when available).
+
 - `user-settings.nix`
   - **Generated** file containing user-specific settings that VS Code may change at runtime.
   - This is intentionally kept separate from structural settings.

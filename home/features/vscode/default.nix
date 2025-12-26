@@ -6,6 +6,8 @@
 }: let
   inherit (lib) mkEnableOption mkIf;
 
+  jsonFormat = pkgs.formats.json {};
+
   # Keep VS Code settings in one place. We only apply them when VS Code is enabled
   # somewhere else (e.g. `my.devtools.enable` sets `programs.vscode.enable = true`).
   vscodeEnabled = config.programs.vscode.enable or false;
@@ -58,6 +60,21 @@
   # overwriting any manual changes. To preserve manual changes, sync them
   # back to this Nix config using ./scripts/sync-vscode-settings
   allVscodeSettings = vscodeNixSettings // vscodeUserSettings;
+
+  # Generate a proper JSON file in the Nix store rather than embedding JSON
+  # into the activation script. This keeps this module readable and makes the
+  # "template" a real file.
+  vscodeSettingsTemplate = jsonFormat.generate "vscode-settings.json" allVscodeSettings;
+
+  vscodeManagedSettingsJson = builtins.toJSON vscodeNixSettings;
+
+  vscodeSettingsActivationScript = pkgs.substituteAll {
+    name = "activation-vscode-settings.sh";
+    src = ./activation-vscode-settings.sh.tpl;
+    SETTINGS_TEMPLATE = "${vscodeSettingsTemplate}";
+    MANAGED_SETTINGS_JSON = vscodeManagedSettingsJson;
+    JQ_BIN = "${pkgs.jq}/bin/jq";
+  };
 in {
   options.my.vscode = {
     enable = mkEnableOption "VS Code configuration (extensions + settings)";
@@ -79,36 +96,9 @@ in {
     # Use an activation script to merge our base settings with any existing user settings
     # This allows VS Code to modify settings.json while we provide defaults
     home.activation.vscodeSettings = lib.hm.dag.entryAfter ["writeBoundary"] ''
-            vscode_settings_file="$HOME/.config/Code/User/settings.json"
-            vscode_settings_dir="$(dirname "$vscode_settings_file")"
-
-            # Ensure the directory exists
-            $DRY_RUN_CMD mkdir -p "$vscode_settings_dir"
-
-            # If settings.json doesn't exist or is a symlink (from old home-manager config),
-            # create/replace it with our base settings
-            if [[ ! -f "$vscode_settings_file" ]] || [[ -L "$vscode_settings_file" ]]; then
-              $DRY_RUN_CMD rm -f "$vscode_settings_file"
-              $DRY_RUN_CMD cat > "$vscode_settings_file" <<'EOF'
-      ${builtins.toJSON allVscodeSettings}
-      EOF
-              $VERBOSE_ECHO "VS Code settings initialized (writable file created)"
-            else
-              # File exists and is not a symlink - preserve it but ensure our structural settings are present
-              # We use jq to merge, with our settings taking precedence for managed keys
-              if command -v jq >/dev/null 2>&1; then
-                managed_settings='${builtins.toJSON vscodeNixSettings}'
-                current_settings=$(cat "$vscode_settings_file")
-
-                # Merge: current settings as base, overlay our managed settings on top
-                merged=$(echo "$current_settings" | ${pkgs.jq}/bin/jq --argjson managed "$managed_settings" '. + $managed')
-
-                $DRY_RUN_CMD echo "$merged" > "$vscode_settings_file"
-                $VERBOSE_ECHO "VS Code settings updated (structural settings enforced)"
-              else
-                $VERBOSE_ECHO "VS Code settings preserved (jq not available for merge)"
-              fi
-            fi
+      # Delegate the actual activation logic to a real template file rendered by Nix.
+      # shellcheck source=/dev/null
+      source "${vscodeSettingsActivationScript}"
     '';
   };
 }
