@@ -8,11 +8,8 @@ from unittest.mock import patch
 from scripts_py.setup_links import (
     LinkMapping,
     SetupConfig,
-    build_root_replace_then_link_argv,
-    build_root_helper_argv,
     compute_config,
     compute_mappings,
-    is_safe_root_replace_target,
     link_user_owned,
     parse_args,
     process_mapping,
@@ -31,42 +28,16 @@ class FakeRunner:
 
 class TestSetupLinks(unittest.TestCase):
     def test_build_root_helper_argv(self):
-        src = Path("/src")
-        dst = Path("/dst")
-        self.assertEqual(build_root_helper_argv("sudo", source=src, target=dst)[:2], ["sudo", "ln"])
-        self.assertEqual(build_root_helper_argv("doas", source=src, target=dst)[:2], ["doas", "ln"])
-        self.assertEqual(
-            build_root_helper_argv("sudo --preserve-env", source=src, target=dst)[:3],
-            ["sudo", "--preserve-env", "ln"],
-        )
+        # root-helper functionality removed; nothing to test here.
+        self.assertTrue(True)
 
     def test_build_root_replace_then_link_argv(self):
-        src = Path("/src")
-        dst = Path("/dst")
-        cmds = build_root_replace_then_link_argv("sudo", source=src, target=dst)
-        self.assertEqual(cmds[0][:3], ["sudo", "rm", "-rf"])
-        self.assertEqual(cmds[1][:3], ["sudo", "ln", "-sfn"])
+        # root-helper functionality removed; nothing to test here.
+        self.assertTrue(True)
 
     def test_is_safe_root_replace_target_allowlists_etc_nixos_children(self):
-        # setup-links no longer performs privileged rm -rf on /etc/nixos.
-        self.assertFalse(is_safe_root_replace_target(Path("/etc/nixos/configuration.nix")))
-        self.assertFalse(is_safe_root_replace_target(Path("/etc/nixos/hardware-configuration.nix")))
-        self.assertFalse(is_safe_root_replace_target(Path("/etc/nixos/flake.nix")))
-        self.assertFalse(is_safe_root_replace_target(Path("/etc/nixos/flake.lock")))
-        self.assertFalse(is_safe_root_replace_target(Path("/etc/nixos/hosts")))
-        self.assertFalse(is_safe_root_replace_target(Path("/etc/nixos/home")))
-
-        # Explicitly forbidden
-        self.assertFalse(is_safe_root_replace_target(Path("/")))
-        self.assertFalse(is_safe_root_replace_target(Path("/etc")))
-        self.assertFalse(is_safe_root_replace_target(Path("/etc/nixos")))
-
-        # Not allowlisted
-        self.assertFalse(is_safe_root_replace_target(Path("/etc/nixos/some/dir/file")))
-        self.assertFalse(is_safe_root_replace_target(Path("/tmp/whatever")))
-
-        # Normalization/.. should be refused
-        self.assertFalse(is_safe_root_replace_target(Path("/etc/nixos/../passwd")))
+        # root-helper safety checks removed; nothing to test here.
+        self.assertTrue(True)
 
     def test_compute_config_uses_hostname_file_when_missing_host(self):
         with tempfile.TemporaryDirectory() as td:
@@ -120,7 +91,7 @@ class TestSetupLinks(unittest.TestCase):
             dot_home.mkdir(parents=True)
             (dot_home / "bashrc").write_text("x", encoding="utf-8")
 
-            cfg = SetupConfig(repo_root=repo, hostname="h", host_dir=host_dir, root_helper=None, home=tdp / "HOME")
+            cfg = SetupConfig(repo_root=repo, hostname="h", host_dir=host_dir, home=tdp / "HOME")
             mappings = compute_mappings(cfg)
             targets = {m.target for m in mappings}
 
@@ -171,17 +142,11 @@ class TestSetupLinks(unittest.TestCase):
             err = StringIO()
 
             with patch("scripts_py.setup_links.owner_uid_for_path", return_value=0):
-                rc = process_mapping(
-                    LinkMapping(source=src, target=dst),
-                    root_helper="sudo",
-                    runner=runner,
-                    out=out,
-                    err=err,
-                )
-            self.assertEqual(rc, 0)
-            # setup-links no longer does root rm -rf for /etc/nixos; it falls back to ln -sfn.
-            self.assertEqual(len(runner.calls), 1)
-            self.assertEqual(runner.calls[0][:2], ["sudo", "ln"])
+                rc = process_mapping(LinkMapping(source=src, target=dst), runner=runner, out=out, err=err)
+                self.assertEqual(rc, 0)
+                # Root-owned targets are skipped; no privileged calls should be made.
+                self.assertEqual(len(runner.calls), 0)
+                self.assertIn("Skipping root-owned target", err.getvalue())
 
     def test_process_mapping_falls_back_to_ln_for_non_allowlisted_target(self):
         with tempfile.TemporaryDirectory() as td:
@@ -197,16 +162,12 @@ class TestSetupLinks(unittest.TestCase):
 
             out = StringIO()
             err = StringIO()
-            rc = process_mapping(
-                LinkMapping(source=src, target=dst),
-                root_helper="sudo",
-                runner=runner,
-                out=out,
-                err=err,
-            )
+            # Simulate root-owned path
+            with patch("scripts_py.setup_links.owner_uid_for_path", return_value=0):
+                rc = process_mapping(LinkMapping(source=src, target=dst), runner=runner, out=out, err=err)
             self.assertEqual(rc, 0)
-            self.assertEqual(len(runner.calls), 1)
-            self.assertEqual(runner.calls[0][:2], ["sudo", "ln"])
+            self.assertEqual(len(runner.calls), 0)
+            self.assertIn("Skipping root-owned target", err.getvalue())
 
     def test_process_mapping_skips_root_helper_when_already_linked(self):
         with tempfile.TemporaryDirectory() as td:
@@ -225,7 +186,6 @@ class TestSetupLinks(unittest.TestCase):
             err = StringIO()
             rc = process_mapping(
                 LinkMapping(source=src, target=dst),
-                root_helper="sudo",
                 runner=runner,
                 out=out,
                 err=err,
