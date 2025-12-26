@@ -4,6 +4,14 @@
 
 Some helper scripts live under `scripts/`. They are designed to be runnable as normal executables (for example `rebuild`, including via `sudo`) and implemented in Python for testability.
 
+### Available Scripts
+
+- `rebuild` - NixOS rebuild wrapper with mirror support
+- `import-dotfiles` - Import dotfiles from home directory
+- `setup-links` - Create symlinks for scripts in `~/.local/bin`
+- `devshell` - Enter the development shell environment
+- `sync-vscode-settings` - Sync VS Code runtime settings back to Nix config (see [VS Code Settings Guide](docs/VSCODE-SETTINGS.md))
+
 ### Python version and dependencies
 
 Python tooling for this repo is provided via Home Manager when `my.devtools.enable = true`.

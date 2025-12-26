@@ -1,0 +1,30 @@
+#!/usr/bin/env -S python3
+"""Executable entrypoint for `sync-vscode-settings`.
+
+This script syncs VS Code runtime settings back to Nix configuration.
+The implementation lives in `scripts_py.sync_vscode_settings` for unit testing.
+"""
+
+from __future__ import annotations
+
+import sys
+
+
+def _bootstrap() -> None:
+    from pathlib import Path
+
+    here = Path(__file__).resolve()
+    sys.path.insert(0, str(here.parent.parent))
+
+    from scripts_py.utils import RepoMarkers, bootstrap_repo_import_path
+
+    bootstrap_repo_import_path(script_file=here, markers=RepoMarkers())
+
+
+_bootstrap()
+
+from scripts_py.sync_vscode_settings import main  # noqa: E402
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
