@@ -4,6 +4,7 @@ import argparse
 import os
 import subprocess
 import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Sequence
@@ -165,8 +166,21 @@ def root_ensure_etc_nixos_clone(*, mirror_dir: Path, etc_dir: Path, stderr) -> i
         return 0
 
     if etc_dir.exists():
-        print(f"Refusing to overwrite existing {etc_dir}. Move it aside first.", file=stderr)
-        return 1
+        # If /etc/nixos exists but is NOT a git repo, it's usually a partially
+        # recreated directory (e.g. user ran `sudo mkdir /etc/nixos` and copied
+        # in flake.nix). In mirror mode we want /etc/nixos to be a proper clone.
+        #
+        # Be safe: don't delete. Move aside to a timestamped backup and then
+        # clone.
+        if not (etc_dir / ".git").exists():
+            backup = Path(f"{etc_dir}.bak.{int(time.time())}")
+            print(f"Moving aside non-git {etc_dir} -> {backup}", file=stderr)
+            cp = subprocess.run(["sudo", "mv", "--", str(etc_dir), str(backup)], text=True)
+            if cp.returncode != 0:
+                return int(cp.returncode)
+        else:
+            print(f"Refusing to overwrite existing git repo at {etc_dir}. Move it aside first.", file=stderr)
+            return 1
 
     print(f"Cloning {mirror_dir} into {etc_dir} (root-owned)", file=stderr)
     cp = subprocess.run(["sudo", "git", "clone", str(mirror_dir), str(etc_dir)], text=True)

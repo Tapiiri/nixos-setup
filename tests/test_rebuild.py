@@ -12,6 +12,7 @@ from scripts_py.rebuild import (
     compute_config,
     parse_args,
     root_set_origin_to_mirror,
+    root_ensure_etc_nixos_clone,
     root_update_from_mirror,
 )
 
@@ -177,6 +178,34 @@ class TestRebuild(unittest.TestCase):
         self.assertNotIn("github.com", flat)
         self.assertIn("fetch --prune origin", flat)
         self.assertIn("merge --ff-only origin/main", flat)
+
+    def test_root_ensure_etc_nixos_clone_moves_aside_non_git_dir(self):
+        from unittest.mock import patch
+
+        calls: list[list[str]] = []
+
+        def fake_run(argv, **kwargs):
+            calls.append(list(argv))
+            # mv and git clone both succeed
+            return type("CP", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+
+        with tempfile.TemporaryDirectory() as td:
+            etc_dir = Path(td) / "etc-nixos"
+            etc_dir.mkdir()
+            # make it look like a partially-created /etc/nixos (has flake.nix, no .git)
+            (etc_dir / "flake.nix").write_text("{}", encoding="utf-8")
+
+            with patch("subprocess.run", side_effect=fake_run):
+                rc = root_ensure_etc_nixos_clone(
+                    mirror_dir=Path("/var/lib/nixos-setup/mirror.git"),
+                    etc_dir=etc_dir,
+                    stderr=None,
+                )
+
+        self.assertEqual(rc, 0)
+        flat = "\n".join(" ".join(c) for c in calls)
+        self.assertIn("sudo mv --", flat)
+        self.assertIn("sudo git clone /var/lib/nixos-setup/mirror.git", flat)
 
     def test_entrypoint_bootstraps_when_symlinked(self):
         """Simulate PATH installation: symlink entrypoint outside repo.
