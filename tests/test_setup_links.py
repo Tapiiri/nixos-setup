@@ -2,14 +2,17 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 
 from scripts_py.setup_links import (
     LinkMapping,
     SetupConfig,
+    build_root_replace_then_link_argv,
     build_root_helper_argv,
     compute_config,
     compute_mappings,
+    is_safe_root_replace_target,
     link_user_owned,
     parse_args,
     process_mapping,
@@ -36,6 +39,33 @@ class TestSetupLinks(unittest.TestCase):
             build_root_helper_argv("sudo --preserve-env", source=src, target=dst)[:3],
             ["sudo", "--preserve-env", "ln"],
         )
+
+    def test_build_root_replace_then_link_argv(self):
+        src = Path("/src")
+        dst = Path("/dst")
+        cmds = build_root_replace_then_link_argv("sudo", source=src, target=dst)
+        self.assertEqual(cmds[0][:3], ["sudo", "rm", "-rf"])
+        self.assertEqual(cmds[1][:3], ["sudo", "ln", "-sfn"])
+
+    def test_is_safe_root_replace_target_allowlists_etc_nixos_children(self):
+        self.assertTrue(is_safe_root_replace_target(Path("/etc/nixos/configuration.nix")))
+        self.assertTrue(is_safe_root_replace_target(Path("/etc/nixos/hardware-configuration.nix")))
+        self.assertTrue(is_safe_root_replace_target(Path("/etc/nixos/flake.nix")))
+        self.assertTrue(is_safe_root_replace_target(Path("/etc/nixos/flake.lock")))
+        self.assertTrue(is_safe_root_replace_target(Path("/etc/nixos/hosts")))
+        self.assertTrue(is_safe_root_replace_target(Path("/etc/nixos/home")))
+
+        # Explicitly forbidden
+        self.assertFalse(is_safe_root_replace_target(Path("/")))
+        self.assertFalse(is_safe_root_replace_target(Path("/etc")))
+        self.assertFalse(is_safe_root_replace_target(Path("/etc/nixos")))
+
+        # Not allowlisted
+        self.assertFalse(is_safe_root_replace_target(Path("/etc/nixos/some/dir/file")))
+        self.assertFalse(is_safe_root_replace_target(Path("/tmp/whatever")))
+
+        # Normalization/.. should be refused
+        self.assertFalse(is_safe_root_replace_target(Path("/etc/nixos/../passwd")))
 
     def test_compute_config_uses_hostname_file_when_missing_host(self):
         with tempfile.TemporaryDirectory() as td:
@@ -69,6 +99,14 @@ class TestSetupLinks(unittest.TestCase):
             (host_dir / "home").mkdir()
             (host_dir / "configuration.nix").write_text("{}", encoding="utf-8")
 
+            # flake entrypoint
+            (repo / "flake.nix").write_text("{}", encoding="utf-8")
+            (repo / "flake.lock").write_text("{}", encoding="utf-8")
+
+            # repo-level HM modules
+            (repo / "home" / "modules").mkdir(parents=True)
+            (repo / "home" / "modules" / "default.nix").write_text("{}", encoding="utf-8")
+
             # scripts
             scripts = repo / "scripts"
             scripts.mkdir(parents=True)
@@ -87,7 +125,12 @@ class TestSetupLinks(unittest.TestCase):
 
             self.assertIn(cfg.home / ".config" / "home-manager" / "home.nix", targets)
             self.assertIn(cfg.home / ".config" / "home-manager", targets)
+            self.assertIn(cfg.home / ".config" / "home-manager" / "modules", targets)
             self.assertIn(Path("/etc/nixos/configuration.nix"), targets)
+            self.assertIn(Path("/etc/nixos/flake.nix"), targets)
+            self.assertIn(Path("/etc/nixos/flake.lock"), targets)
+            self.assertIn(Path("/etc/nixos/hosts"), targets)
+            self.assertIn(Path("/etc/nixos/home"), targets)
             self.assertIn(cfg.home / ".local" / "bin" / "tool", targets)
             self.assertIn(cfg.home / ".bashrc", targets)
 
@@ -118,8 +161,11 @@ class TestSetupLinks(unittest.TestCase):
             src = tdp / "src"
             src.write_text("x", encoding="utf-8")
 
-            # A target under an existing root-owned path: / (uid 0)
-            dst = Path("/tmp") / f"copilot-test-{os.getpid()}-setup-links"
+            # An allowlisted managed path (root-owned because it lives under /etc).
+            # We don't actually create it; FakeRunner captures argv.
+            # Use an allowlisted path, but do not touch the real file.
+            # Point at configuration.nix (expected to be managed via helper).
+            dst = Path("/etc/nixos/configuration.nix")
 
             runner = FakeRunner()
             from io import StringIO
@@ -127,6 +173,33 @@ class TestSetupLinks(unittest.TestCase):
             out = StringIO()
             err = StringIO()
 
+            with patch("scripts_py.setup_links.owner_uid_for_path", return_value=0):
+                rc = process_mapping(
+                    LinkMapping(source=src, target=dst),
+                    root_helper="sudo",
+                    runner=runner,
+                    out=out,
+                    err=err,
+                )
+            self.assertEqual(rc, 0)
+            self.assertEqual(len(runner.calls), 2)
+            self.assertEqual(runner.calls[0][:2], ["sudo", "rm"])
+            self.assertEqual(runner.calls[1][:2], ["sudo", "ln"])
+
+    def test_process_mapping_falls_back_to_ln_for_non_allowlisted_target(self):
+        with tempfile.TemporaryDirectory() as td:
+            tdp = Path(td)
+            src = tdp / "src"
+            src.write_text("x", encoding="utf-8")
+
+            # Root-owned because it ultimately resolves ownership from '/'
+            dst = Path("/tmp") / f"copilot-test-{os.getpid()}-setup-links-fallback"
+
+            runner = FakeRunner()
+            from io import StringIO
+
+            out = StringIO()
+            err = StringIO()
             rc = process_mapping(
                 LinkMapping(source=src, target=dst),
                 root_helper="sudo",
@@ -137,6 +210,31 @@ class TestSetupLinks(unittest.TestCase):
             self.assertEqual(rc, 0)
             self.assertEqual(len(runner.calls), 1)
             self.assertEqual(runner.calls[0][:2], ["sudo", "ln"])
+
+    def test_process_mapping_skips_root_helper_when_already_linked(self):
+        with tempfile.TemporaryDirectory() as td:
+            tdp = Path(td)
+            src = tdp / "src"
+            src.write_text("x", encoding="utf-8")
+
+            # Create a symlink at the target path pointing to src.
+            dst = tdp / "dst"
+            dst.symlink_to(src)
+
+            runner = FakeRunner()
+            from io import StringIO
+
+            out = StringIO()
+            err = StringIO()
+            rc = process_mapping(
+                LinkMapping(source=src, target=dst),
+                root_helper="sudo",
+                runner=runner,
+                out=out,
+                err=err,
+            )
+            self.assertEqual(rc, 0)
+            self.assertEqual(runner.calls, [])
 
 
 if __name__ == "__main__":

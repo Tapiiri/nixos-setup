@@ -61,3 +61,38 @@ Quick checks:
 
 This repo's module `home/modules/shell-bash.nix` sources `hm-session-vars.sh`
 for both login shells and interactive shells.
+
+## /etc/nixos and flakes (recommended setup)
+
+This repo uses flakes. The `rebuild` wrapper defaults to:
+
+- `nixos-rebuild switch --flake /etc/nixos/.#<hostname>`
+
+That means whatever is in `/etc/nixos` must be a *valid flake source tree*.
+
+### Why symlinks can break
+
+If `/etc/nixos` is itself a Git repository and you symlink in directories like
+`home/` or `hosts/`, Git will see them as **untracked paths** in `/etc/nixos`.
+Nix treats flake sources as Git trees and will error out with messages like:
+
+- `Path 'home' in the repository "/etc/nixos" is not tracked by Git.`
+
+### Best fix: use a Git worktree for /etc/nixos
+
+Make `/etc/nixos` a **git worktree** of this repository. Then `/etc/nixos` has
+the same history and tracked files as your development checkout, and Nix won't
+complain about untracked paths.
+
+High level steps:
+
+1. Make a backup of the current `/etc/nixos`.
+2. Remove the existing `/etc/nixos` git repo.
+3. Add `/etc/nixos` as a worktree of this repo.
+
+After that, `sudo rebuild` will evaluate the exact tracked contents of this
+repo via `/etc/nixos`.
+
+Note: `setup-links` is still useful for user-owned targets (dotfiles,
+`~/.local/bin`, Home Manager config), but `/etc/nixos` itself is best managed
+as the worktree.

@@ -169,6 +169,75 @@ def build_root_helper_argv(root_helper: str, *, source: Path, target: Path) -> l
     return [*parts, "ln", "-sfn", str(source), str(target)]
 
 
+def build_root_replace_then_link_argv(
+    root_helper: str,
+    *,
+    source: Path,
+    target: Path,
+) -> list[list[str]]:
+    """Build argv list to replace target and then link, under privilege helper.
+
+    Why: `ln -sfn` will overwrite an existing symlink or file, but it won't
+    reliably replace pre-existing directories on all platforms. Users often end
+    up with old real files under `/etc/nixos` that never get updated.
+
+    Strategy: run `rm -rf TARGET` and then `ln -sfn SOURCE TARGET` via the same
+    helper prefix.
+    """
+
+    parts = [root_helper] if root_helper in {"sudo", "doas"} else root_helper.split()
+
+    # Intentionally use `--` so weird target names can't be interpreted as flags.
+    rm_argv = [*parts, "rm", "-rf", "--", str(target)]
+    ln_argv = [*parts, "ln", "-sfn", str(source), str(target)]
+    return [rm_argv, ln_argv]
+
+
+ROOT_MANAGED_ETC_NIXOS_PATHS: tuple[Path, ...] = (
+    Path("/etc/nixos/flake.nix"),
+    Path("/etc/nixos/flake.lock"),
+    Path("/etc/nixos/configuration.nix"),
+    Path("/etc/nixos/hardware-configuration.nix"),
+    Path("/etc/nixos/hosts"),
+    Path("/etc/nixos/home"),
+)
+
+
+def is_safe_root_replace_target(target: Path) -> bool:
+    """Return True if it's safe for this tool to `rm -rf` the target.
+
+    We *only* do privileged deletion for the specific NixOS files we manage.
+    Fail closed: if unsure, return False and let the caller fall back to a
+    safer linking strategy.
+    """
+
+    try:
+        t = target
+        # Disallow relative paths and weird empties.
+        if not t.is_absolute():
+            return False
+
+        # Never allow nuking root or /etc itself.
+        forbidden = {Path("/"), Path("/etc"), Path("/etc/nixos")}
+        if t in forbidden:
+            return False
+
+        # Allowlist: only the explicit /etc/nixos paths our tool manages.
+        if t not in set(ROOT_MANAGED_ETC_NIXOS_PATHS):
+            return False
+
+        # Extra sanity: refuse anything containing '..' after normalization.
+        # (Absolute Paths can still contain '..' segments before normalization.)
+        normalized = Path(os.path.normpath(str(t)))
+        if normalized != t:
+            # If the caller passed something with redundant segments, be strict.
+            return False
+
+        return True
+    except Exception:
+        return False
+
+
 def process_mapping(
     mapping: LinkMapping,
     *,
@@ -185,10 +254,26 @@ def process_mapping(
 
     owner_uid = owner_uid_for_path(target)
     if owner_uid == 0:
+        # If /etc/nixos already points at the desired source, avoid prompting for sudo.
+        if is_already_linked(target, source):
+            log_info(f"Already linked: {target} -> {source}", out=out)
+            return 0
         if root_helper:
             log_info(f"Delegating root-owned target to helper: {target}", out=out)
+            if is_safe_root_replace_target(target):
+                cmds = build_root_replace_then_link_argv(root_helper, source=source, target=target)
+                rc = 0
+                for argv in cmds:
+                    rc = max(rc, int(runner.run(argv)))
+                return rc
+
+            log_warn(
+                "Refusing to run privileged 'rm -rf' for unexpected target: "
+                f"{target}. Falling back to plain 'ln -sfn'.",
+                err=err,
+            )
             argv = build_root_helper_argv(root_helper, source=source, target=target)
-            return runner.run(argv)
+            return int(runner.run(argv))
         log_warn(f"Skipping root-owned target: {target}", err=err)
         log_warn(f"To link manually, run (as root): ln -sfn {source} {target}", err=err)
         return 0
@@ -215,6 +300,19 @@ def compute_mappings(cfg: SetupConfig) -> list[LinkMapping]:
             LinkMapping(source=host_dir / "home", target=home / ".config" / "home-manager")
         )
 
+    # Home Manager modules
+    # Repo-level HM modules live under <repo>/home/modules and are usually imported
+    # via flakeRoot + "/home/modules/...". Linking them locally makes iterating on
+    # modules nicer and helps when configs refer to ~/.config/home-manager/modules.
+    repo_hm_modules = cfg.repo_root / "home" / "modules"
+    if repo_hm_modules.is_dir():
+        mappings.append(
+            LinkMapping(
+                source=repo_hm_modules,
+                target=home / ".config" / "home-manager" / "modules",
+            )
+        )
+
     # NixOS system files
     if (host_dir / "configuration.nix").is_file():
         mappings.append(
@@ -228,6 +326,38 @@ def compute_mappings(cfg: SetupConfig) -> list[LinkMapping]:
             LinkMapping(
                 source=host_dir / "hardware-configuration.nix",
                 target=Path("/etc/nixos/hardware-configuration.nix"),
+            )
+        )
+
+    # /etc/nixos as a canonical flake entrypoint (option B)
+    # Link the flake itself + required repo subtrees so rebuilds that run in
+    # terms of /etc/nixos can evaluate the full configuration.
+    if (cfg.repo_root / "flake.nix").is_file():
+        mappings.append(
+            LinkMapping(
+                source=cfg.repo_root / "flake.nix",
+                target=Path("/etc/nixos/flake.nix"),
+            )
+        )
+    if (cfg.repo_root / "flake.lock").is_file():
+        mappings.append(
+            LinkMapping(
+                source=cfg.repo_root / "flake.lock",
+                target=Path("/etc/nixos/flake.lock"),
+            )
+        )
+    if (cfg.repo_root / "hosts").is_dir():
+        mappings.append(
+            LinkMapping(
+                source=cfg.repo_root / "hosts",
+                target=Path("/etc/nixos/hosts"),
+            )
+        )
+    if (cfg.repo_root / "home").is_dir():
+        mappings.append(
+            LinkMapping(
+                source=cfg.repo_root / "home",
+                target=Path("/etc/nixos/home"),
             )
         )
 
