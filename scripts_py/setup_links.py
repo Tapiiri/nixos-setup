@@ -193,14 +193,12 @@ def build_root_replace_then_link_argv(
     return [rm_argv, ln_argv]
 
 
-ROOT_MANAGED_ETC_NIXOS_PATHS: tuple[Path, ...] = (
-    Path("/etc/nixos/flake.nix"),
-    Path("/etc/nixos/flake.lock"),
-    Path("/etc/nixos/configuration.nix"),
-    Path("/etc/nixos/hardware-configuration.nix"),
-    Path("/etc/nixos/hosts"),
-    Path("/etc/nixos/home"),
-)
+# setup-links no longer manages /etc/nixos content. `/etc/nixos` is expected to
+# be a root-owned clone updated from a local mirror by `rebuild --mirror`.
+#
+# We keep the root replace-then-link safety mechanism for potential future use,
+# but fail closed by default (no privileged rm -rf targets).
+ROOT_MANAGED_ETC_NIXOS_PATHS: tuple[Path, ...] = ()
 
 
 def is_safe_root_replace_target(target: Path) -> bool:
@@ -329,37 +327,9 @@ def compute_mappings(cfg: SetupConfig) -> list[LinkMapping]:
             )
         )
 
-    # /etc/nixos as a canonical flake entrypoint (option B)
-    # Link the flake itself + required repo subtrees so rebuilds that run in
-    # terms of /etc/nixos can evaluate the full configuration.
-    if (cfg.repo_root / "flake.nix").is_file():
-        mappings.append(
-            LinkMapping(
-                source=cfg.repo_root / "flake.nix",
-                target=Path("/etc/nixos/flake.nix"),
-            )
-        )
-    if (cfg.repo_root / "flake.lock").is_file():
-        mappings.append(
-            LinkMapping(
-                source=cfg.repo_root / "flake.lock",
-                target=Path("/etc/nixos/flake.lock"),
-            )
-        )
-    if (cfg.repo_root / "hosts").is_dir():
-        mappings.append(
-            LinkMapping(
-                source=cfg.repo_root / "hosts",
-                target=Path("/etc/nixos/hosts"),
-            )
-        )
-    if (cfg.repo_root / "home").is_dir():
-        mappings.append(
-            LinkMapping(
-                source=cfg.repo_root / "home",
-                target=Path("/etc/nixos/home"),
-            )
-        )
+    # NOTE: We intentionally do not link the flake into /etc/nixos.
+    # /etc/nixos is managed as a real git clone (mirror mode) rather than a
+    # symlink farm, to keep flakes happy and avoid untracked-path errors.
 
     # Scripts into ~/.local/bin
     user_bin_dir = home / ".local" / "bin"

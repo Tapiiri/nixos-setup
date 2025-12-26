@@ -48,12 +48,13 @@ class TestSetupLinks(unittest.TestCase):
         self.assertEqual(cmds[1][:3], ["sudo", "ln", "-sfn"])
 
     def test_is_safe_root_replace_target_allowlists_etc_nixos_children(self):
-        self.assertTrue(is_safe_root_replace_target(Path("/etc/nixos/configuration.nix")))
-        self.assertTrue(is_safe_root_replace_target(Path("/etc/nixos/hardware-configuration.nix")))
-        self.assertTrue(is_safe_root_replace_target(Path("/etc/nixos/flake.nix")))
-        self.assertTrue(is_safe_root_replace_target(Path("/etc/nixos/flake.lock")))
-        self.assertTrue(is_safe_root_replace_target(Path("/etc/nixos/hosts")))
-        self.assertTrue(is_safe_root_replace_target(Path("/etc/nixos/home")))
+        # setup-links no longer performs privileged rm -rf on /etc/nixos.
+        self.assertFalse(is_safe_root_replace_target(Path("/etc/nixos/configuration.nix")))
+        self.assertFalse(is_safe_root_replace_target(Path("/etc/nixos/hardware-configuration.nix")))
+        self.assertFalse(is_safe_root_replace_target(Path("/etc/nixos/flake.nix")))
+        self.assertFalse(is_safe_root_replace_target(Path("/etc/nixos/flake.lock")))
+        self.assertFalse(is_safe_root_replace_target(Path("/etc/nixos/hosts")))
+        self.assertFalse(is_safe_root_replace_target(Path("/etc/nixos/home")))
 
         # Explicitly forbidden
         self.assertFalse(is_safe_root_replace_target(Path("/")))
@@ -99,7 +100,7 @@ class TestSetupLinks(unittest.TestCase):
             (host_dir / "home").mkdir()
             (host_dir / "configuration.nix").write_text("{}", encoding="utf-8")
 
-            # flake entrypoint
+            # flake entrypoint (no longer linked into /etc/nixos by setup-links)
             (repo / "flake.nix").write_text("{}", encoding="utf-8")
             (repo / "flake.lock").write_text("{}", encoding="utf-8")
 
@@ -127,10 +128,6 @@ class TestSetupLinks(unittest.TestCase):
             self.assertIn(cfg.home / ".config" / "home-manager", targets)
             self.assertIn(cfg.home / ".config" / "home-manager" / "modules", targets)
             self.assertIn(Path("/etc/nixos/configuration.nix"), targets)
-            self.assertIn(Path("/etc/nixos/flake.nix"), targets)
-            self.assertIn(Path("/etc/nixos/flake.lock"), targets)
-            self.assertIn(Path("/etc/nixos/hosts"), targets)
-            self.assertIn(Path("/etc/nixos/home"), targets)
             self.assertIn(cfg.home / ".local" / "bin" / "tool", targets)
             self.assertIn(cfg.home / ".bashrc", targets)
 
@@ -182,9 +179,9 @@ class TestSetupLinks(unittest.TestCase):
                     err=err,
                 )
             self.assertEqual(rc, 0)
-            self.assertEqual(len(runner.calls), 2)
-            self.assertEqual(runner.calls[0][:2], ["sudo", "rm"])
-            self.assertEqual(runner.calls[1][:2], ["sudo", "ln"])
+            # setup-links no longer does root rm -rf for /etc/nixos; it falls back to ln -sfn.
+            self.assertEqual(len(runner.calls), 1)
+            self.assertEqual(runner.calls[0][:2], ["sudo", "ln"])
 
     def test_process_mapping_falls_back_to_ln_for_non_allowlisted_target(self):
         with tempfile.TemporaryDirectory() as td:
