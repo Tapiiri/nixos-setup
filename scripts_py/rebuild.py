@@ -19,9 +19,13 @@ class RebuildConfig:
     sync_etc_nixos: bool
     sync_ref: str
     sync_checkout: bool
+    use_mirror: bool
+    mirror_dir: Path
+    offline_ok: bool
 
 
 DEFAULT_SYSTEM_FLAKE_DIR = Path("/etc/nixos")
+DEFAULT_MIRROR_DIR = Path("/var/lib/nixos-setup/mirror.git")
 
 
 def parse_args(argv: Sequence[str]) -> tuple[argparse.Namespace, list[str]]:
@@ -69,6 +73,27 @@ def parse_args(argv: Sequence[str]) -> tuple[argparse.Namespace, list[str]]:
         help=(
             "Also update the /etc/nixos checkout to the synced ref. "
             "Use this only if /etc/nixos is writable by root git and its worktree admin area is healthy."
+        ),
+    )
+    parser.add_argument(
+        "--mirror",
+        action="store_true",
+        help=(
+            "Use a local bare mirror (recommended for root-owned /etc/nixos). "
+            "Fetch from GitHub as the user into the mirror, then fast-forward /etc/nixos from it."
+        ),
+    )
+    parser.add_argument(
+        "--mirror-dir",
+        type=Path,
+        default=DEFAULT_MIRROR_DIR,
+        help=f"Path to bare mirror repository (default: {DEFAULT_MIRROR_DIR})",
+    )
+    parser.add_argument(
+        "--offline-ok",
+        action="store_true",
+        help=(
+            "If network fetch fails, continue rebuilding using the existing /etc/nixos checkout."
         ),
     )
     parser.add_argument("hostname", nargs="?", help="Target host (defaults to /etc/hostname)")
@@ -135,7 +160,72 @@ def compute_config(
         sync_etc_nixos=sync_etc_nixos,
         sync_ref=str(args.sync_ref),
         sync_checkout=bool(args.sync_checkout),
+        use_mirror=bool(args.mirror),
+        mirror_dir=Path(args.mirror_dir),
+        offline_ok=bool(args.offline_ok),
     )
+
+
+def run_cp(argv: Sequence[str], *, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(list(argv), text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+
+
+def ensure_mirror(
+    *,
+    mirror_dir: Path,
+    upstream_url: str,
+    stderr,
+) -> int:
+    """Ensure bare mirror exists; create if missing.
+
+    This function does not require root; it assumes permissions are already
+    configured (e.g. nixos-setup group + writable mirror dir).
+    """
+
+    if mirror_dir.exists():
+        return 0
+
+    mirror_dir.parent.mkdir(parents=True, exist_ok=True)
+    print(f"Creating mirror repo at {mirror_dir}", file=stderr)
+    cp = subprocess.run(["git", "clone", "--mirror", upstream_url, str(mirror_dir)], text=True)
+    return int(cp.returncode)
+
+
+def mirror_fetch(*, mirror_dir: Path, stderr) -> int:
+    """Fetch updates into the bare mirror."""
+
+    cp = run_cp(["git", "-C", str(mirror_dir), "fetch", "--prune", "origin"])
+    if cp.stdout:
+        print(cp.stdout.rstrip(), file=stderr)
+    if cp.stderr:
+        print(cp.stderr.rstrip(), file=stderr)
+    return int(cp.returncode)
+
+
+def root_ensure_etc_nixos_clone(*, mirror_dir: Path, etc_dir: Path, stderr) -> int:
+    """Ensure /etc/nixos exists as a root-owned clone of the mirror."""
+
+    if (etc_dir / "flake.nix").is_file() and (etc_dir / ".git").exists():
+        return 0
+
+    if etc_dir.exists():
+        print(f"Refusing to overwrite existing {etc_dir}. Move it aside first.", file=stderr)
+        return 1
+
+    print(f"Cloning {mirror_dir} into {etc_dir} (root-owned)", file=stderr)
+    cp = subprocess.run(["sudo", "git", "clone", str(mirror_dir), str(etc_dir)], text=True)
+    return int(cp.returncode)
+
+
+def root_update_from_mirror(*, etc_dir: Path, ref: str, stderr) -> int:
+    """Fast-forward /etc/nixos from its origin (the local mirror)."""
+
+    # Ensure we have latest from mirror (no network).
+    cp = subprocess.run(["sudo", "git", "-C", str(etc_dir), "fetch", "--prune", "origin"], text=True)
+    if cp.returncode != 0:
+        return int(cp.returncode)
+    cp = subprocess.run(["sudo", "git", "-C", str(etc_dir), "merge", "--ff-only", ref], text=True)
+    return int(cp.returncode)
 
 
 def sync_worktree(
@@ -289,15 +379,48 @@ def main(argv: Sequence[str] | None = None, *, runner: Runner | None = None, std
 
         # Sync should happen as the invoking user (SSH keys, agents, etc).
         if cfg.sync_etc_nixos and cfg.flake_dir == DEFAULT_SYSTEM_FLAKE_DIR:
-            rc = sync_worktree(
-                worktree_dir=DEFAULT_SYSTEM_FLAKE_DIR,
-                repo_root=cfg.repo_root,
-                ref=cfg.sync_ref,
-                update_checkout=cfg.sync_checkout,
-                stderr=stderr,
-            )
-            if rc != 0:
-                return rc
+            if cfg.use_mirror:
+                # Use a local bare mirror under /var/lib to avoid root needing SSH.
+                # We rely on the mirror having the correct upstream URL already.
+                # If it doesn't exist yet, try to create it using this repo's origin.
+                origin_cp = run_cp(["git", "-C", str(cfg.repo_root), "remote", "get-url", "origin"])
+                upstream = (origin_cp.stdout or "").strip()
+                if origin_cp.returncode != 0 or not upstream:
+                    print("Could not determine origin URL for mirror creation.", file=stderr)
+                    return 1
+
+                rc = ensure_mirror(mirror_dir=cfg.mirror_dir, upstream_url=upstream, stderr=stderr)
+                if rc != 0:
+                    return rc
+
+                rc = mirror_fetch(mirror_dir=cfg.mirror_dir, stderr=stderr)
+                if rc != 0:
+                    if cfg.offline_ok:
+                        print("Mirror fetch failed (offline?). Continuing without updates.", file=stderr)
+                    else:
+                        return rc
+
+                rc = root_ensure_etc_nixos_clone(mirror_dir=cfg.mirror_dir, etc_dir=DEFAULT_SYSTEM_FLAKE_DIR, stderr=stderr)
+                if rc != 0:
+                    return rc
+
+                # Always update checkout in mirror mode (root fast-forward only).
+                rc = root_update_from_mirror(etc_dir=DEFAULT_SYSTEM_FLAKE_DIR, ref=cfg.sync_ref, stderr=stderr)
+                if rc != 0:
+                    if cfg.offline_ok:
+                        print("/etc/nixos update failed; continuing with existing checkout.", file=stderr)
+                    else:
+                        return rc
+            else:
+                rc = sync_worktree(
+                    worktree_dir=DEFAULT_SYSTEM_FLAKE_DIR,
+                    repo_root=cfg.repo_root,
+                    ref=cfg.sync_ref,
+                    update_checkout=cfg.sync_checkout,
+                    stderr=stderr,
+                )
+                if rc != 0:
+                    return rc
 
         cmd = build_nixos_rebuild_command(cfg, passthrough)
         exec_cmd = build_exec_command(cmd)

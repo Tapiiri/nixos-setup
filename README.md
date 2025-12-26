@@ -78,30 +78,45 @@ Nix treats flake sources as Git trees and will error out with messages like:
 
 - `Path 'home' in the repository "/etc/nixos" is not tracked by Git.`
 
-### Best fix: use a Git worktree for /etc/nixos
+### Recommended fix: local mirror + root-owned /etc/nixos clone
 
-Make `/etc/nixos` a **git worktree** of this repository. Then `/etc/nixos` has
-the same history and tracked files as your development checkout, and Nix won't
-complain about untracked paths.
+Instead of making `/etc/nixos` a separate git repo with symlinks (breaks flakes)
+or a git worktree (can create permission/admin-dir pitfalls when mixing root and
+user operations), this repo supports a **local mirror** workflow:
 
-High level steps:
+1. Your user fetches from GitHub into a local bare mirror (uses your SSH keys)
+2. Root fast-forwards `/etc/nixos` from that *local* mirror (no GitHub creds)
 
-1. Make a backup of the current `/etc/nixos`.
-2. Remove the existing `/etc/nixos` git repo.
-3. Add `/etc/nixos` as a worktree of this repo.
+By default the mirror lives at:
 
-After that, `sudo rebuild` will evaluate the exact tracked contents of this
-repo via `/etc/nixos`.
+- `/var/lib/nixos-setup/mirror.git`
+
+#### One-time setup (implemented via NixOS config)
+
+In `hosts/<host>/configuration.nix`, we:
+
+- create group `nixos-setup`
+- add your user to that group
+- create `/var/lib/nixos-setup` with group write + setgid
+- add sudo rules so members of `nixos-setup` can run the minimal privileged
+	commands used by `rebuild --mirror` (including `git` for `/etc/nixos` updates)
+
+After switching to that config, the first run of `rebuild --mirror` will create
+the bare mirror (if missing) and bootstrap `/etc/nixos` as a clone of the mirror.
+
+#### Daily usage
+
+Prefer running:
+
+- `rebuild --mirror`
+
+Optional flags:
+
+- `--mirror-dir <path>`: override mirror location
+- `--offline-ok`: proceed if fetching from GitHub fails (uses last fetched mirror)
 
 ### Running rebuild (no sudo)
 
-Once your `/etc/nixos` is a worktree, prefer running:
-
-- `rebuild`
-
-The script will sync `/etc/nixos` using your normal user's Git/SSH credentials
-and then invoke `sudo nixos-rebuild ...` internally for the privileged part.
-
-Note: `setup-links` is still useful for user-owned targets (dotfiles,
-`~/.local/bin`, Home Manager config), but `/etc/nixos` itself is best managed
-as the worktree.
+Prefer running `rebuild` as your normal user. The script will do the sync step
+as your user (for GitHub access) and invoke `sudo nixos-rebuild ...` internally
+for the privileged part.

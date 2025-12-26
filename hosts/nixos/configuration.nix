@@ -1,14 +1,15 @@
 # Edit this configuration file to define what should be installed on
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
-
-{ config, pkgs, inputs, ... }:
-
 {
-  imports =
-    [ 
-      ./hardware-configuration.nix
-    ];
+  config,
+  pkgs,
+  inputs,
+  ...
+}: {
+  imports = [
+    ./hardware-configuration.nix
+  ];
 
   # Bootloader.
   boot.loader.systemd-boot.enable = true;
@@ -84,10 +85,59 @@
   users.users.tapiiri = {
     isNormalUser = true;
     description = "Ilmari Tarpila";
-    extraGroups = [ "networkmanager" "wheel" ];
+    extraGroups = ["networkmanager" "wheel" "nixos-setup"];
     packages = with pkgs; [
     ];
   };
+
+  # Local mirror + permissions for nixos-setup tooling.
+  # Goal: `rebuild --mirror` can update a shared local mirror as user and then
+  # let root fast-forward `/etc/nixos` from that mirror without root needing
+  # GitHub credentials.
+  users.groups.nixos-setup = {};
+
+  # Create the mirror parent directory at boot with stable ownership.
+  # (The bare mirror repo itself is created by `rebuild --mirror` on first run.)
+  systemd.tmpfiles.rules = [
+    "d /var/lib/nixos-setup 2775 root nixos-setup - -"
+  ];
+
+  # Allow members of nixos-setup to run the specific privileged operations that
+  # `rebuild --mirror` uses to manage /etc/nixos without prompting for a password.
+  # This avoids needing root to have SSH keys and keeps the root step local-only.
+  security.sudo.extraRules = [
+    {
+      groups = ["nixos-setup"];
+      commands = [
+        # Used by rebuild to bootstrap `/etc/nixos` from the local mirror.
+        {
+          command = "${pkgs.git}/bin/git";
+          options = ["NOPASSWD"];
+        }
+
+        # Used by rebuild to create /var/lib/nixos-setup/mirror.git if needed.
+        # (git clone --mirror writes into /var/lib/nixos-setup)
+        {
+          command = "${pkgs.coreutils}/bin/mkdir";
+          options = ["NOPASSWD"];
+        }
+        {
+          command = "${pkgs.coreutils}/bin/chown";
+          options = ["NOPASSWD"];
+        }
+        {
+          command = "${pkgs.coreutils}/bin/chmod";
+          options = ["NOPASSWD"];
+        }
+
+        # Used for the actual system switch.
+        {
+          command = "${pkgs.nixos-rebuild}/bin/nixos-rebuild";
+          options = ["NOPASSWD"];
+        }
+      ];
+    }
+  ];
 
   home-manager = {
     # If a file already exists in $HOME and Home Manager wants to manage it
@@ -109,8 +159,8 @@
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
-  #  vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
-  #  wget
+    #  vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
+    #  wget
   ];
 
   # Some programs need SUID wrappers, can be configured further or are
@@ -139,6 +189,6 @@
   # Before changing this value read the documentation for this option
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
   system.stateVersion = "25.05"; # Did you read the comment?
- 
-  nix.settings.experimental-features = "nix-command flakes";  
+
+  nix.settings.experimental-features = "nix-command flakes";
 }
