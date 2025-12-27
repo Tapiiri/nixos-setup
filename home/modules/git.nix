@@ -21,6 +21,10 @@ in {
       extraConfig = {
         init.defaultBranch = "main";
 
+        # Git 2.27+ requires configuring how `git pull` reconciles divergent
+        # branches. We prefer the traditional merge strategy by default.
+        pull.rebase = false;
+
         # Make it easier to get GitHub's green "Verified" badge by signing.
         # Preferred modern setup is SSH signing:
         #   - create a signing key: ssh-keygen -t ed25519 -C "git-signing"

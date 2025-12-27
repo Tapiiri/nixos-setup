@@ -70,6 +70,19 @@ Quick checks:
 This repo's module `home/modules/shell-bash.nix` sources `hm-session-vars.sh`
 for both login shells and interactive shells.
 
+## Git defaults
+
+This setup configures Git (via Home Manager) so `git pull` uses **merge** by
+default when local/remote histories diverge:
+
+- `pull.rebase = false`
+
+You can still override per-invocation:
+
+- `git pull --rebase`
+- `git pull --no-rebase`
+- `git pull --ff-only`
+
 ## /etc/nixos and flakes (recommended setup)
 
 This repo uses flakes. The `rebuild` wrapper defaults to:
