@@ -104,9 +104,10 @@ in {
 
     # Use an activation script to merge our base settings with any existing user settings
     # This allows VS Code to modify settings.json while we provide defaults
-    # Run early so we can rotate any old backups and ensure settings.json is
-    # writable before other activation steps.
-    home.activation.vscodeSettings = lib.hm.dag.entryBefore ["checkLinkTargets"] ''
+    # Run *after* Home Manager's built-in VS Code profile activation, because
+    # that step may (re)create settings.json as a Nix store symlink.
+    # We then replace it with a writable file and merge managed settings.
+    home.activation.vscodeSettings = lib.hm.dag.entryAfter ["vscodeProfiles"] ''
       # Delegate the actual activation logic to a real template file rendered by Nix.
       # shellcheck source=/dev/null
       source "${vscodeSettingsActivationScript}"
