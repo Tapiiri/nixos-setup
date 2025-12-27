@@ -66,6 +66,20 @@ Included hooks: `nix flake check`, `nixpkgs-fmt`, `yamllint`, `actionlint` (work
 
 VS Code: recommended extensions include the Nix environment selector plus Python/Ruff. With the Nix Env Selector extension installed, set the workspace Nix file to `dev/flake.nix` so VS Code terminals inherit the dev shell and pick up the pre-commit auto-install.
 
+### VS Code + devshell (recommended)
+
+This repo includes a small `code` wrapper script under `scripts/` that you can install via:
+
+- `./scripts/setup-links`
+
+It behaves like this:
+
+- walks up from the folder you open
+- if it finds `./dev/flake.nix`, launches VS Code via `nix develop ./dev -c code ...`
+- otherwise falls back to `./flake.nix`
+
+This makes VS Code's **GUI Git commits** run with the same tooling as the repo devshell (so pre-commit system hooks like `yamllint` don't fail due to missing PATH).
+
 CI runs `pre-commit run --all-files` via the same dev shell to match local tooling.
 
 ### PATH troubleshooting (why `rebuild` isn't found)

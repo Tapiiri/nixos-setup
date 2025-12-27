@@ -3,27 +3,27 @@ repos:
     hooks:
       - id: nix-flake-check
         name: nix flake check
-        entry: nix flake check
+        entry: nix develop ./dev -c nix flake check
         language: system
         pass_filenames: false
       - id: nixpkgs-fmt
         name: nixpkgs-fmt
-        entry: nixpkgs-fmt
+        entry: nix develop ./dev -c nixpkgs-fmt
         language: system
-        files: '(^flake\\.nix$|^(hosts|home|dev)/.*\\.nix$|.*\\.nix$)'
+        files: '(^flake\.nix$|^(hosts|home|dev)/.*\.nix$|.*\.nix$)'
       - id: yamllint
         name: yamllint
-        entry: yamllint
+        entry: nix develop ./dev -c yamllint
         language: system
-        files: '.*\\.ya?ml$'
+        files: '.*\.ya?ml$'
       - id: actionlint
         name: actionlint
-        entry: actionlint
+        entry: nix develop ./dev -c actionlint
         language: system
-        files: '^\\.github/workflows/.*\\.ya?ml$'
+        files: '^\.github/workflows/.*\.ya?ml$'
       - id: ruff-check
         name: ruff check
-        entry: ruff check scripts_py tests
+        entry: nix develop ./dev -c ruff check scripts_py tests
         language: system
         pass_filenames: false
       - id: python-pytest

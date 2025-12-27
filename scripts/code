@@ -1,0 +1,40 @@
+#!/usr/bin/env -S python3
+"""Executable entrypoint for `code`.
+
+This wrapper launches VS Code inside the closest available Nix dev shell.
+
+Priority (first match wins while walking upwards from the opened path):
+  1) <repo>/dev/flake.nix  -> nix develop <repo>/dev -c code ...
+  2) <repo>/flake.nix      -> nix develop <repo> -c code ...
+
+If no flake is found, it falls back to launching VS Code normally.
+
+The implementation lives in `scripts_py.code` for unit testing.
+"""
+
+from __future__ import annotations
+
+import sys
+
+
+def _bootstrap() -> None:
+    from pathlib import Path
+
+    here = Path(__file__).resolve()
+    sys.path.insert(0, str(here.parent.parent))
+
+    from scripts_py.utils import RepoMarkers, bootstrap_repo_import_path
+
+    bootstrap_repo_import_path(
+        script_file=here,
+        markers=RepoMarkers(files=("flake.nix",), dirs=("scripts_py", "dev")),
+    )
+
+
+_bootstrap()
+
+from scripts_py.code import main  # noqa: E402
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
