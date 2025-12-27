@@ -11,6 +11,7 @@
     (flakeRoot + "/home/modules/devtools.nix")
     (flakeRoot + "/home/features/vscode")
     (flakeRoot + "/home/modules/browsers.nix")
+    (flakeRoot + "/home/modules/telegram.nix")
     (flakeRoot + "/home/modules/shell-bash.nix")
   ];
 }
