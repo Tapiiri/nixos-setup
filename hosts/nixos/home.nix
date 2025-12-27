@@ -1,6 +1,4 @@
-{ flakeRoot, ... }:
-
-{
+{flakeRoot, ...}: {
   my = {
     git.enable = true;
     devtools.enable = true;

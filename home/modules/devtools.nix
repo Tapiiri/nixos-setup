@@ -1,15 +1,14 @@
-{ config
-, lib
-, pkgs
-, ...
-}:
-let
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}: let
   inherit (lib) mkEnableOption mkIf;
   # Pin Python explicitly so scripts/tests use a known interpreter.
   py = pkgs.python313;
   pyPkgs = py.pkgs;
-in
-{
+in {
   imports = [
     ./gh.nix
   ];

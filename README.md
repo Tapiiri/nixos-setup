@@ -62,7 +62,7 @@ Run all checks locally (matches CI):
 
 - `nix develop ./dev -c pre-commit run --all-files`
 
-Included hooks: `nix flake check`, `nixpkgs-fmt`, `yamllint`, `actionlint` (workflows), `ruff check`, and `python -m pytest -q tests`.
+Included hooks: `nix flake check`, `alejandra`, `yamllint`, `actionlint` (workflows), `ruff check`, and `python -m pytest -q tests`.
 
 VS Code: recommended extensions include the Nix environment selector plus Python/Ruff. With the Nix Env Selector extension installed, set the workspace Nix file to `dev/flake.nix` so VS Code terminals inherit the dev shell and pick up the pre-commit auto-install.
 

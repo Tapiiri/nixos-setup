@@ -46,6 +46,14 @@ def get_managed_keys() -> set[str]:
     These should NOT be synced back, as they are controlled declaratively.
     """
     return {
+        # Repo workflow defaults (we want HM to be the source of truth)
+        "editor.codeActionsOnSave",
+        "nixEnvSelector.nixFile",
+        "python.analysis.typeCheckingMode",
+        "python.testing.pytestArgs",
+        "python.testing.pytestEnabled",
+        "python.testing.unittestEnabled",
+
         "editor.formatOnSave",
         "[nix]",
         "nix.enableLanguageServer",

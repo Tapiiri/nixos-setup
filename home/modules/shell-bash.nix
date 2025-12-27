@@ -1,9 +1,10 @@
-{ config, lib, ... }:
-
-let
-  inherit (lib) mkEnableOption mkIf;
-in
 {
+  config,
+  lib,
+  ...
+}: let
+  inherit (lib) mkEnableOption mkIf;
+in {
   options.my.shell.bash.enable = mkEnableOption "Bash config";
 
   config = mkIf config.my.shell.bash.enable {

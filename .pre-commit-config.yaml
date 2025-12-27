@@ -6,11 +6,11 @@ repos:
         entry: nix develop ./dev -c nix flake check
         language: system
         pass_filenames: false
-      - id: nixpkgs-fmt
-        name: nixpkgs-fmt
-        entry: nix develop ./dev -c nixpkgs-fmt
+      - id: alejandra-fmt
+        name: alejandra (nix fmt)
+        entry: nix develop ./dev -c alejandra
         language: system
-        files: '(^flake\.nix$|^(hosts|home|dev)/.*\.nix$|.*\.nix$)'
+        files: '(^flake\.nix$|^(hosts|home|dev)/.*\.nix$|.*\.nix)'
       - id: yamllint
         name: yamllint
         entry: nix develop ./dev -c yamllint
@@ -27,7 +27,7 @@ repos:
         language: system
         pass_filenames: false
       - id: python-pytest
-        name: nix develop ./dev -c pytest -q tests
+        name: pytest
         entry: nix develop ./dev -c pytest -q tests
         language: system
         pass_filenames: false

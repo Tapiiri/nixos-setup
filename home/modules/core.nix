@@ -1,12 +1,10 @@
-{ ... }:
-
-{
+{...}: {
   # Identity / base settings.
   home.username = "tapiiri";
   home.homeDirectory = "/home/tapiiri";
 
   # Ensure scripts linked to ~/.local/bin are discoverable.
-  home.sessionPath = [ ".local/bin" ];
+  home.sessionPath = [".local/bin"];
 
   # Some setups won't propagate home.sessionPath into hm-session-vars.sh
   # (it should, but this makes it unambiguous).

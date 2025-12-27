@@ -1,12 +1,11 @@
-{ config
-, lib
-, pkgs
-, ...
-}:
-let
-  inherit (lib) mkEnableOption mkIf mkOption types;
-in
 {
+  config,
+  lib,
+  pkgs,
+  ...
+}: let
+  inherit (lib) mkEnableOption mkIf mkOption types;
+in {
   options.my.git.enable = mkEnableOption "Git (programs.git)";
 
   options.my.git.signing = {
