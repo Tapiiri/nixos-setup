@@ -1,11 +1,10 @@
 # Edit this configuration file to define what should be installed on
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
-{
-  config,
-  pkgs,
-  inputs,
-  ...
+{ config
+, pkgs
+, inputs
+, ...
 }: {
   imports = [
     ./hardware-configuration.nix
@@ -85,7 +84,7 @@
   users.users.tapiiri = {
     isNormalUser = true;
     description = "Ilmari Tarpila";
-    extraGroups = ["networkmanager" "wheel" "nixos-setup"];
+    extraGroups = [ "networkmanager" "wheel" "nixos-setup" ];
     packages = with pkgs; [
     ];
   };
@@ -94,7 +93,7 @@
   # Goal: `rebuild --mirror` can update a shared local mirror as user and then
   # let root fast-forward `/etc/nixos` from that mirror without root needing
   # GitHub credentials.
-  users.groups.nixos-setup = {};
+  users.groups.nixos-setup = { };
 
   # Create the mirror parent directory at boot with stable ownership.
   # (The bare mirror repo itself is created by `rebuild --mirror` on first run.)
@@ -110,33 +109,33 @@
   # This avoids needing root to have SSH keys and keeps the root step local-only.
   security.sudo.extraRules = [
     {
-      groups = ["nixos-setup"];
+      groups = [ "nixos-setup" ];
       commands = [
         # Used by rebuild to bootstrap `/etc/nixos` from the local mirror.
         {
           command = "${pkgs.git}/bin/git";
-          options = ["NOPASSWD"];
+          options = [ "NOPASSWD" ];
         }
 
         # Used by rebuild to create /var/lib/nixos-setup/mirror.git if needed.
         # (git clone --mirror writes into /var/lib/nixos-setup)
         {
           command = "${pkgs.coreutils}/bin/mkdir";
-          options = ["NOPASSWD"];
+          options = [ "NOPASSWD" ];
         }
         {
           command = "${pkgs.coreutils}/bin/chown";
-          options = ["NOPASSWD"];
+          options = [ "NOPASSWD" ];
         }
         {
           command = "${pkgs.coreutils}/bin/chmod";
-          options = ["NOPASSWD"];
+          options = [ "NOPASSWD" ];
         }
 
         # Used for the actual system switch.
         {
           command = "${pkgs.nixos-rebuild}/bin/nixos-rebuild";
-          options = ["NOPASSWD"];
+          options = [ "NOPASSWD" ];
         }
       ];
     }

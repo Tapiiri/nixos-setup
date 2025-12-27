@@ -1,5 +1,8 @@
-{ config, lib, pkgs, ... }:
-
+{ config
+, lib
+, pkgs
+, ...
+}:
 let
   inherit (lib) mkEnableOption mkIf;
   # Pin Python explicitly so scripts/tests use a known interpreter.

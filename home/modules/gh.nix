@@ -1,11 +1,12 @@
-{
-  config,
-  lib,
-  pkgs,
-  ...
-}: let
+{ config
+, lib
+, pkgs
+, ...
+}:
+let
   inherit (lib) mkEnableOption mkIf mkOption types;
-in {
+in
+{
   options.my.gh.enable = mkEnableOption "GitHub CLI (gh)";
 
   # Optional: set the GitHub login explicitly.

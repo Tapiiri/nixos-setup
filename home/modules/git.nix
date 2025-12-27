@@ -1,11 +1,12 @@
-{
-  config,
-  lib,
-  pkgs,
-  ...
-}: let
+{ config
+, lib
+, pkgs
+, ...
+}:
+let
   inherit (lib) mkEnableOption mkIf mkOption types;
-in {
+in
+{
   options.my.git.enable = mkEnableOption "Git (programs.git)";
 
   options.my.git.signing = {
@@ -38,12 +39,12 @@ in {
         # branches. We prefer the traditional merge strategy by default.
         pull.rebase = false;
 
-    # Optional signing setup.
-    #
-    # NOTE: We prefer using Home Manager's `programs.git.signing.*` options
-    # (below) to turn signing on/off. These extraConfig values only specify
-    # the signing mechanism when signing is enabled.
-    gpg.format = mkIf config.my.git.signing.enable "ssh";
+        # Optional signing setup.
+        #
+        # NOTE: We prefer using Home Manager's `programs.git.signing.*` options
+        # (below) to turn signing on/off. These extraConfig values only specify
+        # the signing mechanism when signing is enabled.
+        gpg.format = mkIf config.my.git.signing.enable "ssh";
 
         safe.directory = [
           "/etc/nixos"

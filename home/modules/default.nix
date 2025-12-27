@@ -1,4 +1,4 @@
-{flakeRoot, ...}: {
+{ flakeRoot, ... }: {
   # Module registry.
   # Add new modules here and they become available to your Home Manager config.
   #

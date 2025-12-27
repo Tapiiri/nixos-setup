@@ -1,12 +1,12 @@
-{
-  config,
-  lib,
-  pkgs,
-  ...
-}: let
+{ config
+, lib
+, pkgs
+, ...
+}:
+let
   inherit (lib) mkEnableOption mkIf;
 
-  jsonFormat = pkgs.formats.json {};
+  jsonFormat = pkgs.formats.json { };
 
   # Keep VS Code settings in one place. We only apply them when VS Code is enabled
   # somewhere else (e.g. `my.devtools.enable` sets `programs.vscode.enable = true`).
@@ -46,7 +46,7 @@
     "nix.serverSettings" = {
       nil = {
         # nil supports formatting via external formatter.
-        formatting = {command = [alejandraBin];};
+        formatting = { command = [ alejandraBin ]; };
       };
     };
   };
@@ -59,7 +59,7 @@
   vscodeUserSettings =
     if builtins.pathExists vscodeUserSettingsPath
     then (import vscodeUserSettingsPath).userSettings
-    else {};
+    else { };
 
   # Merge structural and user settings
   # Note: home-manager will write these to settings.json on each rebuild,
@@ -79,7 +79,8 @@
     MANAGED_SETTINGS_JSON = vscodeManagedSettingsJson;
     JQ_BIN = "${pkgs.jq}/bin/jq";
   };
-in {
+in
+{
   options.my.vscode = {
     enable = mkEnableOption "VS Code configuration (extensions + settings)";
   };
@@ -93,7 +94,7 @@ in {
       mutableExtensionsDir = true;
 
       # Install extensions using the new profiles syntax.
-      profiles.default.extensions = [nixIdeExt];
+      profiles.default.extensions = [ nixIdeExt ];
 
       # IMPORTANT: Do NOT set userSettings here.
       # Home Manager's VS Code module writes settings.json as a symlink into the
@@ -107,7 +108,7 @@ in {
     # Run *after* Home Manager's built-in VS Code profile activation, because
     # that step may (re)create settings.json as a Nix store symlink.
     # We then replace it with a writable file and merge managed settings.
-    home.activation.vscodeSettings = lib.hm.dag.entryAfter ["vscodeProfiles"] ''
+    home.activation.vscodeSettings = lib.hm.dag.entryAfter [ "vscodeProfiles" ] ''
       # Delegate the actual activation logic to a real template file rendered by Nix.
       # shellcheck source=/dev/null
       source "${vscodeSettingsActivationScript}"
