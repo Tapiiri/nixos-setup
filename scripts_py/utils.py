@@ -4,7 +4,7 @@ import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, Protocol, Sequence
+from typing import Iterable, NoReturn, Protocol, Sequence
 
 
 def log_info(msg: str, *, out) -> None:
@@ -24,12 +24,12 @@ FIND_UPWARDS_LIMIT = 8
 
 
 class Runner(Protocol):
-    def exec(self, argv: Sequence[str]) -> "NoReturn":  # pragma: no cover
+    def exec(self, argv: Sequence[str]) -> NoReturn:  # pragma: no cover
         """Replace the current process with argv[0] and arguments."""
 
 
 class OsExecRunner:
-    def exec(self, argv: Sequence[str]) -> "NoReturn":
+    def exec(self, argv: Sequence[str]) -> NoReturn:
         os.execvp(argv[0], list(argv))
         raise AssertionError("os.execvp returned")
 
@@ -93,7 +93,7 @@ def bootstrap_repo_import_path(
 def repo_root_from_script_path(
     script_path: Path,
     *,
-    markers: RepoMarkers = RepoMarkers(),
+    markers: RepoMarkers | None = None,
 ) -> Path:
     """Determine the repo root for an implementation module.
 
@@ -107,6 +107,8 @@ def repo_root_from_script_path(
     """
 
     script_path = script_path.resolve()
+    if markers is None:
+        markers = RepoMarkers()
     candidates = [script_path.parent.parent, script_path.parent]
     for c in candidates:
         root = find_upwards(c, markers=markers)

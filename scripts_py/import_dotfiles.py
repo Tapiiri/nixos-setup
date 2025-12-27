@@ -36,7 +36,8 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
         prog="import-dotfiles",
         description=(
             "Import existing user config into this repo's dotfiles/ tree.\n"
-            "This copies: ~/.<NAME> -> dotfiles/home/<NAME> and ~/.config/<NAME> -> dotfiles/config/<NAME>.\n\n"
+            "This copies: ~/.<NAME> -> dotfiles/home/<NAME> and ~/.config/<NAME> -> "
+            "dotfiles/config/<NAME>.\n\n"
             "Safety: won't overwrite existing files/dirs in dotfiles/."
         ),
     )
@@ -62,7 +63,12 @@ def ensure_dirs(paths: ImportPaths) -> None:
     paths.dot_config.mkdir(parents=True, exist_ok=True)
 
 
-def planned_imports(paths: ImportPaths, *, from_home: Iterable[str], from_config: Iterable[str]) -> list[tuple[Path, Path]]:
+def planned_imports(
+    paths: ImportPaths,
+    *,
+    from_home: Iterable[str],
+    from_config: Iterable[str],
+) -> list[tuple[Path, Path]]:
     pairs: list[tuple[Path, Path]] = []
     for name in from_home:
         pairs.append((paths.home_dir / f".{name}", paths.dot_home / name))

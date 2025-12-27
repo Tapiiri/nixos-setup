@@ -27,7 +27,7 @@ repos:
         language: system
         pass_filenames: false
       - id: python-pytest
-        name: python -m pytest -q tests
-        entry: python -m pytest -q tests
+        name: nix develop ./dev -c pytest -q tests
+        entry: nix develop ./dev -c pytest -q tests
         language: system
         pass_filenames: false

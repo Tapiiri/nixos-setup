@@ -4,12 +4,11 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-
 from scripts_py.setup_links import (
     LinkMapping,
     SetupConfig,
-    build_root_replace_then_link_argv,
     build_root_helper_argv,
+    build_root_replace_then_link_argv,
     compute_config,
     compute_mappings,
     is_safe_root_replace_target,
@@ -83,7 +82,12 @@ class TestSetupLinks(unittest.TestCase):
             hostname_file.write_text("myhost\n", encoding="utf-8")
 
             args = parse_args([])
-            cfg = compute_config(args=args, script_path=fake_script_path, home=tdp / "home", hostname_path=hostname_file)
+            cfg = compute_config(
+                args=args,
+                script_path=fake_script_path,
+                home=tdp / "home",
+                hostname_path=hostname_file,
+            )
             self.assertEqual(cfg.hostname, "myhost")
             self.assertEqual(cfg.host_dir, repo / "hosts" / "myhost")
 
@@ -119,7 +123,13 @@ class TestSetupLinks(unittest.TestCase):
             dot_home.mkdir(parents=True)
             (dot_home / "bashrc").write_text("x", encoding="utf-8")
 
-            cfg = SetupConfig(repo_root=repo, hostname="h", host_dir=host_dir, root_helper=None, home=tdp / "HOME")
+            cfg = SetupConfig(
+                repo_root=repo,
+                hostname="h",
+                host_dir=host_dir,
+                root_helper=None,
+                home=tdp / "HOME",
+            )
             mappings = compute_mappings(cfg)
             targets = {m.target for m in mappings}
 

@@ -6,7 +6,7 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, Protocol, Sequence
+from typing import Protocol, Sequence
 
 from scripts_py.utils import (
     log_error,
@@ -378,7 +378,13 @@ def compute_mappings(cfg: SetupConfig) -> list[LinkMapping]:
     return mappings
 
 
-def main(argv: Sequence[str] | None = None, *, runner: RootCommandRunner | None = None, out=None, err=None) -> int:
+def main(
+    argv: Sequence[str] | None = None,
+    *,
+    runner: RootCommandRunner | None = None,
+    out=None,
+    err=None,
+) -> int:
     if argv is None:
         argv = sys.argv[1:]
     if out is None:
@@ -406,7 +412,16 @@ def main(argv: Sequence[str] | None = None, *, runner: RootCommandRunner | None 
 
     rc = 0
     for m in mappings:
-        rc = max(rc, process_mapping(m, root_helper=cfg.root_helper, runner=runner, out=out, err=err))
+        rc = max(
+            rc,
+            process_mapping(
+                m,
+                root_helper=cfg.root_helper,
+                runner=runner,
+                out=out,
+                err=err,
+            ),
+        )
     return rc
 
 
