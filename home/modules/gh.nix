@@ -1,32 +1,29 @@
-{ config, lib, pkgs, ... }:
-
-let
-  inherit (lib) mkEnableOption mkIf;
-
-  # Match the GitHub CLI "user" to whatever userEmail is set in git.
-  # `programs.gh.settings.user` expects your GitHub username (login), but we only
-  # have a git identity here. So we derive it from the email local-part.
-  #
-  # If you need the exact GitHub login and it's not the same as the email
-  # local-part, we can add an explicit option later.
-  gitEmail = config.programs.git.userEmail or null;
-  ghUser =
-    if gitEmail == null then null
-    else builtins.elemAt (lib.splitString "@" gitEmail) 0;
-
-  ghUserSettings =
-    if ghUser == null then { }
-    else { user = ghUser; };
-in
 {
+  config,
+  lib,
+  pkgs,
+  ...
+}: let
+  inherit (lib) mkEnableOption mkIf mkOption types;
+in {
   options.my.gh.enable = mkEnableOption "GitHub CLI (gh)";
+
+  # Optional: set the GitHub login explicitly.
+  # Note: this does NOT affect commit attribution; it's only for gh defaults.
+  options.my.gh.user = mkOption {
+    type = types.nullOr types.str;
+    default = null;
+    example = "Tapiiri";
+    description = "GitHub username (login) for gh CLI settings.";
+  };
 
   config = mkIf config.my.gh.enable {
     programs.gh = {
       enable = true;
 
-      # Keep gh's notion of "user" aligned with the configured git email.
-      settings = ghUserSettings;
+      settings = mkIf (config.my.gh.user != null) {
+        user = config.my.gh.user;
+      };
     };
   };
 }
