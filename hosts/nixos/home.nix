@@ -4,6 +4,7 @@
     devtools.enable = true;
     browsers.enable = true;
     shell.bash.enable = true;
+    telegram.enable = true;
   };
 
   # Home Manager module hub.
