@@ -17,7 +17,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from scripts_py.utils import repo_root_from_script_path, log_error, log_info
+from scripts_py.utils import log_error, log_info, repo_root_from_script_path
 
 
 def get_vscode_settings_path() -> Path:
@@ -60,7 +60,10 @@ def get_user_settings() -> dict[str, Any]:
     settings_path = get_vscode_settings_path()
     
     if not settings_path.exists():
-        log_info(f"VS Code settings file not found at {settings_path}", out=sys.stdout)
+        log_info(
+            f"VS Code settings file not found at {settings_path}",
+            out=sys.stdout,
+        )
         return {}
     
     all_settings = read_json_file(settings_path)
@@ -133,7 +136,11 @@ def main() -> int:
     user_settings = get_user_settings()
     
     if not user_settings:
-        log_info("No user-specific settings found (or all are managed by home-manager)", out=sys.stdout)
+        log_info(
+            "No user-specific settings found (or all are managed by "
+            "home-manager)",
+            out=sys.stdout,
+        )
         return 0
     
     log_info(f"Found {len(user_settings)} user-specific setting(s)", out=sys.stdout)
@@ -167,7 +174,7 @@ def main() -> int:
     
     log_info("✓ Done! You can now review and integrate the changes.", out=sys.stdout)
     log_info(f"  Review: cat {output_path}", out=sys.stdout)
-    log_info(f"  Then update vscode.nix to import these settings", out=sys.stdout)
+    log_info("  Then update vscode.nix to import these settings", out=sys.stdout)
     
     return 0
 

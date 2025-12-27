@@ -4,7 +4,6 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-
 from scripts_py.setup_links import (
     LinkMapping,
     SetupConfig,
@@ -55,7 +54,12 @@ class TestSetupLinks(unittest.TestCase):
             hostname_file.write_text("myhost\n", encoding="utf-8")
 
             args = parse_args([])
-            cfg = compute_config(args=args, script_path=fake_script_path, home=tdp / "home", hostname_path=hostname_file)
+            cfg = compute_config(
+                args=args,
+                script_path=fake_script_path,
+                home=tdp / "home",
+                hostname_path=hostname_file,
+            )
             self.assertEqual(cfg.hostname, "myhost")
             self.assertEqual(cfg.host_dir, repo / "hosts" / "myhost")
 
@@ -91,7 +95,13 @@ class TestSetupLinks(unittest.TestCase):
             dot_home.mkdir(parents=True)
             (dot_home / "bashrc").write_text("x", encoding="utf-8")
 
-            cfg = SetupConfig(repo_root=repo, hostname="h", host_dir=host_dir, home=tdp / "HOME")
+            cfg = SetupConfig(
+                repo_root=repo,
+                hostname="h",
+                host_dir=host_dir,
+                root_helper=None,
+                home=tdp / "HOME",
+            )
             mappings = compute_mappings(cfg)
             targets = {m.target for m in mappings}
 
@@ -142,7 +152,12 @@ class TestSetupLinks(unittest.TestCase):
             err = StringIO()
 
             with patch("scripts_py.setup_links.owner_uid_for_path", return_value=0):
-                rc = process_mapping(LinkMapping(source=src, target=dst), runner=runner, out=out, err=err)
+                rc = process_mapping(
+                    LinkMapping(source=src, target=dst),
+                    runner=runner,
+                    out=out,
+                    err=err,
+                )
                 self.assertEqual(rc, 0)
                 # Root-owned targets are skipped; no privileged calls should be made.
                 self.assertEqual(len(runner.calls), 0)
@@ -164,7 +179,12 @@ class TestSetupLinks(unittest.TestCase):
             err = StringIO()
             # Simulate root-owned path
             with patch("scripts_py.setup_links.owner_uid_for_path", return_value=0):
-                rc = process_mapping(LinkMapping(source=src, target=dst), runner=runner, out=out, err=err)
+                rc = process_mapping(
+                    LinkMapping(source=src, target=dst),
+                    runner=runner,
+                    out=out,
+                    err=err,
+                )
             self.assertEqual(rc, 0)
             self.assertEqual(len(runner.calls), 0)
             self.assertIn("Skipping root-owned target", err.getvalue())

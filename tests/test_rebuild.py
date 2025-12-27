@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import os
 import tempfile
 import unittest
-import os
 from pathlib import Path
 
 from scripts_py.rebuild import (
@@ -10,11 +10,11 @@ from scripts_py.rebuild import (
     build_exec_command,
     build_nixos_rebuild_command,
     compute_config,
-    parse_args,
-    root_set_origin_to_mirror,
-    root_ensure_etc_nixos_clone,
-    root_update_from_mirror,
     mirror_push_from_dev,
+    parse_args,
+    root_ensure_etc_nixos_clone,
+    root_set_origin_to_mirror,
+    root_update_from_mirror,
 )
 
 
@@ -46,7 +46,9 @@ class TestRebuild(unittest.TestCase):
         self.assertTrue(args2.no_mirror)
 
     def test_parse_args_supports_mirror_flags(self):
-        args, _rest = parse_args(["--mirror", "--offline-ok", "--mirror-dir", "/x/mirror.git", "myhost"])
+        args, _rest = parse_args(
+            ["--mirror", "--offline-ok", "--mirror-dir", "/x/mirror.git", "myhost"]
+        )
         self.assertTrue(args.mirror)
         self.assertTrue(args.offline_ok)
         self.assertEqual(str(args.mirror_dir), "/x/mirror.git")
@@ -119,7 +121,11 @@ class TestRebuild(unittest.TestCase):
 
             ns, _rest = parse_args(["--dev", "myhost"])
             with self.assertRaises(FileNotFoundError):
-                compute_config(args=ns, script_path=script_path, hostname_path=tmp_path / "hostname")
+                compute_config(
+                    args=ns,
+                    script_path=script_path,
+                    hostname_path=tmp_path / "hostname",
+                )
 
     def test_build_command_shape(self):
         cfg = RebuildConfig(
@@ -157,7 +163,11 @@ class TestRebuild(unittest.TestCase):
                 return type(
                     "CP",
                     (),
-                    {"returncode": 0, "stdout": "git@github.com:Tapiiri/nixos-setup.git\n", "stderr": ""},
+                    {
+                        "returncode": 0,
+                        "stdout": "git@github.com:Tapiiri/nixos-setup.git\n",
+                        "stderr": "",
+                    },
                 )()
             return type("CP", (), {"returncode": 0, "stdout": "", "stderr": ""})()
 
@@ -255,7 +265,12 @@ class TestRebuild(unittest.TestCase):
             return type("CP", (), {"returncode": 0, "stdout": "", "stderr": ""})()
 
         with patch("subprocess.run", side_effect=fake_run):
-            rc = mirror_push_from_dev(repo_root=Path("/repo"), mirror_dir=Path("/mirror.git"), branch="main", stderr=None)
+            rc = mirror_push_from_dev(
+                repo_root=Path("/repo"),
+                mirror_dir=Path("/mirror.git"),
+                branch="main",
+                stderr=None,
+            )
 
         self.assertEqual(rc, 0)
         flat = "\n".join(" ".join(c) for c in calls)
@@ -269,7 +284,6 @@ class TestRebuild(unittest.TestCase):
         """
 
         import subprocess
-        import sys
         import tempfile
 
         repo_root = Path(__file__).resolve().parent.parent

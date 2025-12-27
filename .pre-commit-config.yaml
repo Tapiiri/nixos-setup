@@ -1,0 +1,33 @@
+repos:
+  - repo: local
+    hooks:
+      - id: nix-flake-check
+        name: nix flake check
+        entry: nix flake check
+        language: system
+        pass_filenames: false
+      - id: nixpkgs-fmt
+        name: nixpkgs-fmt
+        entry: nixpkgs-fmt
+        language: system
+        files: '(^flake\\.nix$|^(hosts|home|dev)/.*\\.nix$|.*\\.nix$)'
+      - id: yamllint
+        name: yamllint
+        entry: yamllint
+        language: system
+        files: '.*\\.ya?ml$'
+      - id: actionlint
+        name: actionlint
+        entry: actionlint
+        language: system
+        files: '^\\.github/workflows/.*\\.ya?ml$'
+      - id: ruff-check
+        name: ruff check
+        entry: ruff check scripts_py tests
+        language: system
+        pass_filenames: false
+      - id: python-pytest
+        name: nix develop ./dev -c pytest -q tests
+        entry: nix develop ./dev -c pytest -q tests
+        language: system
+        pass_filenames: false

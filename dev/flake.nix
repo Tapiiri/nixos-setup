@@ -14,7 +14,21 @@
     in
     {
       devShells.${system}.default = pkgs.mkShell {
-        packages = [ pyEnv ];
+        packages = [
+          pkgs.pre-commit
+          pkgs.nixpkgs-fmt
+          pkgs.yamllint
+          pkgs.actionlint
+          pyEnv
+        ];
+        shellHook = ''
+          if [ -d .git ]; then
+            if [ ! -x .git/hooks/pre-commit ]; then
+              echo "Installing pre-commit hook (via dev shell) ..."
+              pre-commit install --install-hooks >/dev/null
+            fi
+          fi
+        '';
       };
     };
 }

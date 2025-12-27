@@ -7,8 +7,6 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
-import pytest
-
 from scripts_py import sync_vscode_settings
 
 
@@ -66,7 +64,10 @@ def test_get_user_settings_filters_managed():
     
     try:
         # Mock the settings path
-        with patch('scripts_py.sync_vscode_settings.get_vscode_settings_path', return_value=temp_path):
+        with patch(
+            "scripts_py.sync_vscode_settings.get_vscode_settings_path",
+            return_value=temp_path,
+        ):
             user_settings = sync_vscode_settings.get_user_settings()
             
             # Should not contain managed keys

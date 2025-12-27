@@ -6,7 +6,7 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, Sequence
+from typing import Sequence
 
 from scripts_py.utils import (
     log_error,
@@ -34,6 +34,7 @@ class SetupConfig:
     repo_root: Path
     hostname: str
     host_dir: Path
+    root_helper: object | None
     home: Path
 
 
@@ -74,6 +75,7 @@ def compute_config(
         repo_root=repo_root,
         hostname=hostname,
         host_dir=host_dir,
+        root_helper=None,
         home=home,
     )
 
@@ -138,7 +140,8 @@ def link_user_owned(source: Path, target: Path, *, out, err) -> None:
 def process_mapping(
     mapping: LinkMapping,
     *,
-    runner: object | None,
+    root_helper: object | None = None,
+    runner: object | None = None,
     out,
     err,
 ) -> int:
@@ -229,7 +232,13 @@ def compute_mappings(cfg: SetupConfig) -> list[LinkMapping]:
     return mappings
 
 
-def main(argv: Sequence[str] | None = None, *, runner: object | None = None, out=None, err=None) -> int:
+def main(
+    argv: Sequence[str] | None = None,
+    *,
+    runner: object | None = None,
+    out=None,
+    err=None,
+) -> int:
     if argv is None:
         argv = sys.argv[1:]
     if out is None:
@@ -257,7 +266,16 @@ def main(argv: Sequence[str] | None = None, *, runner: object | None = None, out
 
     rc = 0
     for m in mappings:
-        rc = max(rc, process_mapping(m, runner=runner, out=out, err=err))
+        rc = max(
+            rc,
+            process_mapping(
+                m,
+                root_helper=cfg.root_helper,
+                runner=runner,
+                out=out,
+                err=err,
+            ),
+        )
     return rc
 
 

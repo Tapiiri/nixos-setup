@@ -11,6 +11,8 @@ from typing import Sequence
 
 from scripts_py.utils import OsExecRunner, Runner, read_hostname, repo_root_from_script_path
 
+# Short alias to keep annotations short and avoid long lines below.
+CompletedProcessT = subprocess.CompletedProcess[str]
 
 @dataclass(frozen=True)
 class RebuildConfig:
@@ -39,7 +41,11 @@ def parse_args(argv: Sequence[str]) -> tuple[argparse.Namespace, list[str]]:
             "somewhere else."
         ),
     )
-    parser.add_argument("--dev", action="store_true", help="Use the development repo checkout as the flake source")
+    parser.add_argument(
+        "--dev",
+        action="store_true",
+        help="Use this repo checkout as the flake source",
+    )
     parser.add_argument("--flake", type=Path, help="Override flake directory to use")
     parser.add_argument(
         "--mirror",
@@ -54,15 +60,18 @@ def parse_args(argv: Sequence[str]) -> tuple[argparse.Namespace, list[str]]:
         dest="no_mirror",
         action="store_true",
         help=(
-            "Disable mirror sync even when rebuilding from /etc/nixos. "
-            "Use this only if you know /etc/nixos is already up to date."
+            "Opt out of mirror sync even when rebuilding from a system flake directory."
         ),
     )
     parser.add_argument(
         "--mirror-dir",
         type=Path,
         default=DEFAULT_MIRROR_DIR,
-        help=f"Path to bare mirror repository (default: {DEFAULT_MIRROR_DIR}). Be sure that both the user and root can access it.",
+        help=(
+            "Path to bare mirror repository (default: "
+            f"{DEFAULT_MIRROR_DIR}). Be sure that both the user and root can "
+            "access it."
+        ),
     )
     parser.add_argument(
         "--offline-ok",
@@ -76,10 +85,9 @@ def parse_args(argv: Sequence[str]) -> tuple[argparse.Namespace, list[str]]:
     # allow passing through any extra nixos-rebuild flags after `--`
     args, rest = parser.parse_known_args(list(argv))
 
-    # emulate the shell script's behavior: unknown options before `--` are errors
-    # parse_known_args will accept them into rest; we reject if rest begins with '-' and no `--` was used.
-    # But we can't know if `--` was used in argv; simplest robust rule:
-    # If any token in rest starts with '-' and it appeared before a literal `--` in argv, error.
+    # Emulate the shell script's behavior: unknown options before `--` are errors.
+    # parse_known_args will accept unknowns into `rest`; we reject them if
+    # they look like options (start with '-') and the caller didn't supply `--`.
     if "--" not in argv:
         for tok in rest:
             if tok.startswith("-"):
@@ -116,7 +124,9 @@ def compute_config(
         hint = None
         if not args.dev and (repo_root / "flake.nix").is_file():
             hint = (
-                f"Hint: either link your flake into {DEFAULT_SYSTEM_FLAKE_DIR} or rerun with --dev.\n"
+                "Hint: either link your flake into "
+                f"{str(DEFAULT_SYSTEM_FLAKE_DIR)}"
+                " or rerun with --dev.\n"
                 "      (You can also explicitly set it with --flake PATH.)"
             )
         msg = f"Could not find flake.nix in {flake_dir}"
@@ -128,8 +138,15 @@ def compute_config(
     # Note: if user explicitly overrides --flake, we still want mirror sync by
     # default because the intent is generally still "use the system-style flow",
     # not "use worktree".
-    default_mirror = (not args.dev) and not bool(getattr(args, "no_mirror", False))
-    use_mirror = bool(args.mirror) or (default_mirror and not bool(getattr(args, "no_mirror", False)))
+    default_mirror = (
+        (not args.dev) and not bool(getattr(args, "no_mirror", False))
+    )
+    use_mirror = (
+        bool(args.mirror)
+        or (
+            default_mirror and not bool(getattr(args, "no_mirror", False))
+        )
+    )
 
     return RebuildConfig(
         hostname=hostname,
@@ -141,8 +158,14 @@ def compute_config(
     )
 
 
-def run_cp(argv: Sequence[str], *, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(list(argv), text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+def run_cp(argv: Sequence[str], *, env: dict[str, str] | None = None) -> CompletedProcessT:
+    return subprocess.run(
+        list(argv),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+    )
 
 
 def ensure_mirror(
@@ -162,42 +185,66 @@ def ensure_mirror(
 
     mirror_dir.parent.mkdir(parents=True, exist_ok=True)
     print(f"Creating mirror repo at {mirror_dir}", file=stderr)
-    cp = subprocess.run(["git", "clone", "--mirror", upstream_url, str(mirror_dir)], text=True)
+    cp = subprocess.run(
+        ["git", "clone", "--mirror", upstream_url, str(mirror_dir)],
+        text=True,
+    )
     return int(cp.returncode)
+
+
+def mirror_push_from_dev(*, repo_root: Path, mirror_dir: Path, branch: str, stderr) -> int:
+    """Push a local dev branch into the bare mirror.
+
+    This is useful when working in --dev mode on a machine where you still want
+    the rebuild flow to be able to use the shared mirror location.
+    """
+
+    # Ensure branch exists locally.
+    cp = subprocess.run(
+        ["git", "-C", str(repo_root), "rev-parse", "--verify", f"refs/heads/{branch}"],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    if cp.stdout:
+        print(cp.stdout.rstrip(), file=stderr)
+    if cp.stderr:
+        print(cp.stderr.rstrip(), file=stderr)
+    if cp.returncode != 0:
+        return int(cp.returncode)
+
+    # Push local branch to the mirror (as a local-path remote).
+    cp2 = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(repo_root),
+            "push",
+            str(mirror_dir),
+            f"refs/heads/{branch}:refs/heads/{branch}",
+        ],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    if cp2.stdout:
+        print(cp2.stdout.rstrip(), file=stderr)
+    if cp2.stderr:
+        print(cp2.stderr.rstrip(), file=stderr)
+    return int(cp2.returncode)
 
 
 def mirror_fetch(*, mirror_dir: Path, stderr) -> int:
     """Fetch updates into the bare mirror."""
 
-    cp = run_cp(["git", "-C", str(mirror_dir), "fetch", "--prune", "origin"])
-    if cp.stdout:
-        print(cp.stdout.rstrip(), file=stderr)
-    if cp.stderr:
-        print(cp.stderr.rstrip(), file=stderr)
-    return int(cp.returncode)
-
-
-def mirror_push_from_dev(*, repo_root: Path, mirror_dir: Path, branch: str, stderr) -> int:
-    """Push current dev repo state into the local bare mirror.
-
-    This is useful for offline operation: if we can't fetch from GitHub but the
-    user has local commits, we can still update the mirror from the dev checkout.
-
-    Contract:
-    - Does not require network access.
-    - Requires that the user can write to mirror_dir.
-    - Pushes refs/heads/<branch> -> refs/heads/<branch>.
-    """
-
-    cp = run_cp(["git", "-C", str(repo_root), "rev-parse", "--verify", f"refs/heads/{branch}"])
-    if cp.returncode != 0:
-        if cp.stderr:
-            print(cp.stderr.rstrip(), file=stderr)
-        print(f"Dev repo does not have local branch '{branch}' to push.", file=stderr)
-        return int(cp.returncode or 1)
-
-    print(f"Offline fallback: pushing dev branch '{branch}' to mirror", file=stderr)
-    cp = run_cp(["git", "-C", str(repo_root), "push", str(mirror_dir), f"refs/heads/{branch}:refs/heads/{branch}"])
+    cp = run_cp([
+        "git",
+        "-C",
+        str(mirror_dir),
+        "fetch",
+        "--prune",
+        "origin",
+    ])
     if cp.stdout:
         print(cp.stdout.rstrip(), file=stderr)
     if cp.stderr:
@@ -224,55 +271,209 @@ def root_ensure_etc_nixos_clone(*, mirror_dir: Path, etc_dir: Path, stderr) -> i
             cp = subprocess.run(["sudo", "mv", "--", str(etc_dir), str(backup)], text=True)
             if cp.returncode != 0:
                 return int(cp.returncode)
+            # moved aside successfully; proceed to clone
         else:
-            print(f"Refusing to overwrite existing git repo at {etc_dir}. Move it aside first.", file=stderr)
+            print(
+                "Refusing to overwrite existing git repo at "
+                f"{etc_dir}. Move it aside first.",
+                file=stderr,
+            )
             return 1
 
     print(f"Cloning {mirror_dir} into {etc_dir} (root-owned)", file=stderr)
-    cp = subprocess.run(["sudo", "git", "clone", str(mirror_dir), str(etc_dir)], text=True)
+    cp = subprocess.run(
+        ["sudo", "git", "clone", str(mirror_dir), str(etc_dir)],
+        text=True,
+    )
     return int(cp.returncode)
 
 
 def root_set_origin_to_mirror(*, etc_dir: Path, mirror_dir: Path, stderr) -> int:
-    """Force /etc/nixos 'origin' to point at the local mirror.
+    """Point /etc/nixos origin remote to the local mirror.
 
-    This prevents root operations from ever trying to contact GitHub directly.
+    This avoids root needing network access/SSH keys. It's safe to run even if
+    origin already points at the mirror.
     """
 
-    # Get current origin (best-effort).
-    cur = subprocess.run(
+    cp = subprocess.run(
         ["sudo", "git", "-C", str(etc_dir), "remote", "get-url", "origin"],
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
-    current = (cur.stdout or "").strip()
-    desired = str(mirror_dir)
+    current = (cp.stdout or "").strip()
+    if cp.returncode != 0:
+        # If we can't read it, still try to set it.
+        current = ""
 
-    if current == desired:
+    if current == str(mirror_dir):
         return 0
 
-    if current:
-        print(f"Updating /etc/nixos origin: {current} -> {desired}", file=stderr)
-    else:
-        print(f"Setting /etc/nixos origin to {desired}", file=stderr)
+    cp2 = subprocess.run(
+        [
+            "sudo",
+            "git",
+            "-C",
+            str(etc_dir),
+            "remote",
+            "set-url",
+            "origin",
+            str(mirror_dir),
+        ],
+        text=True,
+    )
+    return int(cp2.returncode)
 
-    cp = subprocess.run(["sudo", "git", "-C", str(etc_dir), "remote", "set-url", "origin", desired], text=True)
+
+def root_update_from_mirror(
+        *, 
+        etc_dir: Path,
+        mirror_dir: Path | None = None,
+        ref: str,
+        stderr
+    ) -> int:
+    """Fast-forward /etc/nixos from its origin (the local mirror)."""
+
+    # Ensure we have latest from mirror (no network).
+    cp = subprocess.run(
+        ["sudo", "git", "-C", str(etc_dir), "fetch", "--prune", "origin"],
+        text=True,
+    )
+    if cp.returncode != 0:
+        return int(cp.returncode)
+    cp = subprocess.run(
+        ["sudo", "git", "-C", str(etc_dir), "merge", "--ff-only", ref],
+        text=True,
+    )
     return int(cp.returncode)
 
 
-def root_update_from_mirror(*, etc_dir: Path, mirror_dir: Path, ref: str, stderr) -> int:
-    """Fast-forward /etc/nixos from the local mirror (no network)."""
+def sync_worktree(
+    *,
+    worktree_dir: Path,
+    repo_root: Path,
+    ref: str,
+    update_checkout: bool,
+    stderr,
+) -> int:
+    """Fast-forward a worktree to a given ref.
 
-    rc = root_set_origin_to_mirror(etc_dir=etc_dir, mirror_dir=mirror_dir, stderr=stderr)
+    This is intentionally conservative:
+    - no hard resets
+    - no rebases
+    - no interactive prompts
+    """
+
+    def git_env() -> dict[str, str]:
+        # Git 2.35+ introduced “safe.directory” checks to prevent CVE-style attacks.
+        # On NixOS it's common for /etc/nixos to be root-owned while `rebuild` is
+        # run as the normal user. Also, some setups have a read-only $HOME/.config
+        # which prevents `git config --global` from working.
+        #
+        # Use an ephemeral config override so we don't need to write any files.
+        env = dict(os.environ)
+        env.update(
+            {
+                "GIT_CONFIG_COUNT": "1",
+                "GIT_CONFIG_KEY_0": "safe.directory",
+                "GIT_CONFIG_VALUE_0": str(worktree_dir),
+            }
+        )
+        return env
+
+    def run(argv: list[str]) -> int:
+        cp = subprocess.run(
+            argv,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=git_env(),
+        )
+        if cp.stdout:
+            print(cp.stdout.rstrip(), file=stderr)
+        if cp.stderr:
+            print(cp.stderr.rstrip(), file=stderr)
+        return int(cp.returncode)
+
+    # Ensure the target directory is registered as a worktree in the main repo.
+    # IMPORTANT: when the worktree is root-owned, running git in the worktree
+    # directory can fail because git needs to write to the worktree admin dir
+    # under <repo>/.git/worktrees/<name>. So we always operate via repo_root.
+    rc = run(["git", "-C", str(repo_root), "worktree", "list"])
+    if rc != 0:
+        print(f"Not a git repo/worktree setup at {repo_root} (skipping sync)", file=stderr)
+        return 0
+
+    # Verify the worktree_dir looks like a git worktree (without touching its admin files).
+    # If it's not registered, syncing won't work.
+    cp = subprocess.run(
+        ["git", "-C", str(repo_root), "worktree", "list", "--porcelain"],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=git_env(),
+    )
+    if cp.returncode != 0:
+        if cp.stderr:
+            print(cp.stderr.rstrip(), file=stderr)
+        return int(cp.returncode)
+    if f"worktree {worktree_dir}" not in cp.stdout:
+        print(f"Not a registered git worktree: {worktree_dir} (skipping sync)", file=stderr)
+        return 0
+
+    # Fetch in the *main* repo so SSH/agent works.
+    rc = run(["git", "-C", str(repo_root), "fetch", "--prune", "origin"])
     if rc != 0:
         return rc
 
-    # Ensure we have latest from mirror (no network).
-    cp = subprocess.run(["sudo", "git", "-C", str(etc_dir), "fetch", "--prune", "origin"], text=True)
+    # Fail cleanly if there are local modifications.
+    # Check worktree dirtiness via `-C /etc/nixos` but still running under our
+    # user account; this should only read. If this trips permissions, we can
+    # fall back to `git -C repo_root status --porcelain` after `worktree lock`.
+    cp = subprocess.run(
+        ["git", "-C", str(worktree_dir), "status", "--porcelain=v1"],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=git_env(),
+    )
     if cp.returncode != 0:
+        print(cp.stderr.rstrip(), file=stderr)
         return int(cp.returncode)
-    cp = subprocess.run(["sudo", "git", "-C", str(etc_dir), "merge", "--ff-only", ref], text=True)
+    if cp.stdout.strip():
+        print(
+            f"Refusing to sync {worktree_dir}: working tree is dirty. "
+            "Commit/stash changes or rerun with --no-sync.",
+            file=stderr,
+        )
+        return 1
+
+    if not update_checkout:
+        print(
+            "Sync note: fetched updates into",
+            repo_root,
+            "but did not update the /etc/nixos checkout.",
+            "(Pass --sync-checkout to enable checkout updates.)",
+            file=stderr,
+        )
+        return 0
+
+    # Updating a root-owned worktree checkout is tricky because git needs to
+    # write into worktree admin data. We run this part as root and avoid network
+    # access (we already fetched as the user).
+    #
+    # This assumes /etc/nixos has access to the same object database (normal
+    # worktree setup) so the ref resolves locally.
+    update_cmd = [
+        "sudo",
+        "git",
+        "-C",
+        str(worktree_dir),
+        "merge",
+        "--ff-only",
+        ref,
+    ]
+    cp = subprocess.run(update_cmd, text=True)
     return int(cp.returncode)
 
 
@@ -306,15 +507,9 @@ def main(argv: Sequence[str] | None = None, *, runner: Runner | None = None, std
         args, passthrough = parse_args(argv)
         cfg = compute_config(args=args, script_path=Path(__file__))
 
-        # In dev mode, if offline-ok is set, allow pushing local dev state into
-        # the mirror so /etc/nixos can still be updated from it.
-        dev_offline_push = bool(args.dev) and bool(args.offline_ok)
-
-        # Sync step for /etc/nixos (mirror mode only).
-        # Sync should happen as the invoking user (SSH keys, agents, etc).
+        # If using the system flake in mirror mode, keep /etc/nixos synced from
+        # the user-owned mirror (root does only local operations).
         if cfg.use_mirror and cfg.flake_dir == DEFAULT_SYSTEM_FLAKE_DIR:
-            # Use a local bare mirror under /var/lib to avoid root needing SSH.
-            # If it doesn't exist yet, create it using this repo's origin.
             origin_cp = run_cp(["git", "-C", str(cfg.repo_root), "remote", "get-url", "origin"])
             upstream = (origin_cp.stdout or "").strip()
             if origin_cp.returncode != 0 or not upstream:
@@ -328,37 +523,34 @@ def main(argv: Sequence[str] | None = None, *, runner: Runner | None = None, std
             rc = mirror_fetch(mirror_dir=cfg.mirror_dir, stderr=stderr)
             if rc != 0:
                 if cfg.offline_ok:
-                    print("Mirror fetch failed (offline?).", file=stderr)
-                    if dev_offline_push:
-                        push_rc = mirror_push_from_dev(
-                            repo_root=cfg.repo_root,
-                            mirror_dir=cfg.mirror_dir,
-                            branch="main",
-                            stderr=stderr,
-                        )
-                        if push_rc != 0:
-                            print("Offline push-to-mirror failed; continuing without updates.", file=stderr)
-                    else:
-                        print("Continuing without updates.", file=stderr)
+                    print("Mirror fetch failed; continuing without updates.", file=stderr)
                 else:
                     return rc
 
-            rc = root_ensure_etc_nixos_clone(mirror_dir=cfg.mirror_dir, etc_dir=DEFAULT_SYSTEM_FLAKE_DIR, stderr=stderr)
+            rc = root_ensure_etc_nixos_clone(
+                mirror_dir=cfg.mirror_dir,
+                etc_dir=DEFAULT_SYSTEM_FLAKE_DIR,
+                stderr=stderr,
+            )
             if rc != 0:
                 return rc
 
-            # Always update checkout in mirror mode (root fast-forward only).
-            # Use the mirror's tracking branch name.
-            ref = "origin/main"
-            rc = root_update_from_mirror(
+            rc = root_set_origin_to_mirror(
                 etc_dir=DEFAULT_SYSTEM_FLAKE_DIR,
                 mirror_dir=cfg.mirror_dir,
-                ref=ref,
+                stderr=stderr,
+            )
+            if rc != 0:
+                return rc
+
+            rc = root_update_from_mirror(
+                etc_dir=DEFAULT_SYSTEM_FLAKE_DIR,
+                ref="origin/main",
                 stderr=stderr,
             )
             if rc != 0:
                 if cfg.offline_ok:
-                    print("/etc/nixos update failed; continuing with existing checkout.", file=stderr)
+                    print("/etc/nixos update failed; continuing.", file=stderr)
                 else:
                     return rc
 
