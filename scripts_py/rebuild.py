@@ -10,6 +10,8 @@ from typing import Sequence
 
 from scripts_py.utils import OsExecRunner, Runner, read_hostname, repo_root_from_script_path
 
+# Short alias to keep annotations short and avoid long lines below.
+CompletedProcessT = subprocess.CompletedProcess[str]
 
 @dataclass(frozen=True)
 class RebuildConfig:
@@ -41,7 +43,11 @@ def parse_args(argv: Sequence[str]) -> tuple[argparse.Namespace, list[str]]:
             "somewhere else."
         ),
     )
-    parser.add_argument("--dev", action="store_true", help="Use this repo checkout as the flake source")
+    parser.add_argument(
+        "--dev",
+        action="store_true",
+        help="Use this repo checkout as the flake source",
+    )
     parser.add_argument("--flake", type=Path, help="Override flake directory to use")
     parser.add_argument(
         "--sync",
@@ -72,7 +78,8 @@ def parse_args(argv: Sequence[str]) -> tuple[argparse.Namespace, list[str]]:
         action="store_true",
         help=(
             "Also update the /etc/nixos checkout to the synced ref. "
-            "Use this only if /etc/nixos is writable by root git and its worktree admin area is healthy."
+            "Use this only if /etc/nixos is writable by root git and its"
+            " worktree admin area is healthy."
         ),
     )
     parser.add_argument(
@@ -101,10 +108,9 @@ def parse_args(argv: Sequence[str]) -> tuple[argparse.Namespace, list[str]]:
     # allow passing through any extra nixos-rebuild flags after `--`
     args, rest = parser.parse_known_args(list(argv))
 
-    # emulate the shell script's behavior: unknown options before `--` are errors
-    # parse_known_args will accept them into rest; we reject if rest begins with '-' and no `--` was used.
-    # But we can't know if `--` was used in argv; simplest robust rule:
-    # If any token in rest starts with '-' and it appeared before a literal `--` in argv, error.
+    # Emulate the shell script's behavior: unknown options before `--` are errors.
+    # parse_known_args will accept unknowns into `rest`; we reject them if
+    # they look like options (start with '-') and the caller didn't supply `--`.
     if "--" not in argv:
         for tok in rest:
             if tok.startswith("-"):
@@ -145,7 +151,9 @@ def compute_config(
         hint = None
         if not args.dev and (repo_root / "flake.nix").is_file():
             hint = (
-                f"Hint: either link your flake into {DEFAULT_SYSTEM_FLAKE_DIR} or rerun with --dev.\n"
+                "Hint: either link your flake into "
+                f"{str(DEFAULT_SYSTEM_FLAKE_DIR)}"
+                " or rerun with --dev.\n"
                 "      (You can also explicitly set it with --flake PATH.)"
             )
         msg = f"Could not find flake.nix in {flake_dir}"
@@ -166,8 +174,14 @@ def compute_config(
     )
 
 
-def run_cp(argv: Sequence[str], *, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(list(argv), text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+def run_cp(argv: Sequence[str], *, env: dict[str, str] | None = None) -> CompletedProcessT:
+    return subprocess.run(
+        list(argv),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+    )
 
 
 def ensure_mirror(
@@ -187,14 +201,24 @@ def ensure_mirror(
 
     mirror_dir.parent.mkdir(parents=True, exist_ok=True)
     print(f"Creating mirror repo at {mirror_dir}", file=stderr)
-    cp = subprocess.run(["git", "clone", "--mirror", upstream_url, str(mirror_dir)], text=True)
+    cp = subprocess.run(
+        ["git", "clone", "--mirror", upstream_url, str(mirror_dir)],
+        text=True,
+    )
     return int(cp.returncode)
 
 
 def mirror_fetch(*, mirror_dir: Path, stderr) -> int:
     """Fetch updates into the bare mirror."""
 
-    cp = run_cp(["git", "-C", str(mirror_dir), "fetch", "--prune", "origin"])
+    cp = run_cp([
+        "git",
+        "-C",
+        str(mirror_dir),
+        "fetch",
+        "--prune",
+        "origin",
+    ])
     if cp.stdout:
         print(cp.stdout.rstrip(), file=stderr)
     if cp.stderr:
@@ -213,7 +237,10 @@ def root_ensure_etc_nixos_clone(*, mirror_dir: Path, etc_dir: Path, stderr) -> i
         return 1
 
     print(f"Cloning {mirror_dir} into {etc_dir} (root-owned)", file=stderr)
-    cp = subprocess.run(["sudo", "git", "clone", str(mirror_dir), str(etc_dir)], text=True)
+    cp = subprocess.run(
+        ["sudo", "git", "clone", str(mirror_dir), str(etc_dir)],
+        text=True,
+    )
     return int(cp.returncode)
 
 
@@ -221,10 +248,16 @@ def root_update_from_mirror(*, etc_dir: Path, ref: str, stderr) -> int:
     """Fast-forward /etc/nixos from its origin (the local mirror)."""
 
     # Ensure we have latest from mirror (no network).
-    cp = subprocess.run(["sudo", "git", "-C", str(etc_dir), "fetch", "--prune", "origin"], text=True)
+    cp = subprocess.run(
+        ["sudo", "git", "-C", str(etc_dir), "fetch", "--prune", "origin"],
+        text=True,
+    )
     if cp.returncode != 0:
         return int(cp.returncode)
-    cp = subprocess.run(["sudo", "git", "-C", str(etc_dir), "merge", "--ff-only", ref], text=True)
+    cp = subprocess.run(
+        ["sudo", "git", "-C", str(etc_dir), "merge", "--ff-only", ref],
+        text=True,
+    )
     return int(cp.returncode)
 
 
@@ -330,7 +363,9 @@ def sync_worktree(
 
     if not update_checkout:
         print(
-            f"Sync note: fetched updates into {repo_root}, but did not update the /etc/nixos checkout. "
+            "Sync note: fetched updates into",
+            repo_root,
+            "but did not update the /etc/nixos checkout.",
             "(Pass --sync-checkout to enable checkout updates.)",
             file=stderr,
         )
@@ -342,7 +377,15 @@ def sync_worktree(
     #
     # This assumes /etc/nixos has access to the same object database (normal
     # worktree setup) so the ref resolves locally.
-    update_cmd = ["sudo", "git", "-C", str(worktree_dir), "merge", "--ff-only", ref]
+    update_cmd = [
+        "sudo",
+        "git",
+        "-C",
+        str(worktree_dir),
+        "merge",
+        "--ff-only",
+        ref,
+    ]
     cp = subprocess.run(update_cmd, text=True)
     return int(cp.returncode)
 
@@ -396,19 +439,27 @@ def main(argv: Sequence[str] | None = None, *, runner: Runner | None = None, std
                 rc = mirror_fetch(mirror_dir=cfg.mirror_dir, stderr=stderr)
                 if rc != 0:
                     if cfg.offline_ok:
-                        print("Mirror fetch failed (offline?). Continuing without updates.", file=stderr)
+                        print("Mirror fetch failed; continuing without updates.", file=stderr)
                     else:
                         return rc
 
-                rc = root_ensure_etc_nixos_clone(mirror_dir=cfg.mirror_dir, etc_dir=DEFAULT_SYSTEM_FLAKE_DIR, stderr=stderr)
+                rc = root_ensure_etc_nixos_clone(
+                    mirror_dir=cfg.mirror_dir,
+                    etc_dir=DEFAULT_SYSTEM_FLAKE_DIR,
+                    stderr=stderr,
+                )
                 if rc != 0:
                     return rc
 
                 # Always update checkout in mirror mode (root fast-forward only).
-                rc = root_update_from_mirror(etc_dir=DEFAULT_SYSTEM_FLAKE_DIR, ref=cfg.sync_ref, stderr=stderr)
+                rc = root_update_from_mirror(
+                    etc_dir=DEFAULT_SYSTEM_FLAKE_DIR,
+                    ref=cfg.sync_ref,
+                    stderr=stderr,
+                )
                 if rc != 0:
                     if cfg.offline_ok:
-                        print("/etc/nixos update failed; continuing with existing checkout.", file=stderr)
+                        print("/etc/nixos update failed; continuing.", file=stderr)
                     else:
                         return rc
             else:

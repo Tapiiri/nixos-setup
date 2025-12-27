@@ -44,6 +44,22 @@ There's also a convenience wrapper script:
 
 Optional: if you use `direnv`, you can add an `.envrc` that auto-enters the dev shell on `cd`.
 
+## Pre-commit
+
+Hooks auto-install when you enter the dev shell (if not already present) so `nix develop ./dev` is usually enough. To force a reinstall:
+
+- `nix develop ./dev -c pre-commit install --install-hooks`
+
+Run all checks locally (matches CI):
+
+- `nix develop ./dev -c pre-commit run --all-files`
+
+Included hooks: `nix flake check`, `nixpkgs-fmt`, `yamllint`, `actionlint` (workflows), `ruff check`, and `python -m pytest -q tests`.
+
+VS Code: recommended extensions include the Nix environment selector plus Python/Ruff. With the Nix Env Selector extension installed, set the workspace Nix file to `dev/flake.nix` so VS Code terminals inherit the dev shell and pick up the pre-commit auto-install.
+
+CI runs `pre-commit run --all-files` via the same dev shell to match local tooling.
+
 ### PATH troubleshooting (why `rebuild` isn't found)
 
 Scripts from `scripts/` are linked into `~/.local/bin` by `scripts/setup-links.sh`.

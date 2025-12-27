@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import os
 import tempfile
 import unittest
-import os
 from pathlib import Path
 
 from scripts_py.rebuild import (
@@ -44,7 +44,9 @@ class TestRebuild(unittest.TestCase):
         self.assertFalse(args2.sync)
 
     def test_parse_args_supports_mirror_flags(self):
-        args, _rest = parse_args(["--mirror", "--offline-ok", "--mirror-dir", "/x/mirror.git", "myhost"])
+        args, _rest = parse_args(
+            ["--mirror", "--offline-ok", "--mirror-dir", "/x/mirror.git", "myhost"]
+        )
         self.assertTrue(args.mirror)
         self.assertTrue(args.offline_ok)
         self.assertEqual(str(args.mirror_dir), "/x/mirror.git")
@@ -90,7 +92,11 @@ class TestRebuild(unittest.TestCase):
 
             ns, _rest = parse_args(["--dev", "myhost"])
             with self.assertRaises(FileNotFoundError):
-                compute_config(args=ns, script_path=script_path, hostname_path=tmp_path / "hostname")
+                compute_config(
+                    args=ns,
+                    script_path=script_path,
+                    hostname_path=tmp_path / "hostname",
+                )
 
     def test_build_command_shape(self):
         cfg = RebuildConfig(
@@ -127,7 +133,6 @@ class TestRebuild(unittest.TestCase):
         """
 
         import subprocess
-        import sys
         import tempfile
 
         repo_root = Path(__file__).resolve().parent.parent
