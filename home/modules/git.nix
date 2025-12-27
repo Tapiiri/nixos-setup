@@ -4,9 +4,22 @@
   pkgs,
   ...
 }: let
-  inherit (lib) mkEnableOption mkIf;
+  inherit (lib) mkEnableOption mkIf mkOption types;
 in {
   options.my.git.enable = mkEnableOption "Git (programs.git)";
+
+  options.my.git.signing = {
+    enable = mkEnableOption "Git commit/tag signing (SSH via gpg.format=ssh)";
+
+    # If set, should point to the *public* key file used for SSH signing.
+    # Example: ~/.ssh/id_ed25519_git_signing.pub
+    key = mkOption {
+      type = types.nullOr types.str;
+      default = null;
+      description = "Path to SSH signing public key for Git (user.signingKey).";
+      example = "~/.ssh/id_ed25519_git_signing.pub";
+    };
+  };
 
   config = mkIf config.my.git.enable {
     programs.git = {
@@ -25,19 +38,22 @@ in {
         # branches. We prefer the traditional merge strategy by default.
         pull.rebase = false;
 
-        # Make it easier to get GitHub's green "Verified" badge by signing.
-        # Preferred modern setup is SSH signing:
-        #   - create a signing key: ssh-keygen -t ed25519 -C "git-signing"
-        #   - add the *public* key to GitHub: Settings -> SSH and GPG keys ->
-        #     "New SSH key" -> Key type: "Signing key"
-        #   - set user.signingKey to the public key file path.
-        gpg.format = "ssh";
-        commit.gpgSign = true;
-        tag.gpgSign = true;
+    # Optional signing setup.
+    #
+    # NOTE: We prefer using Home Manager's `programs.git.signing.*` options
+    # (below) to turn signing on/off. These extraConfig values only specify
+    # the signing mechanism when signing is enabled.
+    gpg.format = mkIf config.my.git.signing.enable "ssh";
 
         safe.directory = [
           "/etc/nixos"
         ];
+      };
+
+      # Home Manager's stable way to configure commit signing.
+      signing = mkIf config.my.git.signing.enable {
+        signByDefault = true;
+        key = mkIf (config.my.git.signing.key != null) config.my.git.signing.key;
       };
     };
   };

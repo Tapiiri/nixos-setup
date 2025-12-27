@@ -93,6 +93,28 @@ default when local/remote histories diverge:
 
 - `pull.rebase = false`
 
+### Commit signing (SSH)
+
+By default, this repo configures Git without forcing signing. If you enable SSH
+commit signing but Git cannot determine the signing key, you'll see:
+
+- `fatal: either user.signingkey or gpg.ssh.defaultKeyCommand needs to be configured`
+
+To use GitHub's **Verified** badge with SSH signing:
+
+1. Create a dedicated signing key:
+	- `ssh-keygen -t ed25519 -C "git-signing" -f ~/.ssh/id_ed25519_git_signing`
+2. Add the **public** key to GitHub:
+	- Settings → SSH and GPG keys → New SSH key → Key type: **Signing key**
+3. Configure Home Manager to enable signing and point Git at the public key
+	(see `home/modules/git.nix`):
+	- enable `my.git.signing.enable = true;`
+	- set `my.git.signing.key = "~/.ssh/id_ed25519_git_signing.pub";`
+
+Alternative: instead of `user.signingKey`, you can configure
+`gpg.ssh.defaultKeyCommand` to dynamically choose a key, but a fixed
+`user.signingKey` is simplest.
+
 You can still override per-invocation:
 
 - `git pull --rebase`
