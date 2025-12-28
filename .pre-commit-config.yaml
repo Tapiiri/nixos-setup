@@ -6,6 +6,7 @@ repos:
         entry: nix flake check --no-build
         language: system
         files: '(\.nix$|^flake\.nix$|^flake\.lock$)'
+        pass_filenames: false
       - id: alejandra-fmt
         name: alejandra (nix fmt)
         entry: alejandra
