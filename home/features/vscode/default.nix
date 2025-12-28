@@ -44,25 +44,6 @@
     # - file: always format the whole file
     "editor.formatOnSaveMode" = "file";
 
-    # Keep editor behavior consistent across machines (repo defaults).
-    # These are stable (no Nix store paths), but we still want HM to be the
-    # source of truth rather than letting VS Code drift over time.
-    "editor.codeActionsOnSave" = {
-      "source.organizeImports.ruff" = "explicit";
-      "source.fixAll.ruff" = "explicit";
-    };
-
-    "python.testing.pytestEnabled" = true;
-    "python.testing.pytestArgs" = ["tests"];
-    "python.testing.unittestEnabled" = false;
-    "python.analysis.typeCheckingMode" = "basic";
-
-    # Syntax highlighting for activation-script templates.
-    # VS Code doesn't know what `*.tpl` is by default.
-    "files.associations" = {
-      "*.sh.tpl" = "shellscript";
-    };
-
     # Repo convention: dev tooling comes from `dev/flake.nix`.
     "nixEnvSelector.nixFile" = "dev/flake.nix";
 
