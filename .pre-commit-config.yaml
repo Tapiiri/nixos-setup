@@ -3,7 +3,7 @@ repos:
     hooks:
       - id: nix-flake-check
         name: nix flake check
-        entry: nix flake show
+        entry: nix flake check --no-build
         language: system
         pass_filenames: false
       - id: alejandra-fmt

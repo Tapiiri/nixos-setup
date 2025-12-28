@@ -22,7 +22,18 @@
   GHActionsExt = pkgs.vscode-extensions.github.vscode-github-actions;
   CopilotExt = pkgs.vscode-extensions.github.copilot;
   CopilotChatExt = pkgs.vscode-extensions.github.copilot-chat;
-  CodexExt = pkgs.vscode-extensions.github.copilot-codex;
+  # Not packaged in nixpkgs (no `pkgs.vscode-extensions.openai.*`), so fetch it
+  # from the VS Code Marketplace and build a Nix derivation instead.
+  CodexExt = pkgs.vscode-utils.buildVscodeMarketplaceExtension {
+    mktplcRef = {
+      publisher = "openai";
+      name = "chatgpt";
+      # Pin this after first build: set a dummy hash, build once, then copy the
+      # reported sha256 here.
+      version = "0.5.56";
+      hash = "sha256-FAy2Cf2XnOnctBBATloXz8y4cLNHBoXAVnlw42CQzN8=";
+    };
+  };
 
   # Settings used by nix-ide / VS Code Nix tooling.
   # These are "structural" settings that point to binaries and configure tooling.
