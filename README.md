@@ -116,15 +116,11 @@ commit signing but Git cannot determine the signing key, you'll see:
 
 To use GitHub's **Verified** badge with SSH signing:
 
-1. Create a dedicated signing key:
-
-- `ssh-keygen -t ed25519 -C "git-signing" -f ~/.ssh/id_ed25519_git_signing`
-
-1. Add the **public** key to GitHub:
-
-- Settings → SSH and GPG keys → New SSH key → Key type: **Signing key**
-
-1. Configure Home Manager to enable signing and point Git at the public key
+- Create a dedicated signing key:
+  - `ssh-keygen -t ed25519 -C "git-signing" -f ~/.ssh/id_ed25519_git_signing`
+- Add the **public** key to GitHub:
+  - Settings → SSH and GPG keys → New SSH key → Key type: **Signing key**
+- Configure Home Manager to enable signing and point Git at the public key
  (see `home/modules/git.nix`):
 
 - enable `my.git.signing.enable = true;`
