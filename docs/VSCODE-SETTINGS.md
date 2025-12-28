@@ -2,6 +2,12 @@
 
 This setup allows **both** home-manager and VS Code to manage settings through a merge-based workflow.
 
+## Extensions
+
+If you hit a missing extension under `pkgs.vscode-extensions.*` (e.g. `attribute 'openai' missing` for `openai.chatgpt`), see:
+
+- `docs/VSCODE-EXTENSIONS-MARKETPLACE.md`
+
 ## The Problem
 
 By default, home-manager creates VS Code's `settings.json` as a **read-only symlink** to the Nix store, which prevents VS Code from making any runtime changes. This means:
