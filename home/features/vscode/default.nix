@@ -19,6 +19,10 @@
   # Extension IDs are `publisher.extensionName`.
   nixIdeExt = pkgs.vscode-extensions.jnoortheen.nix-ide;
   markdownlintExt = pkgs.vscode-extensions.davidanson.vscode-markdownlint;
+  GHActionsExt = pkgs.vscode-extensions.github.vscode-github-actions;
+  CopilotExt = pkgs.vscode-extensions.github.copilot;
+  CopilotChatExt = pkgs.vscode-extensions.github.copilot-chat;
+  CodexExt = pkgs.vscode-extensions.github.copilot-codex;
 
   # Settings used by nix-ide / VS Code Nix tooling.
   # These are "structural" settings that point to binaries and configure tooling.
@@ -127,6 +131,10 @@ in {
       profiles.default.extensions = [
         nixIdeExt
         markdownlintExt
+        GHActionsExt
+        CopilotExt
+        CopilotChatExt
+        CodexExt
       ];
 
       # IMPORTANT: Do NOT set userSettings here.
