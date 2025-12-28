@@ -21,6 +21,11 @@ repos:
         entry: actionlint
         language: system
         files: '^\.github/workflows/.*\.ya?ml$'
+      - id: markdownlint
+        name: markdownlint
+        entry: markdownlint-cli2
+        language: system
+        files: '.*\.md$'
       - id: ruff-check
         name: ruff check
         entry: ruff check scripts_py tests

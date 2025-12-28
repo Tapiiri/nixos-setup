@@ -36,9 +36,9 @@ If you run into `ModuleNotFoundError: No module named 'pytest'` even though `pyt
 Most reliable options:
 
 - Use the interpreter module form:
-	- `python -m pytest -q`
+  - `python -m pytest -q`
 - Or use the repo's dev-only flake shell (pins Python + pytest together without touching the NixOS flake outputs):
-	- `nix develop ./dev -c pytest -q`
+  - `nix develop ./dev -c pytest -q`
 
 If you want an interactive shell (so you can just type `pytest` afterwards), enter it first and then run commands normally:
 
@@ -117,13 +117,18 @@ commit signing but Git cannot determine the signing key, you'll see:
 To use GitHub's **Verified** badge with SSH signing:
 
 1. Create a dedicated signing key:
-	- `ssh-keygen -t ed25519 -C "git-signing" -f ~/.ssh/id_ed25519_git_signing`
-2. Add the **public** key to GitHub:
-	- Settings → SSH and GPG keys → New SSH key → Key type: **Signing key**
-3. Configure Home Manager to enable signing and point Git at the public key
-	(see `home/modules/git.nix`):
-	- enable `my.git.signing.enable = true;`
-	- set `my.git.signing.key = "~/.ssh/id_ed25519_git_signing.pub";`
+
+- `ssh-keygen -t ed25519 -C "git-signing" -f ~/.ssh/id_ed25519_git_signing`
+
+1. Add the **public** key to GitHub:
+
+- Settings → SSH and GPG keys → New SSH key → Key type: **Signing key**
+
+1. Configure Home Manager to enable signing and point Git at the public key
+ (see `home/modules/git.nix`):
+
+- enable `my.git.signing.enable = true;`
+- set `my.git.signing.key = "~/.ssh/id_ed25519_git_signing.pub";`
 
 Alternative: instead of `user.signingKey`, you can configure
 `gpg.ssh.defaultKeyCommand` to dynamically choose a key, but a fixed
@@ -172,7 +177,7 @@ In `hosts/<host>/configuration.nix`, we:
 - add your user to that group
 - create `/var/lib/nixos-setup` with group write + setgid
 - add sudo rules so members of `nixos-setup` can run the minimal privileged
-	commands used by `rebuild --mirror` (including `git` for `/etc/nixos` updates)
+ commands used by `rebuild --mirror` (including `git` for `/etc/nixos` updates)
 
 After switching to that config, the first run of `rebuild --mirror` will create
 the bare mirror (if missing) and bootstrap `/etc/nixos` as a clone of the mirror.
@@ -206,7 +211,7 @@ fallback:
 
 - `rebuild --dev --offline-ok` will still *try* to fetch into the mirror first.
 - If that fetch fails (e.g. you're offline), it will push your local dev repo's
-	current `main` into the local mirror, and then update `/etc/nixos` from that.
+ current `main` into the local mirror, and then update `/etc/nixos` from that.
 
 This lets you iterate locally and still rebuild against `/etc/nixos` even when
 you have no network, as long as your local dev checkout has the commits you want.
@@ -228,17 +233,17 @@ Behavior:
 - `rebuild` will attempt to update the bare mirror (`/var/lib/nixos-setup/mirror.git`).
 - If fetching fails and `--offline-ok` was provided, it continues.
 - It then uses whatever is already in `/etc/nixos` (the last successfully
-	synced state) to do `nixos-rebuild`.
+ synced state) to do `nixos-rebuild`.
 
 Important notes:
 
 - Offline rebuilds will only work if you have **already bootstrapped** `/etc/nixos`
-	at least once (so it exists as a git clone), and you have fetched at least
-	once previously.
+ at least once (so it exists as a git clone), and you have fetched at least
+ once previously.
 - To prepare for offline use, do a normal online sync first (e.g. run `rebuild`
-	once while connected).
+ once while connected).
 - If `/etc/nixos` is missing or not a valid git clone, the initial bootstrap
-	requires access to the mirror and typically one online run.
+ requires access to the mirror and typically one online run.
 
 ### Running rebuild (no sudo)
 

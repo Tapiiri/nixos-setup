@@ -20,6 +20,7 @@
         pkgs.alejandra
         pkgs.yamllint
         pkgs.actionlint
+        pkgs.markdownlint-cli2
         pyEnv
       ];
       shellHook = ''

@@ -18,6 +18,7 @@
 
   # Extension IDs are `publisher.extensionName`.
   nixIdeExt = pkgs.vscode-extensions.jnoortheen.nix-ide;
+  markdownlintExt = pkgs.vscode-extensions.davidanson.vscode-markdownlint;
 
   # Settings used by nix-ide / VS Code Nix tooling.
   # These are "structural" settings that point to binaries and configure tooling.
@@ -117,7 +118,10 @@ in {
       mutableExtensionsDir = true;
 
       # Install extensions using the new profiles syntax.
-      profiles.default.extensions = [nixIdeExt];
+      profiles.default.extensions = [
+        nixIdeExt
+        markdownlintExt
+      ];
 
       # IMPORTANT: Do NOT set userSettings here.
       # Home Manager's VS Code module writes settings.json as a symlink into the

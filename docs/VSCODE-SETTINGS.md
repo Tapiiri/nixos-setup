@@ -5,6 +5,7 @@ This setup allows **both** home-manager and VS Code to manage settings through a
 ## The Problem
 
 By default, home-manager creates VS Code's `settings.json` as a **read-only symlink** to the Nix store, which prevents VS Code from making any runtime changes. This means:
+
 - "Don't show again" dialogs can't persist
 - VS Code can't save UI preferences
 - Any runtime configuration changes are lost
@@ -12,6 +13,7 @@ By default, home-manager creates VS Code's `settings.json` as a **read-only syml
 ## The Solution
 
 We use a **home-manager activation script** that:
+
 1. Creates a **writable** `settings.json` file (not a symlink)
 2. Initializes it with our base settings on first run
 3. On subsequent rebuilds, **merges** our structural settings with existing user settings
@@ -22,7 +24,8 @@ This gives you the best of both worlds: declarative management of critical setti
 ## How It Works
 
 ### On First Home-Manager Rebuild
-```
+
+```text
 home-manager activation script runs
   ↓
 Removes old symlink (if exists)
@@ -33,7 +36,8 @@ VS Code can now modify the file freely
 ```
 
 ### On Subsequent Rebuilds
-```
+
+```text
 home-manager activation script runs
   ↓
 Detects existing writable settings.json
@@ -46,18 +50,21 @@ Result: Your preferences + Updated structural settings
 ```
 
 ### During Daily Use
-```
+
+```text
 VS Code makes changes → Writes to settings.json → Changes persist!
 ```
 
 ## Settings Categories
 
 **Structural Settings** (managed by `vscode.nix`):
+
 - Paths to formatters, language servers (e.g., `nix.serverPath`)
 - Tool configurations that reference Nix store paths
 - Core development workflow settings
 
 **User Preferences** (can be modified by VS Code):
+
 - UI theme and appearance
 - Window state and zoom levels
 - "Don't show again" dialogs
@@ -66,7 +73,7 @@ VS Code makes changes → Writes to settings.json → Changes persist!
 
 ### The Workflow
 
-```
+```text
 ┌──────────────────────────────────────────────────────────────┐
 │ 1. Initial Rebuild                                            │
 │    Activation script creates writable settings.json          │
@@ -102,6 +109,7 @@ VS Code makes changes → Writes to settings.json → Changes persist!
 ### Daily Use
 
 **Just use VS Code normally!** Your changes will persist automatically:
+
 - Click "Don't show again" on dialogs ✓
 - Change UI preferences ✓
 - Adjust editor settings ✓
@@ -122,6 +130,7 @@ If you want to share your VS Code preferences across multiple machines, you can 
 ```
 
 This will:
+
 1. Read your current VS Code settings from `~/.config/Code/User/settings.json`
 2. Filter out the structural settings managed by home-manager
 3. Generate `home/features/vscode/user-settings.nix` with your user preferences
@@ -217,6 +226,7 @@ home.activation.vscodeSettings = lib.hm.dag.entryAfter ["writeBoundary"] ''
 ### Settings Are Preserved Across Rebuilds
 
 Unlike the default home-manager behavior (which overwrites settings.json), our activation script:
+
 1. Checks if settings.json exists and is a regular file
 2. If yes: Merges your existing settings with updated structural settings using `jq`
 3. If no: Creates a new file with base settings
@@ -226,6 +236,7 @@ Unlike the default home-manager behavior (which overwrites settings.json), our a
 ### The Sync Script Is Optional
 
 `./scripts/sync-vscode-settings` is only needed if you want to:
+
 - Share your personalized settings across multiple machines via git
 - Keep a declarative record of your preferences
 - Review what settings have accumulated over time
@@ -235,6 +246,7 @@ For single-machine use, you can just let VS Code manage everything!
 ### Multi-Machine Setup
 
 The generated `user-settings.nix` is machine-agnostic:
+
 - Sync settings on your main machine
 - Commit to git
 - Other machines get the same user preferences
@@ -243,6 +255,7 @@ The generated `user-settings.nix` is machine-agnostic:
 ### What Gets Filtered
 
 The sync script filters out settings that:
+
 1. Reference Nix store paths (these change across rebuilds)
 2. Are explicitly listed in `get_managed_keys()`
 3. Should always be managed declaratively
@@ -258,6 +271,7 @@ ls -la ~/.config/Code/User/settings.json
 ```
 
 The activation script should have converted it. Try:
+
 1. Manually remove the symlink: `rm ~/.config/Code/User/settings.json`
 2. Rebuild: `./scripts/rebuild`
 3. The activation script will create a writable file
@@ -265,6 +279,7 @@ The activation script should have converted it. Try:
 ### VS Code says settings are read-only
 
 Check file permissions:
+
 ```bash
 ls -la ~/.config/Code/User/settings.json
 ```
@@ -278,6 +293,7 @@ If it shows `lrwxrwxrwx` (symlink), see above.
 This shouldn't happen with the new activation script! The script specifically preserves existing settings.
 
 If it does happen:
+
 1. Check the activation script output during rebuild
 2. Verify `jq` is available: `which jq`
 3. Check the settings file before and after rebuild
@@ -285,12 +301,14 @@ If it does happen:
 ### Structural settings not updating
 
 If paths to formatters/LSP servers are stale after a Nix store update:
+
 - Rebuild again: `./scripts/rebuild`  
 - The activation script will overlay fresh structural settings
 
 Default path: `~/.config/Code/User/settings.json`
 
 If VS Code uses a different location:
+
 - Check with: `code --version` and look for user data directory
 - Update `get_vscode_settings_path()` in `scripts_py/sync_vscode_settings.py`
 
@@ -301,14 +319,17 @@ Edit `get_managed_keys()` to control what's filtered out. Keys in that set are a
 ## Alternative Approaches (Not Implemented)
 
 ### 1. Disable home-manager settings management entirely
+
 **Pros**: VS Code has full control
 **Cons**: Lose declarative benefits, no Nix store path management
 
 ### 2. Use separate settings files
+
 **Pros**: Clean separation
 **Cons**: VS Code doesn't natively support this
 
 ### 3. Automated git hooks
+
 **Pros**: Automatic syncing
 **Cons**: Noisy commits, merge conflicts
 
