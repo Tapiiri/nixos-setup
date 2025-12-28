@@ -3,31 +3,31 @@ repos:
     hooks:
       - id: nix-flake-check
         name: nix flake check
-        entry: nix develop ./dev -c nix flake check
+        entry: nix flake check
         language: system
         pass_filenames: false
       - id: alejandra-fmt
         name: alejandra (nix fmt)
-        entry: nix develop ./dev -c alejandra
+        entry: alejandra
         language: system
         files: '(^flake\.nix$|^(hosts|home|dev)/.*\.nix$|.*\.nix)'
       - id: yamllint
         name: yamllint
-        entry: nix develop ./dev -c yamllint
+        entry: yamllint
         language: system
         files: '.*\.ya?ml$'
       - id: actionlint
         name: actionlint
-        entry: nix develop ./dev -c actionlint
+        entry: actionlint
         language: system
         files: '^\.github/workflows/.*\.ya?ml$'
       - id: ruff-check
         name: ruff check
-        entry: nix develop ./dev -c ruff check scripts_py tests
+        entry: ruff check scripts_py tests
         language: system
         pass_filenames: false
       - id: python-pytest
         name: pytest
-        entry: nix develop ./dev -c pytest -q tests
+        entry: pytest -q tests
         language: system
         pass_filenames: false
