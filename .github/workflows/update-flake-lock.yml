@@ -1,0 +1,43 @@
+name: Update flake.lock
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Weekly on Sunday at 06:00 UTC
+    - cron: "0 6 * * 0"
+
+concurrency:
+  group: update-flake-lock
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-flake-lock:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31.9.0
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Update flake.lock
+        uses: DeterminateSystems/update-flake-lock@v24
+        with:
+          pr-title: "chore: update flake.lock"
+          pr-labels: |
+            dependencies
+            nix
+          # If CI stays red due to upstream breakage,
+          # bump the cooldown to reduce noise.
+          pr-cooldown-days: 1
+
+      # Sanity-check the update using the same checks as CI.
+      - name: Run pre-commit
+        run: nix develop ./dev -c pre-commit run --all-files

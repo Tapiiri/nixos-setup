@@ -82,6 +82,13 @@ This makes VS Code's **GUI Git commits** run with the same tooling as the repo d
 
 CI runs `pre-commit run --all-files` via the same dev shell to match local tooling.
 
+## Automated dependency updates (flake.lock)
+
+This repo includes a scheduled GitHub Actions workflow that opens PRs updating `flake.lock`.
+It runs weekly and can also be triggered manually from the Actions tab.
+
+The update PRs also run the same checks as CI (`nix develop ./dev -c pre-commit run --all-files`).
+
 ### PATH troubleshooting (why `rebuild` isn't found)
 
 Scripts from `scripts/` are linked into `~/.local/bin` by `scripts/setup-links.sh`.
