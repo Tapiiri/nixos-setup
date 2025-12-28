@@ -24,6 +24,12 @@
   # These are "structural" settings that point to binaries and configure tooling.
   # They should be managed declaratively by home-manager.
   vscodeNixSettings = {
+    # Disable prompts for updates.
+    "update.mode" = "none";
+
+    # Disable extensions auto-update to avoid unexpected changes.
+    "extensions.autoUpdate" = false;
+
     # Format on save globally.
     "editor.formatOnSave" = true;
 
