@@ -26,6 +26,13 @@
     # Format on save globally.
     "editor.formatOnSave" = true;
 
+    # Be explicit about *when* formatting runs on save. VS Code defaults can vary
+    # and extensions may add additional formatting providers; this keeps behavior
+    # consistent.
+    #
+    # - file: always format the whole file
+    "editor.formatOnSaveMode" = "file";
+
     # Keep editor behavior consistent across machines (repo defaults).
     # These are stable (no Nix store paths), but we still want HM to be the
     # source of truth rather than letting VS Code drift over time.
@@ -51,6 +58,7 @@
     # Use alejandra for Nix formatting.
     "[nix]" = {
       "editor.defaultFormatter" = "jnoortheen.nix-ide";
+      "editor.formatOnSave" = true;
     };
 
     # nix-ide settings.
