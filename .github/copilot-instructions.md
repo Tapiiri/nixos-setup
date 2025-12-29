@@ -59,6 +59,19 @@
   - Example (see `flake.nix`): `nixosConfigurations.nixos = ...`.
   - Keep this in sync with `hosts/<hostname>/` and the machine hostname.
 
+### Flake outputs / profiles debugging tip
+
+- This flake intentionally exposes `nixosConfigurations.<host>` but may **not** expose
+  `homeConfigurations.*` as a top-level flake output.
+- When you need to discover what outputs exist (or when a build target is unclear), run:
+  - `nix flake show --all-systems`
+- When you specifically need to *force evaluation* of Home Manager modules (for example
+  to surface a VS Code Marketplace extension hash mismatch), a reliable target is:
+  - `.#nixosConfigurations.<host>.config.system.build.toplevel`
+
+This avoids guesswork around “profiles” / output names and matches how we actually build
+the system configuration.
+
 ## Editing guidelines specific to this repo
 
 - Avoid introducing new Python deps lightly: dev deps belong in `dev/flake.nix`; “real” tooling deps are managed via Home Manager (`home/modules/devtools.nix`, referenced in `README.md`).
