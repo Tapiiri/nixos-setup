@@ -156,7 +156,7 @@ in {
         YamlExt
         TomlExt
         EditorConfigExt
-        OnePasswordExt
+        # OnePasswordExt
       ];
 
       # IMPORTANT: Do NOT set userSettings here.
