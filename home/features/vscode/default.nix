@@ -30,6 +30,21 @@
   YamlExt = pkgs.vscode-extensions.redhat.vscode-yaml;
   TomlExt = pkgs.vscode-extensions.tamasfe.even-better-toml;
   EditorConfigExt = pkgs.vscode-extensions.editorconfig.editorconfig;
+
+  # 1Password VS Code extension (not packaged in nixpkgs in this repo's snapshot).
+  OnePasswordExt = pkgs.vscode-utils.buildVscodeMarketplaceExtension {
+    mktplcRef = {
+      # Marketplace publisher uses this casing.
+      publisher = "1Password";
+      name = "op-vscode";
+      # Pin this after first build: set a dummy hash, build once, then copy the
+      # reported sha256 here.
+      version = "1.0.5";
+      # NOTE: This must be an SRI hash. Use any dummy value, build once, then
+      # replace with the reported `got: sha256-...`.
+      hash = "sha256-J7vAK2t6fSjm5i6y3+88aO84ipFwekQkJMD7W3EIWrc=";
+    };
+  };
   # Not packaged in nixpkgs (no `pkgs.vscode-extensions.openai.*`), so fetch it
   # from the VS Code Marketplace and build a Nix derivation instead.
   CodexExt = pkgs.vscode-utils.buildVscodeMarketplaceExtension {
@@ -141,6 +156,7 @@ in {
         YamlExt
         TomlExt
         EditorConfigExt
+        OnePasswordExt
       ];
 
       # IMPORTANT: Do NOT set userSettings here.
