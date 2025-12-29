@@ -34,6 +34,8 @@ in {
       description = "Install the 1Password CLI (op).";
     };
 
+    onepasswordPkg.polkitPolicyOwners = ["tapiiri"];
+
     guiPackage = mkPkgOption onepasswordPkg;
     cliPackage = mkPkgOption onepasswordCLIPkg;
   };
