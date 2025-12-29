@@ -5,6 +5,7 @@
     browsers.enable = true;
     shell.bash.enable = true;
     telegram.enable = true;
+    onepassword.enable = true;
   };
 
   # Home Manager module hub.
