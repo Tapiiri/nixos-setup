@@ -20,8 +20,16 @@
   nixIdeExt = pkgs.vscode-extensions.jnoortheen.nix-ide;
   markdownlintExt = pkgs.vscode-extensions.davidanson.vscode-markdownlint;
   GHActionsExt = pkgs.vscode-extensions.github.vscode-github-actions;
+  GHPullRequestsExt = pkgs.vscode-extensions.github.vscode-pull-request-github;
   CopilotExt = pkgs.vscode-extensions.github.copilot;
   CopilotChatExt = pkgs.vscode-extensions.github.copilot-chat;
+
+  # Other repo/devtools helpers.
+  PythonExt = pkgs.vscode-extensions.ms-python.python;
+  ShellCheckExt = pkgs.vscode-extensions.timonwong.shellcheck;
+  YamlExt = pkgs.vscode-extensions.redhat.vscode-yaml;
+  TomlExt = pkgs.vscode-extensions.tamasfe.even-better-toml;
+  EditorConfigExt = pkgs.vscode-extensions.editorconfig.editorconfig;
   # Not packaged in nixpkgs (no `pkgs.vscode-extensions.openai.*`), so fetch it
   # from the VS Code Marketplace and build a Nix derivation instead.
   CodexExt = pkgs.vscode-utils.buildVscodeMarketplaceExtension {
@@ -124,9 +132,15 @@ in {
         nixIdeExt
         markdownlintExt
         GHActionsExt
+        GHPullRequestsExt
         CopilotExt
         CopilotChatExt
         CodexExt
+        PythonExt
+        ShellCheckExt
+        YamlExt
+        TomlExt
+        EditorConfigExt
       ];
 
       # IMPORTANT: Do NOT set userSettings here.
