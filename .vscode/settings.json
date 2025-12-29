@@ -10,6 +10,12 @@
     "source.organizeImports.ruff": "explicit",
     "source.fixAll.ruff": "explicit"
   },
+  "python.formatting.provider": "ruff",
+  "python.linting.enabled": true,
+  "python.linting.ruffEnabled": true,
+  "python.linting.ruffArgs": [
+    "--fix"
+  ],
   "files.associations": {
     "*.sh.tpl": "shellscript"
   }
