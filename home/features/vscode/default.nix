@@ -30,6 +30,8 @@
   YamlExt = pkgs.vscode-extensions.redhat.vscode-yaml;
   TomlExt = pkgs.vscode-extensions.tamasfe.even-better-toml;
   EditorConfigExt = pkgs.vscode-extensions.editorconfig.editorconfig;
+  GitLensExt = pkgs.vscode-extensions.eamodio.gitlens;
+  RuffExt = pkgs.vscode-extensions.charliermarsh.ruff;
 
   # 1Password VS Code extension (not packaged in nixpkgs in this repo's snapshot).
   OnePasswordExt = pkgs.vscode-utils.buildVscodeMarketplaceExtension {
@@ -156,7 +158,9 @@ in {
         YamlExt
         TomlExt
         EditorConfigExt
-        # OnePasswordExt
+        OnePasswordExt
+        GitLensExt
+        RuffExt
       ];
 
       # IMPORTANT: Do NOT set userSettings here.
