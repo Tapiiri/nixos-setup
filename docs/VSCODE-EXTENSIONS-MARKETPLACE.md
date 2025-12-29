@@ -50,10 +50,43 @@ Marketplace extensions change frequently; to update them reproducibly, bump both
 Workflow:
 
 1. Update `version`.
-2. Temporarily set `hash` to `lib.fakeSha256` (or an obviously-wrong SRI hash).
+2. Temporarily set `hash` to an obviously-wrong SRI hash.
 3. Build once to get a hash mismatch error.
 4. Copy the `got: sha256-…` value into `mktplcRef.hash`.
 5. Build again.
+
+### Common gotchas (learned the hard way)
+
+#### 1) Publisher casing can matter
+
+The Marketplace “item name” looks case-insensitive on the public website (e.g.
+`1Password.op-vscode` loads fine), but the actual VSIX download URL used by
+`buildVscodeMarketplaceExtension` may be **case-sensitive**.
+
+If you see `curl: (22) ... 404`, double-check the exact publisher casing.
+Example that required casing:
+
+- ✅ `publisher = "1Password";`
+- ❌ `publisher = "1password";` (404)
+
+#### 2) Don’t guess the version
+
+A wrong `mktplcRef.version` can also produce a 404 (because the VSIX asset for
+that version doesn’t exist).
+
+If you’re not sure what version to pin, get it from the Marketplace page:
+
+- Open: <https://marketplace.visualstudio.com/items?itemName=PUBLISHER.EXTENSION_NAME>
+- Use the version shown there (or scrape it) as the initial `mktplcRef.version`.
+
+Once the URL is valid, you should see a **hash mismatch** (not a 404), which is
+your cue that you’re now ready to pin the real `got: sha256-...` value.
+
+#### 3) The dummy hash must be SRI-formatted
+
+The placeholder hash must be an SRI hash like `sha256-AAAA...`.
+If you use a raw hex string or an untyped fake, evaluation can fail before the
+fetch even happens.
 
 ## Notes
 
