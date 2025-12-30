@@ -1,5 +1,6 @@
 # Managed by: nixos-setup (dotfiles/home/bashrc)
 # Target: ~/.bashrc
+# shellcheck shell=bash
 #
 # This file is a starting point. Add your aliases, env vars, and shell config here.
 #
@@ -19,8 +20,10 @@ hm_profile_dir="${HOME_MANAGER_PROFILE_DIR:-$HOME/.nix-profile}"
 # Prefer the hm-session-vars.sh from the Home Manager profile (it’s guaranteed
 # to match the active generation). Fallback to ~/.nix-profile for older setups.
 if [ -f "$hm_profile_dir/etc/profile.d/hm-session-vars.sh" ]; then
+	# shellcheck source=/dev/null
 	. "$hm_profile_dir/etc/profile.d/hm-session-vars.sh"
 elif [ -f "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" ]; then
+	# shellcheck source=/dev/null
 	. "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"
 fi
 
@@ -48,6 +51,7 @@ for hm_bashrc in \
 	"$hm_profile_dir/share/home-manager/bashrc" \
 	"$HOME/.config/home-manager/current-home/etc/profile.d/hm-bashrc.sh"; do
 	if [ -f "$hm_bashrc" ]; then
+		# shellcheck source=/dev/null
 		. "$hm_bashrc"
 		break
 	fi
@@ -56,6 +60,7 @@ done
 # --- End Home Manager integration --------------------------------------------
 
 # Load VS Code shell integration when inside VS Code (matches the current system bashrc)
+# shellcheck source=/dev/null
 [[ "${TERM_PROGRAM-}" == "vscode" ]] && . "$(code --locate-shell-integration-path bash)"
 
 # User customizations

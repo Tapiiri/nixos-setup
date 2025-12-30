@@ -10,6 +10,7 @@
     yamllint
     actionlint
     markdownlint-cli2
+    shellcheck
 
     # Python tooling pinned together (works even without devenv python module).
     (python313.withPackages (ps:

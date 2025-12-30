@@ -22,6 +22,11 @@ repos:
         entry: actionlint
         language: system
         files: '^\.github/workflows/.*\.ya?ml$'
+      - id: shellcheck
+        name: shellcheck
+        entry: shellcheck
+        language: system
+        files: '(.*\.sh$|^dotfiles/home/bashrc$|^home/.*\.sh\.tpl$)'
       - id: markdownlint
         name: markdownlint
         entry: markdownlint-cli2

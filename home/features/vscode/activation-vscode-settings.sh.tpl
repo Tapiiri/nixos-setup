@@ -40,7 +40,8 @@ else
     current_settings=$(cat "$vscode_settings_file")
 
     # Merge: current settings as base, overlay our managed settings on top
-    merged=$(echo "$current_settings" | @JQ_BIN@ --argjson managed "$managed_settings" '. + $managed')
+  # shellcheck disable=SC2016
+  merged=$(echo "$current_settings" | @JQ_BIN@ --argjson managed "$managed_settings" '. + $managed')
 
     $DRY_RUN_CMD echo "$merged" > "$vscode_settings_file"
     # Ensure VS Code can write back changes.
