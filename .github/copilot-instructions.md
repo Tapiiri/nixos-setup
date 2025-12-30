@@ -7,18 +7,17 @@
 
 ## Key workflows (use these exact flows)
 
-- Dev tooling (Python + linters + pre-commit) is pinned in the **dev-only** flake: `dev/flake.nix`.
-  - Prefer running checks inside the dev shell so PATH/tooling matches CI.
+- Dev tooling (Python + linters + pre-commit) is pinned in `./devenv.nix` (devenv.sh).
+  - Prefer running checks inside the devenv shell so PATH/tooling matches CI.
   - Enter dev shell:
-    - `nix develop ./dev`
-    - or: `./scripts/devshell`
+    - `devenv shell`
 - Fast tests:
   - `python -m unittest -q`
   - Or (preferred when available): `python -m pytest -q` (pytest config in `pyproject.toml`).
 - Pre-commit is the “one command” quality gate (same as CI):
   - Run inside the dev shell:
     - `pre-commit run --all-files`
-    - or (CI-parity one-liner): `nix develop ./dev -c pre-commit run --all-files`
+    - or (CI-parity one-liner): `devenv shell --command "pre-commit run --all-files"`
 
 ## Architecture & conventions
 
@@ -31,11 +30,11 @@
     - Repo root detection uses `repo_root_from_script_path()` and markers (`flake.nix` + `scripts_py/`).
     - Prefer `Path` objects and explicit, user-friendly error messages.
 
-### VS Code + devshell integration
+### VS Code + devenv integration
 
 - Prefer launching VS Code via the repo’s wrapper `scripts/code` (installed by `scripts/setup-links`).
-  - It walks up from the folder you open; if it finds `dev/flake.nix`, it runs `code ...` *inside* `nix develop ./dev`.
-  - This keeps GUI git commits / hooks running with the same tooling as the dev shell.
+  - It walks up from the folder you open; if it finds `devenv.nix`, it runs `code ...` *inside* the devenv shell.
+  - This keeps GUI git commits / hooks running with the same tooling as the devenv environment.
 
 ### `rebuild` (system-critical)
 
@@ -74,7 +73,7 @@ the system configuration.
 
 ## Editing guidelines specific to this repo
 
-- Avoid introducing new Python deps lightly: dev deps belong in `dev/flake.nix`; “real” tooling deps are managed via Home Manager (`home/modules/devtools.nix`, referenced in `README.md`).
+- Avoid introducing new Python deps lightly: dev deps belong in `devenv.nix`; “real” tooling deps are managed via Home Manager (`home/modules/devtools.nix`, referenced in `README.md`).
 - Keep scripts runnable in minimal environments; tests should remain able to run with stdlib `unittest`.
 - Prefer modifying Python implementation in `scripts_py/` and keep `scripts/` wrappers thin.
 

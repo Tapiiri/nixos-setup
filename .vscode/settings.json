@@ -1,5 +1,5 @@
 {
-  "nixEnvSelector.nixFile": "dev/flake.nix",
+  "nixEnvSelector.nixFile": "devenv.nix",
   "python.testing.pytestEnabled": true,
   "python.testing.pytestArgs": [
     "tests"

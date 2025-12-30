@@ -79,8 +79,8 @@
     # - file: always format the whole file
     "editor.formatOnSaveMode" = "file";
 
-    # Repo convention: dev tooling comes from `dev/flake.nix`.
-    "nixEnvSelector.nixFile" = "dev/flake.nix";
+    # Repo convention: dev tooling comes from `devenv.nix`.
+    "nixEnvSelector.nixFile" = "devenv.nix";
 
     # Use alejandra for Nix formatting.
     "[nix]" = {

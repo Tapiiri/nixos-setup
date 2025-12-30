@@ -9,7 +9,7 @@ Some helper scripts live under `scripts/`. They are designed to be runnable as n
 - `rebuild` - NixOS rebuild wrapper with mirror support
 - `import-dotfiles` - Import dotfiles from home directory
 - `setup-links` - Create symlinks for scripts in `~/.local/bin`
-- `devshell` - Enter the development shell environment
+- `devenv` - Project dev environment (via devenv.sh)
 - `sync-vscode-settings` - Sync VS Code runtime settings back to Nix config (see [VS Code Settings Guide](docs/VSCODE-SETTINGS.md))
 
 ### Python version and dependencies
@@ -37,17 +37,18 @@ Most reliable options:
 
 - Use the interpreter module form:
   - `python -m pytest -q`
-- Or use the repo's dev-only flake shell (pins Python + pytest together without touching the NixOS flake outputs):
-  - `nix develop ./dev -c pytest -q`
+- Or use devenv.sh (pins Python + pytest together without touching the NixOS flake outputs):
+  - `devenv test`
+  - or: `devenv shell --command "python -m pytest -q"`
 
 If you want an interactive shell (so you can just type `pytest` afterwards), enter it first and then run commands normally:
 
-- `nix develop ./dev`
+- `devenv shell`
 - then: `pytest -q`
 
 There's also a convenience wrapper script:
 
-- `./scripts/devshell`
+- Use `devenv shell` (recommended)
 - then: `pytest -q`
 
 Optional: if you use `direnv`, you can add an `.envrc` that auto-enters the dev shell on `cd`.
@@ -56,17 +57,20 @@ Optional: if you use `direnv`, you can add an `.envrc` that auto-enters the dev 
 
 Hooks auto-install when you enter the dev shell (if not already present) so `nix develop ./dev` is usually enough. To force a reinstall:
 
-- `nix develop ./dev -c pre-commit install --install-hooks`
+Hooks auto-install when you enter the dev shell (if not already present) so `devenv shell` is usually enough. To force a reinstall:
+
+- `devenv shell --command "pre-commit install --install-hooks"`
 
 Run all checks locally (matches CI):
 
-- `nix develop ./dev -c pre-commit run --all-files`
+- `devenv shell --command "pre-commit run --all-files"`
 
 Included hooks: `nix flake check`, `alejandra`, `yamllint`, `actionlint` (workflows), `ruff check`, and `python -m pytest -q tests`.
 
-VS Code: recommended extensions include the Nix environment selector plus Python/Ruff. With the Nix Env Selector extension installed, set the workspace Nix file to `dev/flake.nix` so VS Code terminals inherit the dev shell and pick up the pre-commit auto-install.
+VS Code: recommended extensions include the Nix environment selector plus Python/Ruff. With the Nix Env Selector extension installed, set the workspace Nix file to `devenv.nix` so VS Code terminals inherit the dev shell and pick up the pre-commit auto-install.
+VS Code: recommended extensions include the Nix environment selector plus Python/Ruff. With the Nix Env Selector extension installed, set the workspace Nix file to `devenv.nix` so VS Code terminals inherit the dev shell and pick up the pre-commit auto-install.
 
-### VS Code + devshell (recommended)
+### VS Code + devenv (recommended)
 
 This repo includes a small `code` wrapper script under `scripts/` that you can install via:
 
@@ -75,10 +79,10 @@ This repo includes a small `code` wrapper script under `scripts/` that you can i
 It behaves like this:
 
 - walks up from the folder you open
-- if it finds `./dev/flake.nix`, launches VS Code via `nix develop ./dev -c code ...`
-- otherwise falls back to `./flake.nix`
+- if it finds `./devenv.nix`, launches VS Code via `nix develop --file devenv.nix -c code ...`
+- otherwise launches VS Code normally
 
-This makes VS Code's **GUI Git commits** run with the same tooling as the repo devshell (so pre-commit system hooks like `yamllint` don't fail due to missing PATH).
+This makes VS Code's **GUI Git commits** run with the same tooling as the repo devenv (so pre-commit system hooks like `yamllint` don't fail due to missing PATH).
 
 CI runs `pre-commit run --all-files` via the same dev shell to match local tooling.
 
@@ -87,7 +91,7 @@ CI runs `pre-commit run --all-files` via the same dev shell to match local tooli
 This repo includes a scheduled GitHub Actions workflow that opens PRs updating `flake.lock`.
 It runs weekly and can also be triggered manually from the Actions tab.
 
-The update PRs also run the same checks as CI (`nix develop ./dev -c pre-commit run --all-files`).
+The update PRs also run the same checks as CI (`devenv shell --command "pre-commit run --all-files"`).
 
 ### PATH troubleshooting (why `rebuild` isn't found)
 
