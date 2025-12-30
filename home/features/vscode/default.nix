@@ -31,6 +31,7 @@
   TomlExt = pkgs.vscode-extensions.tamasfe.even-better-toml;
   EditorConfigExt = pkgs.vscode-extensions.editorconfig.editorconfig;
   RuffExt = pkgs.vscode-extensions.charliermarsh.ruff;
+  DirenvExt = pkgs.vscode-extensions.mkhl.direnv;
 
   # 1Password VS Code extension (not packaged in nixpkgs in this repo's snapshot).
   OnePasswordExt = pkgs.vscode-utils.buildVscodeMarketplaceExtension {
@@ -152,6 +153,7 @@ in {
         CopilotExt
         CopilotChatExt
         CodexExt
+        DirenvExt
         PythonExt
         ShellCheckExt
         YamlExt
