@@ -39,5 +39,5 @@ jobs:
           pr-cooldown-days: 1
 
       # Sanity-check the update using the same checks as CI.
-      - name: Run pre-commit
-        run: nix develop ./dev -c pre-commit run --all-files
+      - name: Run checks (devenv tasks)
+        run: devenv shell -- devenv tasks run check:all

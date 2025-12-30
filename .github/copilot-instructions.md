@@ -11,13 +11,17 @@
   - Prefer running checks inside the devenv shell so PATH/tooling matches CI.
   - Enter dev shell:
     - `devenv shell`
-- Fast tests:
-  - `python -m unittest -q`
-  - Or (preferred when available): `python -m pytest -q` (pytest config in `pyproject.toml`).
-- Pre-commit is the “one command” quality gate (same as CI):
-  - Run inside the dev shell:
-    - `pre-commit run --all-files`
-    - or (CI-parity one-liner): `devenv shell --command "pre-commit run --all-files"`
+- Canonical checks live in **devenv tasks** (single source of truth):
+  - Full CI-equivalent pipeline:
+    - `devenv shell -- devenv tasks run check:all`
+  - Targeted checks (prefer these when appropriate):
+    - Python lint: `devenv shell -- devenv tasks run lint:python:ruff`
+    - Python tests: `devenv shell -- devenv tasks run tests:python:pytest`
+    - Nix evaluation: `devenv shell -- devenv tasks run check:nix:flake`
+    - All lint: `devenv shell -- devenv tasks run lint:all`
+    - All format: `devenv shell -- devenv tasks run fmt:all`
+- Pre-commit is a local convenience layer and delegates hook logic to devenv tasks:
+  - `devenv shell -- pre-commit run --all-files`
 
 ## Architecture & conventions
 

@@ -3,42 +3,47 @@ repos:
     hooks:
       - id: nix-flake-check
         name: nix flake check
-        entry: nix flake check --no-build
+        entry: devenv tasks run check:nix:flake
         language: system
         files: '(\.nix$|^flake\.nix$|^flake\.lock$)'
         pass_filenames: false
       - id: alejandra-fmt
         name: alejandra (nix fmt)
-        entry: alejandra
+        entry: devenv tasks run fmt:nix:alejandra
         language: system
         files: '(^flake\.nix$|^(hosts|home|dev)/.*\.nix$|.*\.nix)'
+        pass_filenames: false
       - id: yamllint
         name: yamllint
-        entry: yamllint
+        entry: devenv tasks run lint:yaml:yamllint
         language: system
         files: '.*\.ya?ml$'
+        pass_filenames: false
       - id: actionlint
         name: actionlint
-        entry: actionlint
+        entry: devenv tasks run lint:gha:actionlint
         language: system
         files: '^\.github/workflows/.*\.ya?ml$'
+        pass_filenames: false
       - id: shellcheck
         name: shellcheck
-        entry: shellcheck
+        entry: devenv tasks run lint:shell:shellcheck
         language: system
         files: '(.*\.sh$|^dotfiles/home/bashrc$|^home/.*\.sh\.tpl$)'
+        pass_filenames: false
       - id: markdownlint
         name: markdownlint
-        entry: markdownlint-cli2
+        entry: devenv tasks run lint:md:markdownlint
         language: system
         files: '.*\.md$'
+        pass_filenames: false
       - id: ruff-check
         name: ruff check
-        entry: ruff check scripts_py tests
+        entry: devenv tasks run lint:python:ruff
         language: system
         pass_filenames: false
       - id: python-pytest
         name: pytest
-        entry: pytest -q tests
+        entry: devenv tasks run tests:python:pytest
         language: system
         pass_filenames: false

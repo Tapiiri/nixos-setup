@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  pre-commit:
+  ci:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -18,5 +18,5 @@ jobs:
           extra_nix_config: |
             experimental-features = nix-command flakes
 
-      - name: Run pre-commit
-        run: nix develop ./dev -c pre-commit run --all-files
+      - name: Run checks (devenv tasks)
+        run: devenv shell -- devenv tasks run check:all

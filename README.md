@@ -23,13 +23,16 @@ Python tooling for this repo is provided via Home Manager when `my.devtools.enab
 
 This repo’s unit tests use the Python standard library `unittest`, so they work in minimal environments.
 
-Run:
+Canonical commands live in `devenv.nix` as **devenv tasks**.
+
+- Full CI-equivalent check: `devenv shell -- devenv tasks run check:all`
+- Just Python tests: `devenv shell -- devenv tasks run tests:python:pytest`
+
+The unit tests also work in minimal environments (stdlib `unittest` / `pytest` as available).
+
+Run (minimal environment):
 
 - `python -m unittest -q`
-
-If you prefer pytest locally, you can add it in `home/modules/devtools.nix` (already included) and run:
-
-- `pytest -q`
 
 If you run into `ModuleNotFoundError: No module named 'pytest'` even though `pytest` is on PATH, you're typically picking up a `pytest` launcher that points at a different Python than the one in your current shell session.
 
@@ -39,7 +42,7 @@ Most reliable options:
   - `python -m pytest -q`
 - Or use devenv.sh (pins Python + pytest together without touching the NixOS flake outputs):
   - `devenv test`
-  - or: `devenv shell --command "python -m pytest -q"`
+  - or: `devenv shell -- python -m pytest -q`
 
 If you want an interactive shell (so you can just type `pytest` afterwards), enter it first and then run commands normally:
 
@@ -51,19 +54,24 @@ There's also a convenience wrapper script:
 - Use `devenv shell` (recommended)
 - then: `pytest -q`
 
+### Linting and formatting
+
+These are also defined as devenv tasks:
+
+- `devenv shell -- devenv tasks run lint:all`
+- `devenv shell -- devenv tasks run fmt:all`
+
 Optional: if you use `direnv`, you can add an `.envrc` that auto-enters the dev shell on `cd`.
 
 ## Pre-commit
 
-Hooks auto-install when you enter the dev shell (if not already present) so `nix develop ./dev` is usually enough. To force a reinstall:
-
 Hooks auto-install when you enter the dev shell (if not already present) so `devenv shell` is usually enough. To force a reinstall:
 
-- `devenv shell --command "pre-commit install --install-hooks"`
+- `devenv shell -- pre-commit install --install-hooks`
 
 Run all checks locally (matches CI):
 
-- `devenv shell --command "pre-commit run --all-files"`
+- `devenv shell -- devenv tasks run check:all`
 
 Included hooks: `nix flake check`, `alejandra`, `yamllint`, `actionlint` (workflows), `ruff check`, and `python -m pytest -q tests`.
 
@@ -79,19 +87,19 @@ This repo includes a small `code` wrapper script under `scripts/` that you can i
 It behaves like this:
 
 - walks up from the folder you open
-- if it finds `./devenv.nix`, launches VS Code via `nix develop --file devenv.nix -c code ...`
+- if it finds `./devenv.nix`, launches VS Code via `devenv shell -- code ...`
 - otherwise launches VS Code normally
 
 This makes VS Code's **GUI Git commits** run with the same tooling as the repo devenv (so pre-commit system hooks like `yamllint` don't fail due to missing PATH).
 
-CI runs `pre-commit run --all-files` via the same dev shell to match local tooling.
+CI runs the canonical devenv task pipeline (`check:all`). pre-commit remains a local convenience layer and delegates its hook logic to devenv tasks.
 
 ## Automated dependency updates (flake.lock)
 
 This repo includes a scheduled GitHub Actions workflow that opens PRs updating `flake.lock`.
 It runs weekly and can also be triggered manually from the Actions tab.
 
-The update PRs also run the same checks as CI (`devenv shell --command "pre-commit run --all-files"`).
+The update PRs also run the same checks as CI (via devenv tasks).
 
 ### PATH troubleshooting (why `rebuild` isn't found)
 
