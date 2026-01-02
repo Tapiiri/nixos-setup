@@ -6,6 +6,7 @@
     shell.bash.enable = true;
     telegram.enable = true;
     onepassword.enable = true;
+    tailscale.enable = true;
   };
 
   # Home Manager module hub.
