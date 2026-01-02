@@ -20,6 +20,7 @@
     nixosConfigurations.nixos = nixpkgs.lib.nixosSystem {
       specialArgs = {inherit inputs;};
       modules = [
+        ./modules/tailscale.nix
         ./hosts/nixos/configuration.nix
         inputs.home-manager.nixosModules.default
       ];

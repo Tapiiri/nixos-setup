@@ -7,6 +7,8 @@
   inputs,
   ...
 }: {
+  my.tailscale.enable = true;
+
   imports = [
     ./hardware-configuration.nix
   ];
