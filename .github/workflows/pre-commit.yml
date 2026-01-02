@@ -18,5 +18,10 @@ jobs:
           extra_nix_config: |
             experimental-features = nix-command flakes
 
+      - name: Install devenv (via Nix)
+        run: |
+          set -euo pipefail
+          nix profile install nixpkgs#devenv
+
       - name: Run checks (devenv tasks)
         run: devenv shell -- devenv tasks run check:all
