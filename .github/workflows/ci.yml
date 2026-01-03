@@ -21,10 +21,5 @@ jobs:
       - name: Cache Nix store
         uses: DeterminateSystems/magic-nix-cache-action@v8
 
-      - name: Install devenv (via Nix)
-        run: |
-          set -euo pipefail
-          nix profile install nixpkgs#devenv
-
       - name: Run checks (devenv tasks)
-        run: devenv shell -- devenv tasks run check:all
+        run: nix run nixpkgs#devenv -- shell -- devenv tasks run check:all
