@@ -1,0 +1,22 @@
+# Repository label catalog
+#
+# Sync to GitHub via: scripts/sync-github-labels
+#
+# Schema:
+#   labels:
+#     - name: "dependencies"
+#       color: "0366d6"   # hex without '#'
+#       description: "Dependency updates"
+#
+labels:
+  - name: "dependencies"
+    color: "0366d6"
+    description: "Dependency updates"
+
+  - name: "github-actions"
+    color: "000000"
+    description: "GitHub Actions workflow updates"
+
+  - name: "nix"
+    color: "7e57c2"
+    description: "Nix / NixOS related"
