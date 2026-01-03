@@ -20,6 +20,80 @@
       ]))
   ];
 
+  # Keep pre-commit as the runner (instead of the default prek).
+  git-hooks.package = pkgs.pre-commit; # see devenv 1.11 changelog
+  git-hooks.hooks = {
+    nix-flake-check = {
+      enable = true;
+      name = "nix flake check";
+      entry = "devenv tasks run check:nix:flake";
+      language = "system";
+      files = "(\\.nix$|^flake\\.nix$|^flake\\.lock$)";
+      pass_filenames = false;
+    };
+
+    alejandra-fmt = {
+      enable = true;
+      name = "alejandra (nix fmt)";
+      entry = "devenv tasks run fmt:nix:alejandra";
+      language = "system";
+      files = "(^flake\\.nix$|^(hosts|home|dev)/.*\\.nix$|.*\\.nix)";
+      pass_filenames = false;
+    };
+
+    yamllint = {
+      enable = true;
+      name = "yamllint";
+      entry = "devenv tasks run lint:yaml:yamllint";
+      language = "system";
+      files = ".*\\.ya?ml$";
+      pass_filenames = false;
+    };
+
+    actionlint = {
+      enable = true;
+      name = "actionlint";
+      entry = "devenv tasks run lint:gha:actionlint";
+      language = "system";
+      files = "^\\.github/workflows/.*\\.ya?ml$";
+      pass_filenames = false;
+    };
+
+    shellcheck = {
+      enable = true;
+      name = "shellcheck";
+      entry = "devenv tasks run lint:shell:shellcheck";
+      language = "system";
+      files = "(.*\\.sh$|^dotfiles/home/bashrc$|^home/.*\\.sh\\.tpl$)";
+      pass_filenames = false;
+    };
+
+    markdownlint = {
+      enable = true;
+      name = "markdownlint";
+      entry = "devenv tasks run lint:md:markdownlint";
+      language = "system";
+      files = ".*\\.md$";
+      pass_filenames = false;
+    };
+
+    ruff-check = {
+      enable = true;
+      name = "ruff check";
+      entry = "devenv tasks run lint:python:ruff";
+      language = "system";
+      pass_filenames = false;
+    };
+
+    python-pytest = {
+      enable = true;
+      name = "pytest";
+      entry = "devenv tasks run tests:python:pytest";
+      language = "system";
+      pass_filenames = false;
+    };
+  };
+
   # Canonical automation entrypoints.
   #
   # Conventions:
@@ -107,11 +181,4 @@
       exec = "true";
     };
   };
-
-  enterShell = ''
-    if [ -d .git ] && [ ! -x .git/hooks/pre-commit ]; then
-      echo "Installing pre-commit hooks (via devenv) ..."
-      pre-commit install --install-hooks >/dev/null || true
-    fi
-  '';
 }
