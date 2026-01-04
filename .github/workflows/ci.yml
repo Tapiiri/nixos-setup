@@ -19,7 +19,7 @@ jobs:
             experimental-features = nix-command flakes
 
       - name: Cache Nix store
-        uses: DeterminateSystems/magic-nix-cache-action@v8
+        uses: DeterminateSystems/magic-nix-cache-action@v13
 
       - name: Run checks (devenv tasks)
         run: nix run nixpkgs#devenv -- shell -- devenv tasks run check:all
