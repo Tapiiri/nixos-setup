@@ -15,5 +15,6 @@
     (flakeRoot + "/home/modules/tailscale.nix")
     (flakeRoot + "/home/modules/telegram.nix")
     (flakeRoot + "/home/modules/shell-bash.nix")
+    (flakeRoot + "/home/modules/lastpass-cli.nix")
   ];
 }
