@@ -27,6 +27,12 @@ jobs:
           extra_nix_config: |
             experimental-features = nix-command flakes
 
+      - name: Use Cachix
+        uses: cachix/cachix-action@v15
+        with:
+          name: nixos-setup
+          extraPullNames: nix-community
+
       - name: Update flake.lock
         uses: DeterminateSystems/update-flake-lock@v28
         with:
@@ -34,10 +40,7 @@ jobs:
           pr-labels: |
             dependencies
             nix
-          # If CI stays red due to upstream breakage,
-          # bump the cooldown to reduce noise.
-          pr-cooldown-days: 1
 
       # Sanity-check the update using the same checks as CI.
       - name: Run checks (devenv tasks)
-        run: devenv shell -- devenv tasks run check:all
+        run: nix run nixpkgs#devenv -- shell -- devenv tasks run check:all

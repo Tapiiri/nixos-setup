@@ -26,6 +26,7 @@ in {
     # - repo scripts run with a known interpreter version
     # - unit tests and linters come from the same interpreter set
     home.packages = with pkgs; [
+      cachix
       devenv
       direnv
       nix-direnv
