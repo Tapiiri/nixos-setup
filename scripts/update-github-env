@@ -1,0 +1,38 @@
+#!/usr/bin/env python3
+"""Wrapper to call scripts_py.update_github_env.
+
+This mirrors the pattern used by other `scripts/*` entrypoints: fix up
+sys.path so `import scripts_py.*` works both from the repo checkout and when
+the script is symlinked into ~/.local/bin.
+"""
+
+from __future__ import annotations
+
+import sys
+
+
+def _bootstrap() -> None:
+    # Bootstrapping cannot import scripts_py until sys.path is fixed.
+    from pathlib import Path
+
+    here = Path(__file__).resolve()
+    sys.path.insert(0, str(here.parent.parent))
+
+    from scripts_py.utils import RepoMarkers, bootstrap_repo_import_path
+
+    bootstrap_repo_import_path(
+        script_file=here,
+        markers=RepoMarkers(),
+        extra_candidates=(Path.cwd(),),
+    )
+
+
+def main() -> int:
+    _bootstrap()
+    from scripts_py.update_github_env import main as impl_main
+
+    return int(impl_main(sys.argv[1:]))
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
