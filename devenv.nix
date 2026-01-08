@@ -17,6 +17,7 @@
       with ps; [
         pytest
         ruff
+        tomlkit
       ]))
   ];
 

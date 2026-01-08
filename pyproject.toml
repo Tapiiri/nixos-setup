@@ -3,6 +3,7 @@ name = "nixos-setup-scripts"
 version = "0.1.0"
 description = "Python reimplementations of nixos-setup maintenance scripts"
 requires-python = ">=3.10"
+dependencies = ["tomlkit>=0.11.6"]
 
 [tool.pytest.ini_options]
 addopts = "-q"
