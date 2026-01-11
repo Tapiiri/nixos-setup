@@ -92,8 +92,8 @@ def test_add_secret_to_lastpass_invokes_lpass(tmp_path, monkeypatch):
     # second call is lpass add
     add_cmd, add_kwargs = calls[1]
 
-    # should build path development/myproj/API_KEY
-    assert any("development/myproj/API_KEY" in str(c) for c in add_cmd)
+    # should build path secretspec/myproj/development/API_KEY
+    assert any("secretspec/myproj/development/API_KEY" in str(c) for c in add_cmd)
     assert add_kwargs["input"] == "abcd"
     assert add_kwargs["text"] is True
     assert add_kwargs["check"] is True

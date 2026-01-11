@@ -115,11 +115,11 @@ def add_secret_to_secretspec(opts: AddSecretOptions) -> None:
 def add_secret_to_lastpass(opts: AddSecretOptions) -> None:
     """Call `lpass add` to store the secret value.
 
-    Path format: {profile}/{project}/{name}
+    Path format: secretspec/{project}/{profile}/{key}
     """
     txt = _read_text(opts.secretspec_path)
     project = _get_project_name(txt)
-    path = f"{opts.profile}/{project}/{opts.name}"
+    path = f"secretspec/{project}/{opts.profile}/{opts.name}"
 
     # Quick sanity checks: ensure lpass is available and the user is logged in.
     lpass_path = shutil.which("lpass")
