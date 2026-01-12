@@ -92,6 +92,8 @@
     ];
   };
 
+  nix.settings.trusted-users = ["root" "tapiiri"];
+
   # Local mirror + permissions for nixos-setup tooling.
   # Goal: `rebuild --mirror` can update a shared local mirror as user and then
   # let root fast-forward `/etc/nixos` from that mirror without root needing
