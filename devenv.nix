@@ -1,9 +1,10 @@
 {pkgs, ...}: {
   # Keep devenv usable even when the user is not a trusted Nix user.
   # (Otherwise devenv tries to auto-manage Cachix config and can fail.)
-  cachix.enable = false;
-  # cachix.pull = ["mycache"];
-  # cachix.push = "mycache";
+  cachix.pull = ["nixos-setup-devenv"];
+  cachix.push = "nixos-setup-devenv";
+
+  dotenv.disableHint = true;
 
   packages = with pkgs; [
     git
