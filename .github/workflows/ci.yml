@@ -14,7 +14,7 @@ jobs:
     environment: production
     env:
       CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
-      CACHIX_CACHE: ${{ vars.CACHIX_CACHE }}/devenv
+      CACHIX_CACHE: ${{ vars.CACHIX_CACHE }}-devenv
     steps:
       - name: Checkout
         uses: actions/checkout@v6
