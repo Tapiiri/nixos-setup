@@ -7,6 +7,8 @@ on:
 
 env:
   SECRETSPEC_PROVIDER: env
+  CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
+  CACHIX_CACHE: ${{ vars.CACHIX_CACHE }}/devenv
 
 jobs:
   ci:
@@ -22,7 +24,8 @@ jobs:
             experimental-features = nix-command flakes
       - uses: cachix/cachix-action@v16
         with:
-          name: devenv
+          name: ${{ env.CACHIX_CACHE }}
+          authToken: ${{ env.CACHIX_AUTH_TOKEN }}
       - name: Install devenv.sh
         run: nix profile install nixpkgs#devenv
       - name: Run checks (devenv tasks)
