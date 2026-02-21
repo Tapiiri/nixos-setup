@@ -10,9 +10,6 @@ in {
 
   options.my.git.signing = {
     enable = mkEnableOption "Git commit/tag signing (SSH via gpg.format=ssh)";
-
-    # If set, should point to the *public* key file used for SSH signing.
-    # Example: ~/.ssh/id_ed25519_git_signing.pub
     key = mkOption {
       type = types.nullOr types.str;
       default = null;
@@ -23,7 +20,9 @@ in {
 
   config = mkIf config.my.git.enable {
     programs.git = {
-      package = pkgs.gitAndTools.gitFull;
+      # nixpkgs: gitAndTools.* was removed; packages are available at the top level.
+      package = pkgs.gitFull;
+
       enable = true;
       userName = "Tapiiri";
       userEmail = "ilmari@tarpia.fi";
