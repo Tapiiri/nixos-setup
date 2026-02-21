@@ -19,6 +19,18 @@ class TestScriptsWrappers(unittest.TestCase):
                 ["--dry-run"],
             ),
             (
+                Path(__file__).resolve().parent.parent / "scripts" / "attest-ci-checks",
+                ["--help"],
+            ),
+            (
+                Path(__file__).resolve().parent.parent / "scripts" / "check-ci-attestation",
+                ["--help"],
+            ),
+            (
+                Path(__file__).resolve().parent.parent / "scripts" / "ci-attestation-gate",
+                ["--help"],
+            ),
+            (
                 Path(__file__).resolve().parent.parent
                 / "scripts"
                 / "ensure-password-manager-login",

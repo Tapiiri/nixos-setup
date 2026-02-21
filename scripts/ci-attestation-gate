@@ -1,0 +1,34 @@
+#!/usr/bin/env -S python3
+"""Executable entrypoint for `ci-attestation-gate`.
+
+Decides whether CI can be skipped based on a git-notes attestation, and writes
+`skip=true/false` to $GITHUB_OUTPUT when available.
+
+Implementation lives in `scripts_py.ci_attestation_gate`.
+"""
+
+from __future__ import annotations
+
+import sys
+
+
+def _bootstrap() -> None:
+    from pathlib import Path
+
+    here = Path(__file__).resolve()
+    sys.path.insert(0, str(here.parent.parent))
+
+    from scripts_py.utils import RepoMarkers, bootstrap_repo_import_path
+
+    bootstrap_repo_import_path(script_file=here, markers=RepoMarkers())
+
+
+def main() -> int:
+    _bootstrap()
+    from scripts_py.ci_attestation_gate import main as impl_main
+
+    return int(impl_main(sys.argv[1:]))
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1,0 +1,33 @@
+#!/usr/bin/env -S python3
+"""Executable entrypoint for `check-ci-attestation`.
+
+Checks whether a commit has a successful CI-equivalent attestation stored in git notes.
+
+Implementation lives in `scripts_py.check_ci_attestation`.
+"""
+
+from __future__ import annotations
+
+import sys
+
+
+def _bootstrap() -> None:
+    from pathlib import Path
+
+    here = Path(__file__).resolve()
+    sys.path.insert(0, str(here.parent.parent))
+
+    from scripts_py.utils import RepoMarkers, bootstrap_repo_import_path
+
+    bootstrap_repo_import_path(script_file=here, markers=RepoMarkers())
+
+
+def main() -> int:
+    _bootstrap()
+    from scripts_py.check_ci_attestation import main as impl_main
+
+    return int(impl_main(sys.argv[1:]))
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -9,8 +9,31 @@ env:
   SECRETSPEC_PROVIDER: env
 
 jobs:
+  attestation:
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.attest.outputs.skip }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Determine whether to skip CI
+        id: attest
+        run: |
+          scripts/ci-attestation-gate \
+            --task check:all \
+            --notes-ref refs/notes/nixos-setup-ci \
+            --output-key skip
+
+      - name: Skipped (local attestation)
+        if: steps.attest.outputs.skip == 'true'
+        run: |
+          echo 'Skipping CI: local check:all attestation found.'
+
   ci:
     runs-on: ubuntu-latest
+    needs: [attestation]
+    if: needs.attestation.outputs.skip != 'true'
     environment: production
     env:
       CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
@@ -24,11 +47,14 @@ jobs:
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
+
       - uses: cachix/cachix-action@v16
         with:
           name: ${{ env.CACHIX_CACHE }}
           authToken: ${{ env.CACHIX_AUTH_TOKEN }}
+
       - name: Install devenv.sh
         run: nix profile install nixpkgs#devenv
+
       - name: Run checks (devenv tasks)
         run: devenv tasks run check:all

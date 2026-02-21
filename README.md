@@ -63,6 +63,22 @@ Common entrypoints:
 - Python tests:
   - `devenv shell -- devenv tasks run tests:python:pytest`
 
+### Optional: skip CI when you already ran it locally
+
+This repo can optionally write a **local attestation** (as a git note) when you run the
+exact CI-equivalent task locally:
+
+- Local command:
+  - `scripts/attest-ci-checks --task check:all --push`
+- Git hook:
+  - A `pre-push` hook runs the same command automatically.
+
+On direct pushes to `main`, GitHub Actions will look for that git note and can skip running
+`devenv tasks run check:all` again when it finds a matching successful attestation.
+
+This is mainly a convenience for personal/solo workflows. Git notes are not a strong security
+boundary; PRs still run CI normally.
+
 ### Secretspec + password manager login (common gotcha)
 
 This repo enables `secretspec` in `devenv`. If the password manager CLI is not
