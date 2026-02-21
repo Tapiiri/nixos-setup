@@ -22,7 +22,7 @@
   GHActionsExt = pkgs.vscode-extensions.github.vscode-github-actions;
   GHPullRequestsExt = pkgs.vscode-extensions.github.vscode-pull-request-github;
   CopilotExt = pkgs.vscode-extensions.github.copilot;
-  CopilotChatExt = pkgs.vscode-extensions.github.copilot-chat;
+  ActionsExt = pkgs.vscode-extensions.github.vscode-github-actions;
 
   # Other repo/devtools helpers.
   PythonExt = pkgs.vscode-extensions.ms-python.python;
@@ -151,7 +151,6 @@ in {
         GHActionsExt
         GHPullRequestsExt
         CopilotExt
-        CopilotChatExt
         CodexExt
         DirenvExt
         PythonExt
@@ -161,6 +160,7 @@ in {
         EditorConfigExt
         OnePasswordExt
         RuffExt
+        ActionsExt
       ];
 
       # IMPORTANT: Do NOT set userSettings here.
