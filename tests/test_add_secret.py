@@ -83,6 +83,7 @@ def test_add_secret_to_lastpass_invokes_lpass(tmp_path, monkeypatch):
         return subprocess.CompletedProcess(cmd, 0)
 
     monkeypatch.setattr(subprocess, "run", fake_run)
+    monkeypatch.setattr("shutil.which", lambda _name: "/bin/lpass")
 
     add_secret_to_lastpass(opts)
 

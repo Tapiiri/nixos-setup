@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Add a secret to secretspec and LastPass in one step.
+"""Add a secret to secretspec and a password manager in one step.
 
 This module intentionally keeps side-effects (file IO, subprocess) small and
 abstracted so tests can mock them.
@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import argparse
 import re
-import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -18,6 +17,7 @@ from typing import Optional
 
 import tomlkit
 
+from scripts_py.password_manager import get_password_manager_backend
 from scripts_py.utils import log_error, log_info, repo_root_from_script_path
 
 
@@ -112,63 +112,43 @@ def add_secret_to_secretspec(opts: AddSecretOptions) -> None:
     _write_text(opts.secretspec_path, new_txt)
 
 
-def add_secret_to_lastpass(opts: AddSecretOptions) -> None:
-    """Call `lpass add` to store the secret value.
+def add_secret_to_password_manager(opts: AddSecretOptions, *, provider: str | None = None) -> None:
+    """Store the secret value in a password manager.
 
     Path format: secretspec/{project}/{profile}/{key}
     """
     txt = _read_text(opts.secretspec_path)
     project = _get_project_name(txt)
-    path = f"secretspec/{project}/{opts.profile}/{opts.name}"
+    entry_path = f"secretspec/{project}/{opts.profile}/{opts.name}"
 
-    # Quick sanity checks: ensure lpass is available and the user is logged in.
-    lpass_path = shutil.which("lpass")
-    if not lpass_path:
-        raise RuntimeError(
-            "lpass executable not found on PATH; please install LastPass CLI (lpass)"
-        )
-
-    # `lpass status` returns non-zero when not logged in; capture output to show helpful hint
-    try:
-        status = subprocess.run([lpass_path, "status"], capture_output=True, text=True)
-    except OSError as e:
-        raise RuntimeError(f"Failed to execute lpass: {e}") from e
-
-    if status.returncode != 0:
-        hint = status.stderr.strip() or status.stdout.strip()
-        raise RuntimeError(
-            "lpass indicates you are not logged in or cannot access the account. "
-            f"Run `lpass login user@example.com` first. Details: {hint}"
-        )
-
-    cmd = [
-        lpass_path,
-        "add",
-        "--sync=now",
-        "--non-interactive",
-    ]
-    if opts.username:
-        cmd += ["--username", opts.username]
-
-    # NOTE: For the LastPass CLI shipped in Nixpkgs, `--password` is a flag and
-    # the actual password value is read from stdin (NOT as a flag argument).
-    cmd += ["--password", path]
-
-    # run and raise on failure
-    subprocess.run(cmd, input=opts.value, text=True, check=True)
+    backend = get_password_manager_backend(provider)
+    backend.store_secret(entry_path=entry_path, value=opts.value, username=opts.username)
 
 
-def parse_args(argv: list[str]) -> AddSecretOptions:
-    p = argparse.ArgumentParser(description="Add secret to secretspec and LastPass")
+def add_secret_to_lastpass(opts: AddSecretOptions) -> None:
+    """Compatibility wrapper for older callers/tests."""
+
+    add_secret_to_password_manager(opts, provider="lastpass")
+
+
+def parse_args(argv: list[str]) -> tuple[AddSecretOptions, str | None]:
+    p = argparse.ArgumentParser(
+        description="Add secret to secretspec and a password manager (default: LastPass)"
+    )
     p.add_argument("name", help="Secret name (key)")
     p.add_argument("value", help="Secret value")
     p.add_argument("--username", help="Optional username to store alongside the secret")
     p.add_argument("--profile", default="default", help="secretspec profile to update")
     p.add_argument("--secretspec", default="secretspec.toml", help="Path to secretspec.toml")
     p.add_argument("--description", help="Optional description for the secret in secretspec")
+    p.add_argument(
+        "--provider",
+        default=None,
+        help="Password manager provider id (default: $NIXOS_SETUP_PASSWORD_MANAGER or 'lastpass')",
+    )
 
     ns = p.parse_args(argv)
-    return AddSecretOptions(
+    opts = AddSecretOptions(
         secretspec_path=Path(ns.secretspec),
         profile=ns.profile,
         name=ns.name,
@@ -176,6 +156,7 @@ def parse_args(argv: list[str]) -> AddSecretOptions:
         username=ns.username,
         description=ns.description,
     )
+    return opts, ns.provider
 
 
 def main(argv: Optional[list[str]] = None) -> int:
@@ -190,16 +171,16 @@ def main(argv: Optional[list[str]] = None) -> int:
         return 1
 
     try:
-        opts = parse_args(argv)
+        opts, provider = parse_args(argv)
         log_info(f"Updating {opts.secretspec_path} (profile={opts.profile})...", out=sys.stdout)
         add_secret_to_secretspec(opts)
         log_info("Wrote secret definition to secretspec", out=sys.stdout)
-        log_info("Storing secret value in LastPass...", out=sys.stdout)
-        add_secret_to_lastpass(opts)
-        log_info("✓ Secret added to LastPass and secretspec", out=sys.stdout)
+        log_info("Storing secret value in password manager...", out=sys.stdout)
+        add_secret_to_password_manager(opts, provider=provider)
+        log_info("✓ Secret added to password manager and secretspec", out=sys.stdout)
         return 0
     except subprocess.CalledProcessError as e:
-        log_error(f"lpass failed: {e}", err=sys.stderr)
+        log_error(f"password manager CLI failed: {e}", err=sys.stderr)
         return 2
     except Exception as e:  # pragma: no cover - defensive
         log_error(str(e), err=sys.stderr)

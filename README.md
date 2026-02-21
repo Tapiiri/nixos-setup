@@ -63,14 +63,17 @@ Common entrypoints:
 - Python tests:
   - `devenv shell -- devenv tasks run tests:python:pytest`
 
-### Secretspec + LastPass login (common gotcha)
+### Secretspec + password manager login (common gotcha)
 
-This repo enables `secretspec` in `devenv`. If the LastPass CLI (`lpass`) is not
-logged in, `devenv` can fail in a way that looks opaque.
+This repo enables `secretspec` in `devenv`. If the password manager CLI is not
+available or not logged in, `devenv` can fail in a way that looks opaque.
 
-To make this actionable, the pre-commit hooks that call `devenv tasks ...` now
-run a small preflight (`scripts/ensure-lpass-login`) first and will tell you to
-log in.
+To make this actionable, the pre-commit hooks that call `devenv tasks ...` run a
+small preflight (`scripts/ensure-password-manager-login`) first and will tell
+you how to fix authentication.
+
+Currently the only implemented backend is **LastPass** (`lpass`). The code is
+structured so adding another backend later is straightforward.
 
 Fix:
 

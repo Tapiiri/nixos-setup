@@ -18,6 +18,12 @@ class TestScriptsWrappers(unittest.TestCase):
                 Path(__file__).resolve().parent.parent / "scripts" / "sync-github-labels",
                 ["--dry-run"],
             ),
+            (
+                Path(__file__).resolve().parent.parent
+                / "scripts"
+                / "ensure-password-manager-login",
+                ["--help"],
+            ),
             (Path(__file__).resolve().parent.parent / "scripts" / "ensure-lpass-login", ["--help"]),
         ]
 
