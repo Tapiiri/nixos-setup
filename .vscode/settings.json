@@ -18,5 +18,8 @@
   ],
   "files.associations": {
     "*.sh.tpl": "shellscript"
+  },
+  "chat.tools.terminal.autoApprove": {
+    "devenv": true
   }
 }
