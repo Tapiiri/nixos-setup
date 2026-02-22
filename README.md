@@ -26,6 +26,13 @@ Notes:
 
 - Rebuild your system (recommended daily entrypoint):
   - `rebuild`
+
+Alternative (no local linking required):
+
+- From this repo checkout:
+  - `nix run .#rebuild -- --help`
+- From GitHub:
+  - `nix run github:Tapiiri/nixos-setup#rebuild -- --help`
 - Sync VS Code runtime settings back into Nix (optional, for multi-machine preferences):
   - `sync-vscode-settings`
 
