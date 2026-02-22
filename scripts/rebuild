@@ -27,7 +27,7 @@ def _bootstrap() -> None:
 
 _bootstrap()
 
-from scripts_py.rebuild import main  # noqa: E402
+from scripts_py.rebuild_dispatch import main  # noqa: E402
 
 
 if __name__ == "__main__":

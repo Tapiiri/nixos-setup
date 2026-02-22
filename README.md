@@ -27,18 +27,19 @@ Notes:
 - Rebuild your system (recommended daily entrypoint):
   - `rebuild`
 
-Note: the repo-provided `rebuild` shell entrypoint is **remote-first** (it runs
-`nix run github:Tapiiri/nixos-setup#rebuild`). If you pass `--offline-ok` (or set
-`NIXOS_SETUP_REBUILD_OFFLINE_OK=1` / `offline_ok = true` in the config), it will
-fall back to `nix run /etc/nixos#rebuild` when the remote `nix run` fails due to
-fetch/network-ish errors.
+Note: `rebuild` is a **dispatcher**. When online it runs the remote flake tool
+(`github:Tapiiri/nixos-setup#rebuild-inner`). When offline, it will only run
+locally if `--offline-ok` is enabled (or defaulted via
+`NIXOS_SETUP_REBUILD_OFFLINE_OK=1` / `offline_ok = true` in the config).
 
 Alternative (no local linking required):
 
 - From this repo checkout:
-  - `nix run .#rebuild -- --help`
+  - Dispatcher help: `nix run .#rebuild -- --help`
+  - Implementation help: `nix run .#rebuild-inner -- --help`
 - From GitHub:
-  - `nix run github:Tapiiri/nixos-setup#rebuild -- --help`
+  - Dispatcher help: `nix run github:Tapiiri/nixos-setup#rebuild -- --help`
+  - Implementation help: `nix run github:Tapiiri/nixos-setup#rebuild-inner -- --help`
 
 Note: `nix run ... -- ...` needs the extra `--` so arguments reach `rebuild`.
 When running the linked executable directly (e.g. `rebuild`), do **not** add `--`
@@ -140,11 +141,17 @@ python -m pytest -q
 
 Scripts are installed by linking `scripts/<name>` into `~/.local/bin` via `./scripts/setup-links`.
 
-### `rebuild`: safer NixOS rebuilds with mirror support
+### `rebuild`: dispatcher + safer rebuild implementation
 
-`rebuild` is a wrapper around `nixos-rebuild switch` that supports a safe, convenient flow built around a root-owned `/etc/nixos` checkout.
+`rebuild` is a **dispatcher** that selects how to run the rebuild tool.
+The actual implementation lives in `rebuild-inner`.
 
-Default behavior (when not using `--dev`):
+In other words:
+
+- `rebuild`: chooses remote vs local (and supports `--dev` dispatch)
+- `rebuild-inner`: runs `nixos-rebuild switch` with mirror support
+
+Default behavior for the implementation (when not using `--dev`):
 
 - Uses flake source: `/etc/nixos`
 - Target host defaults to `/etc/hostname`
@@ -187,13 +194,14 @@ See the host config under `hosts/<hostname>/configuration.nix` for the exact set
 
 #### Offline rebuilds
 
-If you’re offline, the “fetch into mirror” step can fail. Use:
+If you’re offline, the dispatcher will refuse to run unless offline mode is
+enabled. Use:
 
 ```bash
 rebuild --offline-ok
 ```
 
-This continues using whatever `/etc/nixos` already has checked out.
+This allows `rebuild` to run the local implementation (using `/etc/nixos`).
 
 Important constraints:
 

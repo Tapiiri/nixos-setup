@@ -75,10 +75,15 @@
           cp -R scripts scripts_py flake.nix "$out/share/nixos-setup/"
 
           chmod +x "$out/share/nixos-setup/scripts/rebuild"
+          chmod +x "$out/share/nixos-setup/scripts/rebuild-inner"
 
           mkdir -p "$out/bin"
           makeWrapper "${pkgs.python3}/bin/python3" "$out/bin/rebuild" \
             --add-flags "$out/share/nixos-setup/scripts/rebuild" \
+            --prefix PATH : "${lib.makeBinPath runtimeInputs}"${wrapperExtraArgs}
+
+          makeWrapper "${pkgs.python3}/bin/python3" "$out/bin/rebuild-inner" \
+            --add-flags "$out/share/nixos-setup/scripts/rebuild-inner" \
             --prefix PATH : "${lib.makeBinPath runtimeInputs}"${wrapperExtraArgs}
 
           runHook postInstall
@@ -99,6 +104,10 @@
       rebuild = {
         type = "app";
         program = "${self.packages.${system}.rebuild}/bin/rebuild";
+      };
+      rebuild-inner = {
+        type = "app";
+        program = "${self.packages.${system}.rebuild}/bin/rebuild-inner";
       };
       default = self.apps.${system}.rebuild;
     });

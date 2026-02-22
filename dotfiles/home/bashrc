@@ -68,85 +68,11 @@ done
 # alias ll='ls -alF'
 
 
-# Rebuild helper
+# Rebuild
 #
-# The primary entrypoint is the flake app/package (invoked via `nix run`). For
-# local development, `scripts/setup-links` installs the checkout wrapper as
-# `rebuild-dev`.
-rebuild() {
-	local want_dev=0
-	local allow_offline_fallback=0
-	local arg
-
-	# Detect flags intended for the rebuild tool (not nixos-rebuild passthrough).
-	for arg in "$@"; do
-		if [ "$arg" = "--" ]; then
-			break
-		fi
-		if [ "$arg" = "--dev" ]; then
-			want_dev=1
-			continue
-		fi
-		if [ "$arg" = "--offline-ok" ]; then
-			allow_offline_fallback=1
-			continue
-		fi
-	done
-
-	# Optional defaulting via env var / system config (same keys as the Python CLI).
-	if [ "$allow_offline_fallback" -eq 0 ] && [ -n "${NIXOS_SETUP_REBUILD_OFFLINE_OK-}" ]; then
-		case "${NIXOS_SETUP_REBUILD_OFFLINE_OK}" in
-			1|true|TRUE|yes|YES|on|ON) allow_offline_fallback=1 ;;
-			*) : ;;
-		esac
-	fi
-	if [ "$allow_offline_fallback" -eq 0 ] && [ -f /etc/nixos-setup/rebuild.conf ]; then
-		# Parse INI-ish config conservatively: only look in [rebuild] section.
-		# shellcheck disable=SC2016
-		if awk '
-			BEGIN{in=0}
-			/^\[rebuild\]/{in=1; next}
-			/^\[/{in=0}
-			in && $0 ~ /^[[:space:]]*offline_ok[[:space:]]*=/ {print $0}
-		' /etc/nixos-setup/rebuild.conf | grep -Eiq 'offline_ok[[:space:]]*=[[:space:]]*(1|true|yes|on)'; then
-			allow_offline_fallback=1
-		fi
-	fi
-
-	if [ "$want_dev" -eq 1 ]; then
-		if ! command -v rebuild-dev >/dev/null 2>&1; then
-			echo "rebuild: --dev requires rebuild-dev (run scripts/setup-links in your checkout)" >&2
-			return 127
-		fi
-		command rebuild-dev "$@"
-		return $?
-	fi
-
-	# Remote-first: use the GitHub flake app by default.
-	local remote_ref="github:Tapiiri/nixos-setup#rebuild"
-	local local_ref="/etc/nixos#rebuild"
-
-	local tmp_err
-	tmp_err="$(mktemp -t nixos-setup-rebuild.XXXXXX)" || return 1
-	# Capture output synchronously so the temp file is complete before we grep it.
-	# (Process substitution here can be async and race with grep/rm.)
-	command nix run "$remote_ref" -- "$@" 2>&1 | tee -a "$tmp_err" >&2
-	local rc=${PIPESTATUS[0]}
-
-	if [ $rc -ne 0 ] && [ "$allow_offline_fallback" -eq 1 ]; then
-		# Only fall back on failures that look like fetch/network/eval problems.
-		if grep -Eiq \
-			'(failed to fetch|unable to download|could not resolve host(name)?|temporary failure in name resolution|name or service not known|network is unreachable|connection (timed out|refused|reset)|http(.*)error|curl|cache\.nixos\.org|substitut|git(hub)?\.com|unexpected end of file|TLS|SSL)' \
-			"$tmp_err"; then
-			echo "rebuild: remote nix run failed; falling back to $local_ref" >&2
-			rm -f "$tmp_err"
-			exec nix run "$local_ref" -- "$@"
-		fi
-	fi
-
-	rm -f "$tmp_err"
-	return $rc
-}
+# `rebuild` is provided as an executable dispatcher (installed via
+# `scripts/setup-links` or as a flake app). It handles online/offline/dev
+# dispatching internally, so we avoid shell-function hacks here.
 
 
 # Direnv - should be one of last
