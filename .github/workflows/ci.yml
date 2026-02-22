@@ -10,6 +10,8 @@ env:
 
 jobs:
   attestation:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     outputs:
       skip: ${{ steps.attest.outputs.skip }}
@@ -31,6 +33,8 @@ jobs:
           echo 'Skipping CI: local check:all attestation found.'
 
   ci:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     needs: [attestation]
     if: needs.attestation.outputs.skip != 'true'

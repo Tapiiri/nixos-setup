@@ -11,11 +11,14 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   update-flake-lock:
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -46,6 +49,10 @@ jobs:
         run: nix run nixpkgs#devenv -- shell -- devenv tasks run check:all
 
   refresh-schemastore-cache:
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
