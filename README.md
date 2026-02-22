@@ -146,7 +146,16 @@ Key flags:
 - `--flake PATH`: explicit flake directory override
 - `--mirror` / `--no-mirror`: force-enable / disable mirror syncing
 - `--mirror-dir PATH`: override mirror location
+- `--upstream-url URL`: upstream Git URL for creating the bare mirror when it doesn't exist yet
+- `--ref REF`: git ref to fast-forward `/etc/nixos` to in mirror mode (default: `origin/main`)
 - `--offline-ok`: keep going if fetching updates fails
+- `--bootstrap-permissions`: opt-in helper to create/fix mirror parent dir permissions using sudo
+
+Defaults sources (in precedence order):
+
+1. CLI flags (e.g. `--upstream-url`, `--mirror-dir`, `--ref`)
+1. Environment variables: `NIXOS_SETUP_REBUILD_UPSTREAM_URL`, `NIXOS_SETUP_REBUILD_MIRROR_DIR`, `NIXOS_SETUP_REBUILD_REF`
+1. System config file: `/etc/nixos-setup/rebuild.conf` (section `[rebuild]`)
 
 #### Why the mirror workflow exists
 

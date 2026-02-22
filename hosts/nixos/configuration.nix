@@ -100,6 +100,13 @@
   # GitHub credentials.
   users.groups.nixos-setup = {};
 
+  my.rebuild = {
+    enable = true;
+    upstreamUrl = "git@github.com:Tapiiri/nixos-setup.git";
+    mirrorDir = "/var/lib/nixos-setup/mirror.git";
+    ref = "origin/main";
+  };
+
   # Create the mirror parent directory at boot with stable ownership.
   # (The bare mirror repo itself is created by `rebuild --mirror` on first run.)
   systemd.tmpfiles.rules = [

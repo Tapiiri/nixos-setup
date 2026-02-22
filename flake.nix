@@ -28,6 +28,7 @@
       specialArgs = {inherit inputs;};
       modules = [
         ./modules/tailscale.nix
+        ./modules/rebuild.nix
         ./hosts/nixos/configuration.nix
         inputs.home-manager.nixosModules.default
       ];
@@ -35,6 +36,16 @@
 
     packages = forAllSystems (system: let
       pkgs = import nixpkgs {inherit system;};
+
+      sourceInfo = self.sourceInfo or {};
+      upstreamDefault =
+        if (sourceInfo ? owner) && (sourceInfo ? repo)
+        then "git@github.com:${sourceInfo.owner}/${sourceInfo.repo}.git"
+        else null;
+      wrapperExtraArgs =
+        lib.optionalString (upstreamDefault != null)
+        ''          \
+                     --set-default NIXOS_SETUP_REBUILD_UPSTREAM_URL "${upstreamDefault}"'';
 
       nixosRebuildPkg =
         if builtins.hasAttr "nixos-rebuild" pkgs
@@ -70,7 +81,7 @@
           mkdir -p "$out/bin"
           makeWrapper "${pkgs.python3}/bin/python3" "$out/bin/rebuild" \
             --add-flags "$out/share/nixos-setup/scripts/rebuild" \
-            --prefix PATH : "${lib.makeBinPath runtimeInputs}"
+            --prefix PATH : "${lib.makeBinPath runtimeInputs}"${wrapperExtraArgs}
 
           runHook postInstall
         '';

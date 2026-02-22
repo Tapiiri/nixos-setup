@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import argparse
+import configparser
 import os
 import subprocess
 import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Sequence
+from typing import Mapping, Sequence
 
 from scripts_py.lib.utils import OsExecRunner, Runner, read_hostname
 from scripts_py.repo.context import repo_root_from_script_path
@@ -24,10 +25,20 @@ class RebuildConfig:
     use_mirror: bool
     mirror_dir: Path
     offline_ok: bool
+    upstream_url: str | None
+    ref: str
+    bootstrap_permissions: bool
 
 
 DEFAULT_SYSTEM_FLAKE_DIR = Path("/etc/nixos")
 DEFAULT_MIRROR_DIR = Path("/var/lib/nixos-setup/mirror.git")
+
+DEFAULT_CONFIG_PATH = Path("/etc/nixos-setup/rebuild.conf")
+
+ENV_UPSTREAM_URL = "NIXOS_SETUP_REBUILD_UPSTREAM_URL"
+ENV_MIRROR_DIR = "NIXOS_SETUP_REBUILD_MIRROR_DIR"
+ENV_SYSTEM_FLAKE_DIR = "NIXOS_SETUP_REBUILD_SYSTEM_FLAKE_DIR"
+ENV_REF = "NIXOS_SETUP_REBUILD_REF"
 
 
 def parse_args(argv: Sequence[str]) -> tuple[argparse.Namespace, list[str]]:
@@ -66,11 +77,35 @@ def parse_args(argv: Sequence[str]) -> tuple[argparse.Namespace, list[str]]:
     parser.add_argument(
         "--mirror-dir",
         type=Path,
-        default=DEFAULT_MIRROR_DIR,
+        default=None,
         help=(
             "Path to bare mirror repository (default: "
             f"{DEFAULT_MIRROR_DIR}). Be sure that both the user and root can "
             "access it."
+        ),
+    )
+    parser.add_argument(
+        "--upstream-url",
+        help=(
+            "Upstream Git URL used to create the bare mirror if it doesn't exist yet. "
+            "Can also be set via env var "
+            f"{ENV_UPSTREAM_URL} or config {DEFAULT_CONFIG_PATH}."
+        ),
+    )
+    parser.add_argument(
+        "--ref",
+        help=(
+            "Git ref to fast-forward /etc/nixos to in mirror mode (default: origin/main). "
+            "Can also be set via env var "
+            f"{ENV_REF} or config {DEFAULT_CONFIG_PATH}."
+        ),
+    )
+    parser.add_argument(
+        "--bootstrap-permissions",
+        action="store_true",
+        help=(
+            "Attempt to create/fix mirror parent directory permissions using sudo. "
+            "By default rebuild fails with a hint instead of modifying system state."
         ),
     )
     parser.add_argument(
@@ -108,8 +143,13 @@ def compute_config(
     args: argparse.Namespace,
     script_path: Path,
     hostname_path: Path = Path("/etc/hostname"),
+    env: Mapping[str, str] | None = None,
+    config_path: Path = DEFAULT_CONFIG_PATH,
 ) -> RebuildConfig:
     repo_root = repo_root_from_script_path(script_path)
+
+    if env is None:
+        env = os.environ
 
     hostname = args.hostname or read_hostname(hostname_path)
     if not hostname:
@@ -118,39 +158,91 @@ def compute_config(
     if args.flake is not None:
         flake_dir = args.flake
     else:
-        flake_dir = repo_root if args.dev else DEFAULT_SYSTEM_FLAKE_DIR
+        system_dir = Path(env.get(ENV_SYSTEM_FLAKE_DIR, str(DEFAULT_SYSTEM_FLAKE_DIR)))
+        flake_dir = repo_root if args.dev else system_dir
+
+    # Mirror sync is the default only when rebuilding from the system flake dir.
+    # When using --flake PATH, be conservative: only enable mirror sync if the
+    # caller explicitly asks for it.
+    flake_explicit = bool(getattr(args, "_flake_explicit", False))
+    requested_no_mirror = bool(getattr(args, "no_mirror", False))
+    default_mirror = (
+        (not args.dev)
+        and (not flake_explicit)
+        and (flake_dir == DEFAULT_SYSTEM_FLAKE_DIR)
+        and not requested_no_mirror
+    )
+
+    if requested_no_mirror:
+        use_mirror = False
+    else:
+        use_mirror = bool(args.mirror) or default_mirror
+
+    defaults = _read_defaults_config(config_path)
+    mirror_dir_default = env.get(ENV_MIRROR_DIR) or defaults.get("mirror_dir")
+    mirror_dir = (
+        Path(args.mirror_dir)
+        if args.mirror_dir is not None
+        else Path(mirror_dir_default or str(DEFAULT_MIRROR_DIR))
+    )
+
+    upstream_url = (
+        (args.upstream_url or "").strip()
+        or env.get(ENV_UPSTREAM_URL)
+        or defaults.get("upstream_url")
+    )
+    upstream_url = upstream_url.strip() if upstream_url else None
+
+    ref = (
+        (args.ref or "").strip() or env.get(ENV_REF) or defaults.get("ref") or "origin/main"
+    ).strip()
 
     if not (flake_dir / "flake.nix").is_file():
-        hint = None
-        if not args.dev and (repo_root / "flake.nix").is_file():
-            hint = (
-                "Hint: either link your flake into "
-                f"{str(DEFAULT_SYSTEM_FLAKE_DIR)}"
-                " or rerun with --dev.\n"
-                "      (You can also explicitly set it with --flake PATH.)"
-            )
-        msg = f"Could not find flake.nix in {flake_dir}"
-        if hint:
-            msg = msg + "\n" + hint
-        raise FileNotFoundError(msg)
-
-    # Mirror sync is the default when rebuilding from the system flake dir.
-    # Note: if user explicitly overrides --flake, we still want mirror sync by
-    # default because the intent is generally still "use the system-style flow",
-    # not "use worktree".
-    default_mirror = (not args.dev) and not bool(getattr(args, "no_mirror", False))
-    use_mirror = bool(args.mirror) or (
-        default_mirror and not bool(getattr(args, "no_mirror", False))
-    )
+        # In mirror mode we can bootstrap /etc/nixos even if it doesn't exist yet.
+        if not (use_mirror and flake_dir == DEFAULT_SYSTEM_FLAKE_DIR):
+            hint = None
+            if not args.dev and (repo_root / "flake.nix").is_file():
+                hint = (
+                    "Hint: either link your flake into "
+                    f"{str(DEFAULT_SYSTEM_FLAKE_DIR)}"
+                    " or rerun with --dev.\n"
+                    "      (You can also explicitly set it with --flake PATH.)"
+                )
+            msg = f"Could not find flake.nix in {flake_dir}"
+            if hint:
+                msg = msg + "\n" + hint
+            raise FileNotFoundError(msg)
 
     return RebuildConfig(
         hostname=hostname,
         flake_dir=flake_dir,
         repo_root=repo_root,
         use_mirror=use_mirror,
-        mirror_dir=Path(args.mirror_dir),
+        mirror_dir=mirror_dir,
         offline_ok=bool(args.offline_ok),
+        upstream_url=upstream_url,
+        ref=ref,
+        bootstrap_permissions=bool(args.bootstrap_permissions),
     )
+
+
+def _read_defaults_config(path: Path) -> dict[str, str]:
+    if not path.is_file():
+        return {}
+    cp = configparser.ConfigParser()
+    try:
+        cp.read(path)
+    except Exception:
+        return {}
+    if "rebuild" not in cp:
+        return {}
+    sec = cp["rebuild"]
+    out: dict[str, str] = {}
+    for key in ("upstream_url", "mirror_dir", "ref"):
+        val = (sec.get(key) or "").strip()
+        if val:
+            out[key] = val
+    return out
 
 
 def run_cp(argv: Sequence[str], *, env: dict[str, str] | None = None) -> CompletedProcessT:
@@ -185,6 +277,34 @@ def ensure_mirror(
         text=True,
     )
     return int(cp.returncode)
+
+
+def _infer_upstream_from_repo_root(*, repo_root: Path, stderr) -> str | None:
+    if not (repo_root / ".git").exists():
+        return None
+    origin_cp = run_cp(["git", "-C", str(repo_root), "remote", "get-url", "origin"])
+    upstream = (origin_cp.stdout or "").strip()
+    if origin_cp.returncode != 0 or not upstream:
+        if origin_cp.stderr:
+            print(origin_cp.stderr.rstrip(), file=stderr)
+        return None
+    return upstream
+
+
+def _bootstrap_mirror_permissions(*, mirror_dir: Path, group: str, stderr) -> int:
+    parent = mirror_dir.parent
+    print(f"Bootstrapping mirror permissions for {parent} (sudo)", file=stderr)
+
+    cmds: list[list[str]] = [
+        ["sudo", "mkdir", "-p", str(parent)],
+        ["sudo", "chown", f"root:{group}", str(parent)],
+        ["sudo", "chmod", "2775", str(parent)],
+    ]
+    for argv in cmds:
+        cp = subprocess.run(argv, text=True)
+        if cp.returncode != 0:
+            return int(cp.returncode)
+    return 0
 
 
 def mirror_push_from_dev(*, repo_root: Path, mirror_dir: Path, branch: str, stderr) -> int:
@@ -502,20 +622,59 @@ def main(argv: Sequence[str] | None = None, *, runner: Runner | None = None, std
         # If using the system flake in mirror mode, keep /etc/nixos synced from
         # the user-owned mirror (root does only local operations).
         if cfg.use_mirror and cfg.flake_dir == DEFAULT_SYSTEM_FLAKE_DIR:
-            origin_cp = run_cp(["git", "-C", str(cfg.repo_root), "remote", "get-url", "origin"])
-            upstream = (origin_cp.stdout or "").strip()
-            if origin_cp.returncode != 0 or not upstream:
-                print("Could not determine origin URL for mirror creation.", file=stderr)
-                return 1
+            # Mirror creation needs an upstream URL, but once the mirror exists,
+            # it already contains the origin remote.
+            if not cfg.mirror_dir.exists():
+                if cfg.bootstrap_permissions:
+                    rc = _bootstrap_mirror_permissions(
+                        mirror_dir=cfg.mirror_dir,
+                        group="nixos-setup",
+                        stderr=stderr,
+                    )
+                    if rc != 0:
+                        return rc
 
-            rc = ensure_mirror(mirror_dir=cfg.mirror_dir, upstream_url=upstream, stderr=stderr)
-            if rc != 0:
-                return rc
+                upstream = cfg.upstream_url or _infer_upstream_from_repo_root(
+                    repo_root=cfg.repo_root,
+                    stderr=stderr,
+                )
+                if not upstream:
+                    print("Could not determine upstream URL for mirror creation.", file=stderr)
+                    print(
+                        "Provide one of:\n"
+                        f"- --upstream-url <git-url>\n"
+                        f"- env {ENV_UPSTREAM_URL}\n"
+                        f"- config {DEFAULT_CONFIG_PATH} with [rebuild] upstream_url=...",
+                        file=stderr,
+                    )
+                    return 1
+
+                rc = ensure_mirror(
+                    mirror_dir=cfg.mirror_dir,
+                    upstream_url=upstream,
+                    stderr=stderr,
+                )
+                if rc != 0:
+                    if cfg.offline_ok and (DEFAULT_SYSTEM_FLAKE_DIR / "flake.nix").is_file():
+                        print(
+                            "Mirror creation failed; continuing with existing /etc/nixos.",
+                            file=stderr,
+                        )
+                    else:
+                        return rc
 
             rc = mirror_fetch(mirror_dir=cfg.mirror_dir, stderr=stderr)
             if rc != 0:
                 if cfg.offline_ok:
-                    print("Mirror fetch failed; continuing without updates.", file=stderr)
+                    if (DEFAULT_SYSTEM_FLAKE_DIR / "flake.nix").is_file():
+                        print("Mirror fetch failed; continuing without updates.", file=stderr)
+                    else:
+                        print(
+                            "Mirror fetch failed and /etc/nixos is not bootstrapped yet; "
+                            "cannot continue offline.",
+                            file=stderr,
+                        )
+                        return rc
                 else:
                     return rc
 
@@ -537,7 +696,7 @@ def main(argv: Sequence[str] | None = None, *, runner: Runner | None = None, std
 
             rc = root_update_from_mirror(
                 etc_dir=DEFAULT_SYSTEM_FLAKE_DIR,
-                ref="origin/main",
+                ref=cfg.ref,
                 stderr=stderr,
             )
             if rc != 0:

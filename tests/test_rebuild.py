@@ -78,8 +78,11 @@ class TestRebuild(unittest.TestCase):
             self.assertFalse(cfg.use_mirror)
             self.assertTrue(str(cfg.mirror_dir).endswith("/var/lib/nixos-setup/mirror.git"))
             self.assertFalse(cfg.offline_ok)
+            self.assertIsNone(cfg.upstream_url)
+            self.assertEqual(cfg.ref, "origin/main")
+            self.assertFalse(cfg.bootstrap_permissions)
 
-    def test_compute_config_defaults_to_mirror_when_not_dev(self):
+    def test_compute_config_defaults_to_mirror_when_not_dev_and_system_dir(self):
         with tempfile.TemporaryDirectory() as td:
             tmp_path = Path(td)
 
@@ -100,13 +103,21 @@ class TestRebuild(unittest.TestCase):
             (etc_dir / "flake.nix").write_text("{}", encoding="utf-8")
 
             hostname_path = write_hostname(tmp_path, "testhost\n")
+
+            # When using --flake PATH, mirror syncing is conservative by default.
             ns, _rest = parse_args(["--flake", str(etc_dir)])
             cfg = compute_config(args=ns, script_path=script_path, hostname_path=hostname_path)
-            self.assertTrue(cfg.use_mirror)
+            self.assertFalse(cfg.use_mirror)
 
-            ns2, _rest2 = parse_args(["--flake", str(etc_dir), "--no-mirror"])
+            # Explicit enable still works.
+            ns2, _rest2 = parse_args(["--flake", str(etc_dir), "--mirror"])
             cfg2 = compute_config(args=ns2, script_path=script_path, hostname_path=hostname_path)
-            self.assertFalse(cfg2.use_mirror)
+            self.assertTrue(cfg2.use_mirror)
+
+            # Explicit opt-out still works.
+            ns3, _rest3 = parse_args(["--flake", str(etc_dir), "--mirror", "--no-mirror"])
+            cfg3 = compute_config(args=ns3, script_path=script_path, hostname_path=hostname_path)
+            self.assertFalse(cfg3.use_mirror)
 
     def test_compute_config_errors_when_flake_missing(self):
         with tempfile.TemporaryDirectory() as td:
@@ -135,10 +146,79 @@ class TestRebuild(unittest.TestCase):
             use_mirror=False,
             mirror_dir=Path("/var/lib/nixos-setup/mirror.git"),
             offline_ok=False,
+            upstream_url=None,
+            ref="origin/main",
+            bootstrap_permissions=False,
         )
         cmd = build_nixos_rebuild_command(cfg, ["--show-trace"])
         self.assertEqual(cmd[:4], ["nixos-rebuild", "switch", "--flake", "/etc/nixos/.#h"])
         self.assertEqual(cmd[4:], ["--show-trace"])
+
+    def test_compute_config_resolves_upstream_from_env_and_ref_default(self):
+        with tempfile.TemporaryDirectory() as td:
+            tmp_path = Path(td)
+
+            repo_root = tmp_path / "repo"
+            repo_root.mkdir()
+            (repo_root / "flake.nix").write_text("{}", encoding="utf-8")
+            script_dir = repo_root / "scripts_py"
+            script_dir.mkdir()
+            script_path = script_dir / "rebuild.py"
+            script_path.write_text("#", encoding="utf-8")
+
+            hostname_path = write_hostname(tmp_path, "testhost\n")
+
+            # Use --dev to avoid touching /etc/nixos in tests.
+            ns, _rest = parse_args(["--dev"])
+            cfg = compute_config(
+                args=ns,
+                script_path=script_path,
+                hostname_path=hostname_path,
+                env={"NIXOS_SETUP_REBUILD_UPSTREAM_URL": "git@github.com:me/repo.git"},
+                config_path=tmp_path / "missing.conf",
+            )
+            self.assertEqual(cfg.upstream_url, "git@github.com:me/repo.git")
+            self.assertEqual(cfg.ref, "origin/main")
+
+    def test_compute_config_resolves_defaults_from_config_file(self):
+        with tempfile.TemporaryDirectory() as td:
+            tmp_path = Path(td)
+
+            repo_root = tmp_path / "repo"
+            repo_root.mkdir()
+            (repo_root / "flake.nix").write_text("{}", encoding="utf-8")
+            script_dir = repo_root / "scripts_py"
+            script_dir.mkdir()
+            script_path = script_dir / "rebuild.py"
+            script_path.write_text("#", encoding="utf-8")
+
+            hostname_path = write_hostname(tmp_path, "testhost\n")
+
+            conf = tmp_path / "rebuild.conf"
+            conf.write_text(
+                "\n".join(
+                    [
+                        "[rebuild]",
+                        "upstream_url = git@github.com:x/y.git",
+                        "ref = origin/main",
+                        "mirror_dir = /m/mirror.git",
+                        "",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            ns, _rest = parse_args(["--dev"])
+            cfg = compute_config(
+                args=ns,
+                script_path=script_path,
+                hostname_path=hostname_path,
+                env={},
+                config_path=conf,
+            )
+            self.assertEqual(cfg.upstream_url, "git@github.com:x/y.git")
+            self.assertEqual(cfg.ref, "origin/main")
+            self.assertEqual(str(cfg.mirror_dir), "/m/mirror.git")
 
     def test_build_exec_command_adds_sudo_when_not_root(self):
         # We can't rely on the test runner uid always being non-root, so test
@@ -305,7 +385,6 @@ class TestRebuild(unittest.TestCase):
             )
             # argparse prints help to stdout (lowercase 'usage:' by default)
             self.assertIn("usage: rebuild", cp.stdout.lower())
-
 
 
 if __name__ == "__main__":
