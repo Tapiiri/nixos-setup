@@ -68,6 +68,38 @@ done
 # alias ll='ls -alF'
 
 
+# Rebuild helper
+#
+# The primary entrypoint is the flake app/package (invoked via `nix run`). For
+# local development, `scripts/setup-links` installs the checkout wrapper as
+# `rebuild-dev`.
+rebuild() {
+	local want_dev=0
+	local arg
+
+	for arg in "$@"; do
+		if [ "$arg" = "--" ]; then
+			break
+		fi
+		if [ "$arg" = "--dev" ]; then
+			want_dev=1
+			break
+		fi
+	done
+
+	if [ "$want_dev" -eq 1 ]; then
+		if ! command -v rebuild-dev >/dev/null 2>&1; then
+			echo "rebuild: --dev requires rebuild-dev (run scripts/setup-links in your checkout)" >&2
+			return 127
+		fi
+		command rebuild-dev "$@"
+		return $?
+	fi
+
+	command nix run /etc/nixos#rebuild -- "$@"
+}
+
+
 # Direnv - should be one of last
 if command -v direnv >/dev/null 2>&1; then
 	eval "$(direnv hook bash)"

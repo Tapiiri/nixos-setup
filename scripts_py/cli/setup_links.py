@@ -214,7 +214,11 @@ def compute_mappings(cfg: SetupConfig) -> list[LinkMapping]:
     if scripts_dir.is_dir():
         for path in sorted(scripts_dir.iterdir()):
             if path.is_file() and os.access(path, os.X_OK):
-                mappings.append(LinkMapping(source=path, target=user_bin_dir / path.name))
+                # `rebuild` is now primarily exposed as a flake app/package and
+                # invoked via `nix run ...#rebuild`. For development we still want
+                # the checkout wrapper on PATH, but under an explicit name.
+                target_name = "rebuild-dev" if path.name == "rebuild" else path.name
+                mappings.append(LinkMapping(source=path, target=user_bin_dir / target_name))
 
     # Dotfiles: dotfiles/home/* -> ~/.<name>
     dotfiles_home = cfg.repo_root / "dotfiles" / "home"
@@ -223,6 +227,30 @@ def compute_mappings(cfg: SetupConfig) -> list[LinkMapping]:
             mappings.append(LinkMapping(source=path, target=home / f".{path.name}"))
 
     return mappings
+
+
+def cleanup_legacy_rebuild_link(cfg: SetupConfig, *, out, err) -> None:
+    """Remove the old checkout `rebuild` link, if it exists.
+
+    Historically, `setup-links` symlinked scripts/rebuild to ~/.local/bin/rebuild.
+    Now `rebuild` is primarily exposed as a flake app/package and the checkout
+    wrapper is intentionally named `rebuild-dev`.
+    """
+
+    legacy_target = cfg.home / ".local" / "bin" / "rebuild"
+    source = cfg.repo_root / "scripts" / "rebuild"
+    if not legacy_target.is_symlink():
+        return
+    if not source.exists():
+        return
+    if not is_already_linked(legacy_target, source):
+        return
+
+    log_info(f"Removing legacy symlink: {legacy_target}", out=out)
+    try:
+        legacy_target.unlink()
+    except OSError as e:
+        log_warn(f"Failed to remove legacy symlink {legacy_target}: {e}", err=err)
 
 
 def main(
@@ -269,6 +297,8 @@ def main(
                 err=err,
             ),
         )
+
+    cleanup_legacy_rebuild_link(cfg, out=out, err=err)
     return rc
 
 

@@ -7,6 +7,7 @@ from unittest.mock import patch
 from scripts_py.setup_links import (
     LinkMapping,
     SetupConfig,
+    cleanup_legacy_rebuild_link,
     compute_config,
     compute_mappings,
     link_user_owned,
@@ -90,6 +91,11 @@ class TestSetupLinks(unittest.TestCase):
             exe.write_text("#!/bin/sh\n", encoding="utf-8")
             exe.chmod(exe.stat().st_mode | 0o111)
 
+            # rebuild is special-cased to link as rebuild-dev
+            rebuild_exe = scripts / "rebuild"
+            rebuild_exe.write_text("#!/bin/sh\n", encoding="utf-8")
+            rebuild_exe.chmod(rebuild_exe.stat().st_mode | 0o111)
+
             # dotfiles
             dot_home = repo / "dotfiles" / "home"
             dot_home.mkdir(parents=True)
@@ -110,6 +116,8 @@ class TestSetupLinks(unittest.TestCase):
             self.assertIn(cfg.home / ".config" / "home-manager" / "modules", targets)
             self.assertIn(Path("/etc/nixos/configuration.nix"), targets)
             self.assertIn(cfg.home / ".local" / "bin" / "tool", targets)
+            self.assertIn(cfg.home / ".local" / "bin" / "rebuild-dev", targets)
+            self.assertNotIn(cfg.home / ".local" / "bin" / "rebuild", targets)
             self.assertIn(cfg.home / ".bashrc", targets)
 
     def test_link_user_owned_creates_symlink_and_updates(self):
@@ -212,6 +220,37 @@ class TestSetupLinks(unittest.TestCase):
             )
             self.assertEqual(rc, 0)
             self.assertEqual(runner.calls, [])
+
+    def test_cleanup_legacy_rebuild_link_removes_old_symlink(self):
+        with tempfile.TemporaryDirectory() as td:
+            tdp = Path(td)
+            repo = tdp / "repo"
+            home = tdp / "HOME"
+
+            (repo / "scripts").mkdir(parents=True)
+            source = repo / "scripts" / "rebuild"
+            source.write_text("#!/bin/sh\n", encoding="utf-8")
+            source.chmod(source.stat().st_mode | 0o111)
+
+            legacy_target = home / ".local" / "bin" / "rebuild"
+            legacy_target.parent.mkdir(parents=True)
+            legacy_target.symlink_to(source)
+
+            cfg = SetupConfig(
+                repo_root=repo,
+                hostname="h",
+                host_dir=repo / "hosts" / "h",
+                root_helper=None,
+                home=home,
+            )
+
+            from io import StringIO
+
+            out = StringIO()
+            err = StringIO()
+            cleanup_legacy_rebuild_link(cfg, out=out, err=err)
+
+            self.assertFalse(legacy_target.exists())
 
 
 if __name__ == "__main__":
