@@ -11,6 +11,7 @@
     pre-commit
     alejandra
     yamllint
+    check-jsonschema
     actionlint
     markdownlint-cli2
     shellcheck
@@ -52,6 +53,16 @@
       language = "system";
       files = ".*\\.ya?ml$";
       pass_filenames = false;
+    };
+
+    schemastore-schemas = {
+      enable = true;
+      name = "schemastore schema validation";
+      entry = "scripts/ensure-password-manager-login -- scripts/validate-schemastore-schemas";
+      language = "system";
+      # Include extensionless YAML configs we have in-repo (e.g. .yamllint).
+      files = "(^\\.yamllint$|.*\\.ya?ml$|.*\\.json$)";
+      pass_filenames = true;
     };
 
     actionlint = {
@@ -130,6 +141,17 @@
       exec = "yamllint .";
     };
 
+    # --- SchemaStore (offline, vendored schemas) ---
+    "sync:schemastore:index" = {
+      description = "Update committed SchemaStore index + vendored schemas";
+      exec = "scripts/sync-schemastore-index";
+    };
+
+    "lint:schemastore:validate" = {
+      description = "Validate all indexed files against their SchemaStore schemas";
+      exec = "scripts/validate-schemastore-schemas --all";
+    };
+
     "lint:gha:actionlint" = {
       description = "Lint GitHub Actions workflows with actionlint";
       exec = "actionlint";
@@ -170,6 +192,7 @@
         "lint:python:ruff"
         "lint:shell:shellcheck"
         "lint:yaml:yamllint"
+        "lint:schemastore:validate"
         "lint:gha:actionlint"
         "lint:md:markdownlint"
       ];

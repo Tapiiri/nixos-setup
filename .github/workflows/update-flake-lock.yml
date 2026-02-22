@@ -44,3 +44,40 @@ jobs:
       # Sanity-check the update using the same checks as CI.
       - name: Run checks (devenv tasks)
         run: nix run nixpkgs#devenv -- shell -- devenv tasks run check:all
+
+  refresh-schemastore-cache:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31.9.1
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Use Cachix
+        uses: cachix/cachix-action@v16
+        with:
+          name: nixos-setup
+          extraPullNames: nix-community
+
+      - name: Refresh SchemaStore index + schemas
+        run: |
+          nix run nixpkgs#devenv -- shell -- \
+          devenv tasks run sync:schemastore:index
+
+      - name: Create PR (only if schemas/ changed)
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: "chore(schemastore): refresh schema cache"
+          title: "chore(schemastore): refresh schema cache"
+          body: |
+            Automated refresh of the SchemaStore index and vendored schemas.
+          branch: chore/refresh-schemastore-cache
+          delete-branch: true
+          add-paths: |
+            schemas/
+          labels: |
+            dependencies

@@ -1,0 +1,72 @@
+{
+  "files": {
+    ".github/dependabot.yml": "https://www.schemastore.org/dependabot-2.0.json",
+    ".github/workflows/ci.yml": "https://www.schemastore.org/github-workflow.json",
+    ".github/workflows/update-flake-lock.yml": "https://www.schemastore.org/github-workflow.json",
+    ".pre-commit-config.yaml": "https://www.schemastore.org/pre-commit-config.json",
+    ".yamllint": "https://www.schemastore.org/yamllint.json",
+    "pyproject.toml": "https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/pyproject.json"
+  },
+  "schemaStore": {
+    "catalogUrl": "https://www.schemastore.org/api/json/catalog.json",
+    "catalogVersion": 1,
+    "fetchedAt": "2026-02-22T00:11:52+00:00",
+    "schemaCount": 1107
+  },
+  "schemas": {
+    "https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/pyproject.json": {
+      "description": "Python project metadata and configuration",
+      "fileMatch": [
+        "pyproject.toml"
+      ],
+      "localPath": "schemas/schemastore/925d3ca34190dec0915f.json",
+      "name": "PyProject",
+      "url": "https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/pyproject.json"
+    },
+    "https://www.schemastore.org/dependabot-2.0.json": {
+      "description": "GitHub Actions' dependabot.yml files",
+      "fileMatch": [
+        "**/.github/dependabot.yml",
+        "**/.github/dependabot.yaml"
+      ],
+      "localPath": "schemas/schemastore/681afa0e8caca3d431bb.json",
+      "name": "dependabot-v2.json",
+      "url": "https://www.schemastore.org/dependabot-2.0.json"
+    },
+    "https://www.schemastore.org/github-workflow.json": {
+      "description": "YAML GitHub Workflow",
+      "fileMatch": [
+        "**/.github/workflows/*.yml",
+        "**/.github/workflows/*.yaml",
+        "**/.gitea/workflows/*.yml",
+        "**/.gitea/workflows/*.yaml",
+        "**/.forgejo/workflows/*.yml",
+        "**/.forgejo/workflows/*.yaml"
+      ],
+      "localPath": "schemas/schemastore/aae416c00725cbcce106.json",
+      "name": "GitHub Workflow",
+      "url": "https://www.schemastore.org/github-workflow.json"
+    },
+    "https://www.schemastore.org/pre-commit-config.json": {
+      "description": "pre-commit configuration file",
+      "fileMatch": [
+        ".pre-commit-config.yml",
+        ".pre-commit-config.yaml"
+      ],
+      "localPath": "schemas/schemastore/e0b5666ce320696aceb8.json",
+      "name": ".pre-commit-config.yml",
+      "url": "https://www.schemastore.org/pre-commit-config.json"
+    },
+    "https://www.schemastore.org/yamllint.json": {
+      "description": "yamllint uses a set of rules to check source files for problems",
+      "fileMatch": [
+        "**/.yamllint",
+        "**/.yamllint.yaml",
+        "**/.yamllint.yml"
+      ],
+      "localPath": "schemas/schemastore/2df6da074dc243a3c8cd.json",
+      "name": "yamllint",
+      "url": "https://www.schemastore.org/yamllint.json"
+    }
+  }
+}

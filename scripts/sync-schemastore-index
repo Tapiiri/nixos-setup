@@ -1,0 +1,29 @@
+#!/usr/bin/env -S python3
+"""Executable entrypoint for `sync-schemastore-index`.
+
+Fetches SchemaStore's catalog, matches it against tracked repo files, writes a
+committed index under schemas/, and vendors the required schema JSON files.
+"""
+
+from __future__ import annotations
+
+import sys
+
+
+def _bootstrap() -> None:
+    from pathlib import Path
+
+    here = Path(__file__).resolve()
+    sys.path.insert(0, str(here.parent.parent))
+
+    from scripts_py.utils import RepoMarkers, bootstrap_repo_import_path
+
+    bootstrap_repo_import_path(script_file=here, markers=RepoMarkers())
+
+
+_bootstrap()
+
+from scripts_py.sync_schemastore_index import main  # noqa: E402
+
+if __name__ == "__main__":
+    raise SystemExit(main())

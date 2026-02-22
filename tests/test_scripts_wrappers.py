@@ -37,6 +37,14 @@ class TestScriptsWrappers(unittest.TestCase):
                 ["--help"],
             ),
             (Path(__file__).resolve().parent.parent / "scripts" / "ensure-lpass-login", ["--help"]),
+            (
+                Path(__file__).resolve().parent.parent / "scripts" / "sync-schemastore-index",
+                ["--help"],
+            ),
+            (
+                Path(__file__).resolve().parent.parent / "scripts" / "validate-schemastore-schemas",
+                ["--help"],
+            ),
         ]
 
         for wrapper, extra_argv in wrappers:
