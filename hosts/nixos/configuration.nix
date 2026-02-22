@@ -105,6 +105,7 @@
     upstreamUrl = "git@github.com:Tapiiri/nixos-setup.git";
     mirrorDir = "/var/lib/nixos-setup/mirror.git";
     ref = "origin/main";
+    offlineOk = true;
   };
 
   # Create the mirror parent directory at boot with stable ownership.
