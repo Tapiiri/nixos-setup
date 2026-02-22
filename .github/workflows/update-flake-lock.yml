@@ -76,7 +76,7 @@ jobs:
           devenv tasks run sync:schemastore:index
 
       - name: Create PR (only if schemas/ changed)
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           commit-message: "chore(schemastore): refresh schema cache"
           title: "chore(schemastore): refresh schema cache"
