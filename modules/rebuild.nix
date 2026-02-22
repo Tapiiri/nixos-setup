@@ -14,6 +14,9 @@
     + optionalString (cfg.upstreamUrl != null && cfg.upstreamUrl != "") ''
       upstream_url = ${cfg.upstreamUrl}
     ''
+    + optionalString cfg.offlineOk ''
+      offline_ok = true
+    ''
     + ''
       mirror_dir = ${cfg.mirrorDir}
       ref = ${cfg.ref}
@@ -43,6 +46,12 @@ in {
       type = types.str;
       default = "origin/main";
       description = "Git ref to fast-forward /etc/nixos to in mirror mode.";
+    };
+
+    offlineOk = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Default offline behavior for rebuild (same as --offline-ok).";
     };
   };
 

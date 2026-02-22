@@ -39,6 +39,20 @@ ENV_UPSTREAM_URL = "NIXOS_SETUP_REBUILD_UPSTREAM_URL"
 ENV_MIRROR_DIR = "NIXOS_SETUP_REBUILD_MIRROR_DIR"
 ENV_SYSTEM_FLAKE_DIR = "NIXOS_SETUP_REBUILD_SYSTEM_FLAKE_DIR"
 ENV_REF = "NIXOS_SETUP_REBUILD_REF"
+ENV_OFFLINE_OK = "NIXOS_SETUP_REBUILD_OFFLINE_OK"
+
+
+def _parse_bool(value: str | None) -> bool | None:
+    if value is None:
+        return None
+    v = value.strip().lower()
+    if not v:
+        return None
+    if v in ("1", "true", "yes", "on"):
+        return True
+    if v in ("0", "false", "no", "off"):
+        return False
+    return None
 
 
 def parse_args(argv: Sequence[str]) -> tuple[argparse.Namespace, list[str]]:
@@ -197,6 +211,10 @@ def compute_config(
         (args.ref or "").strip() or env.get(ENV_REF) or defaults.get("ref") or "origin/main"
     ).strip()
 
+    offline_default = (env.get(ENV_OFFLINE_OK) or defaults.get("offline_ok") or "").strip()
+    offline_default_bool = _parse_bool(offline_default)
+    offline_ok = bool(args.offline_ok) or bool(offline_default_bool)
+
     if not (flake_dir / "flake.nix").is_file():
         # In mirror mode we can bootstrap /etc/nixos even if it doesn't exist yet.
         if not (use_mirror and flake_dir == DEFAULT_SYSTEM_FLAKE_DIR):
@@ -219,7 +237,7 @@ def compute_config(
         repo_root=repo_root,
         use_mirror=use_mirror,
         mirror_dir=mirror_dir,
-        offline_ok=bool(args.offline_ok),
+        offline_ok=offline_ok,
         upstream_url=upstream_url,
         ref=ref,
         bootstrap_permissions=bool(args.bootstrap_permissions),
@@ -238,7 +256,7 @@ def _read_defaults_config(path: Path) -> dict[str, str]:
         return {}
     sec = cp["rebuild"]
     out: dict[str, str] = {}
-    for key in ("upstream_url", "mirror_dir", "ref"):
+    for key in ("upstream_url", "mirror_dir", "ref", "offline_ok"):
         val = (sec.get(key) or "").strip()
         if val:
             out[key] = val

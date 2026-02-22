@@ -27,6 +27,12 @@ Notes:
 - Rebuild your system (recommended daily entrypoint):
   - `rebuild`
 
+Note: the repo-provided `rebuild` shell entrypoint is **remote-first** (it runs
+`nix run github:Tapiiri/nixos-setup#rebuild`). If you pass `--offline-ok` (or set
+`NIXOS_SETUP_REBUILD_OFFLINE_OK=1` / `offline_ok = true` in the config), it will
+fall back to `nix run /etc/nixos#rebuild` when the remote `nix run` fails due to
+fetch/network-ish errors.
+
 Alternative (no local linking required):
 
 - From this repo checkout:
@@ -159,7 +165,7 @@ Key flags:
 Defaults sources (in precedence order):
 
 1. CLI flags (e.g. `--upstream-url`, `--mirror-dir`, `--ref`)
-1. Environment variables: `NIXOS_SETUP_REBUILD_UPSTREAM_URL`, `NIXOS_SETUP_REBUILD_MIRROR_DIR`, `NIXOS_SETUP_REBUILD_REF`
+1. Environment variables: `NIXOS_SETUP_REBUILD_UPSTREAM_URL`, `NIXOS_SETUP_REBUILD_MIRROR_DIR`, `NIXOS_SETUP_REBUILD_REF`, `NIXOS_SETUP_REBUILD_OFFLINE_OK`
 1. System config file: `/etc/nixos-setup/rebuild.conf` (section `[rebuild]`)
 
 #### Why the mirror workflow exists

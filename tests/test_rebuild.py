@@ -226,6 +226,7 @@ class TestRebuild(unittest.TestCase):
                     [
                         "[rebuild]",
                         "upstream_url = git@github.com:x/y.git",
+                        "offline_ok = true",
                         "ref = origin/main",
                         "mirror_dir = /m/mirror.git",
                         "",
@@ -245,6 +246,31 @@ class TestRebuild(unittest.TestCase):
             self.assertEqual(cfg.upstream_url, "git@github.com:x/y.git")
             self.assertEqual(cfg.ref, "origin/main")
             self.assertEqual(str(cfg.mirror_dir), "/m/mirror.git")
+            self.assertTrue(cfg.offline_ok)
+
+    def test_compute_config_defaults_offline_ok_from_env(self):
+        with tempfile.TemporaryDirectory() as td:
+            tmp_path = Path(td)
+
+            repo_root = tmp_path / "repo"
+            repo_root.mkdir()
+            (repo_root / "flake.nix").write_text("{}", encoding="utf-8")
+            script_dir = repo_root / "scripts_py"
+            script_dir.mkdir()
+            script_path = script_dir / "rebuild.py"
+            script_path.write_text("#", encoding="utf-8")
+
+            hostname_path = write_hostname(tmp_path, "testhost\n")
+
+            ns, _rest = parse_args(["--dev"])
+            cfg = compute_config(
+                args=ns,
+                script_path=script_path,
+                hostname_path=hostname_path,
+                env={"NIXOS_SETUP_REBUILD_OFFLINE_OK": "true"},
+                config_path=tmp_path / "missing.conf",
+            )
+            self.assertTrue(cfg.offline_ok)
 
     def test_build_exec_command_adds_sudo_when_not_root(self):
         # We can't rely on the test runner uid always being non-root, so test
