@@ -225,5 +225,6 @@ class TestSetupLinks(unittest.TestCase):
             self.assertEqual(rc, 0)
             self.assertEqual(runner.calls, [])
 
+
 if __name__ == "__main__":
     unittest.main()
