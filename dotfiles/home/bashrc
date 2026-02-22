@@ -134,7 +134,7 @@ rebuild() {
 	if [ $rc -ne 0 ] && [ "$allow_offline_fallback" -eq 1 ]; then
 		# Only fall back on failures that look like fetch/network/eval problems.
 		if grep -Eiq \
-			'(failed to fetch|unable to download|could not resolve host|temporary failure in name resolution|network is unreachable|connection (timed out|refused|reset)|http(.*)error|curl|git(hub)?\.com|unexpected end of file|TLS|SSL)' \
+			'(failed to fetch|unable to download|could not resolve host(name)?|temporary failure in name resolution|name or service not known|network is unreachable|connection (timed out|refused|reset)|http(.*)error|curl|cache\.nixos\.org|substitut|git(hub)?\.com|unexpected end of file|TLS|SSL)' \
 			"$tmp_err"; then
 			echo "rebuild: remote nix run failed; falling back to $local_ref" >&2
 			rm -f "$tmp_err"
