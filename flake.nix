@@ -44,8 +44,7 @@
         else null;
       wrapperExtraArgs =
         lib.optionalString (upstreamDefault != null)
-        ''          \
-                     --set-default NIXOS_SETUP_REBUILD_UPSTREAM_URL "${upstreamDefault}"'';
+        " --set-default NIXOS_SETUP_REBUILD_UPSTREAM_URL ${lib.escapeShellArg upstreamDefault}";
 
       nixosRebuildPkg =
         if builtins.hasAttr "nixos-rebuild" pkgs
@@ -57,7 +56,6 @@
       runtimeInputs =
         [
           pkgs.git
-          pkgs.sudo
         ]
         ++ lib.optional (nixosRebuildPkg != null) nixosRebuildPkg;
 

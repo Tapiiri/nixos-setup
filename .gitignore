@@ -45,6 +45,9 @@ htmlcov/
 .DS_Store
 
 # ---- Repo-specific ----
+# nix build output symlink
+result
+
 # Local direnv state (if you use it)
 .direnv/
 .envrc

@@ -71,7 +71,13 @@ class TestRebuild(unittest.TestCase):
             hostname_path = write_hostname(tmp_path, " testhost \n")
 
             ns, _rest = parse_args(["--dev"])  # no hostname
-            cfg = compute_config(args=ns, script_path=script_path, hostname_path=hostname_path)
+            cfg = compute_config(
+                args=ns,
+                script_path=script_path,
+                hostname_path=hostname_path,
+                env={},
+                config_path=tmp_path / "missing.conf",
+            )
 
             self.assertEqual(cfg.hostname, "testhost")
             self.assertEqual(cfg.flake_dir, repo_root)
@@ -106,17 +112,35 @@ class TestRebuild(unittest.TestCase):
 
             # When using --flake PATH, mirror syncing is conservative by default.
             ns, _rest = parse_args(["--flake", str(etc_dir)])
-            cfg = compute_config(args=ns, script_path=script_path, hostname_path=hostname_path)
+            cfg = compute_config(
+                args=ns,
+                script_path=script_path,
+                hostname_path=hostname_path,
+                env={},
+                config_path=tmp_path / "missing.conf",
+            )
             self.assertFalse(cfg.use_mirror)
 
             # Explicit enable still works.
             ns2, _rest2 = parse_args(["--flake", str(etc_dir), "--mirror"])
-            cfg2 = compute_config(args=ns2, script_path=script_path, hostname_path=hostname_path)
+            cfg2 = compute_config(
+                args=ns2,
+                script_path=script_path,
+                hostname_path=hostname_path,
+                env={},
+                config_path=tmp_path / "missing.conf",
+            )
             self.assertTrue(cfg2.use_mirror)
 
             # Explicit opt-out still works.
             ns3, _rest3 = parse_args(["--flake", str(etc_dir), "--mirror", "--no-mirror"])
-            cfg3 = compute_config(args=ns3, script_path=script_path, hostname_path=hostname_path)
+            cfg3 = compute_config(
+                args=ns3,
+                script_path=script_path,
+                hostname_path=hostname_path,
+                env={},
+                config_path=tmp_path / "missing.conf",
+            )
             self.assertFalse(cfg3.use_mirror)
 
     def test_compute_config_errors_when_flake_missing(self):
@@ -136,6 +160,8 @@ class TestRebuild(unittest.TestCase):
                     args=ns,
                     script_path=script_path,
                     hostname_path=tmp_path / "hostname",
+                    env={},
+                    config_path=tmp_path / "missing.conf",
                 )
 
     def test_build_command_shape(self):

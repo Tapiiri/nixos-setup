@@ -33,6 +33,11 @@ Alternative (no local linking required):
   - `nix run .#rebuild -- --help`
 - From GitHub:
   - `nix run github:Tapiiri/nixos-setup#rebuild -- --help`
+
+Note: `nix run ... -- ...` needs the extra `--` so arguments reach `rebuild`.
+When running the linked executable directly (e.g. `rebuild`), do **not** add `--`
+unless you are intentionally passing flags through to `nixos-rebuild`.
+
 - Sync VS Code runtime settings back into Nix (optional, for multi-machine preferences):
   - `sync-vscode-settings`
 
