@@ -98,9 +98,18 @@ _NETWORKISH_RE = re.compile(
     re.IGNORECASE,
 )
 
+_REMOTE_MISSING_INNER_RE = re.compile(
+    r"does not provide attribute .*rebuild-inner",
+    re.IGNORECASE,
+)
+
 
 def is_networkish_failure(transcript: str) -> bool:
     return bool(_NETWORKISH_RE.search(transcript))
+
+
+def is_remote_missing_inner(transcript: str) -> bool:
+    return bool(_REMOTE_MISSING_INNER_RE.search(transcript))
 
 
 def run_with_pty(argv: Sequence[str]) -> RunResult:
@@ -249,6 +258,15 @@ def main(
     res = run_remote(remote_cmd)
     if res.returncode == 0:
         return 0
+
+    # Rollout compatibility: if the remote flake doesn't have rebuild-inner yet,
+    # fall back to local so the user isn't stuck.
+    if is_remote_missing_inner(res.transcript):
+        print(
+            "rebuild: remote flake does not provide rebuild-inner; falling back to /etc/nixos",
+            file=sys.stderr,
+        )
+        exec_func(build_local_cmd(list(argv)))
 
     if offline_ok and is_networkish_failure(res.transcript):
         print(

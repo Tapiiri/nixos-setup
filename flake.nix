@@ -105,7 +105,7 @@
         type = "app";
         program = "${self.packages.${system}.rebuild}/bin/rebuild";
       };
-      rebuild-inner = {
+      "rebuild-inner" = {
         type = "app";
         program = "${self.packages.${system}.rebuild}/bin/rebuild-inner";
       };

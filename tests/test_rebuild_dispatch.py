@@ -110,6 +110,27 @@ class TestRebuildDispatch(unittest.TestCase):
         )
         self.assertEqual(rc, 42)
 
+    def test_online_remote_missing_inner_falls_back(self):
+        with self.assertRaises(ExecCalled) as ctx:
+            rebuild_dispatch.main(
+                [],
+                online_check=lambda: True,
+                run_remote=lambda argv: rebuild_dispatch.RunResult(
+                    1,
+                    (
+                        "error: flake 'github:Tapiiri/nixos-setup' does not provide attribute "
+                        "'apps.x86_64-linux.rebuild-inner'"
+                    ),
+                ),
+                exec_func=exec_capture,
+                env={},
+                config_path=Path("/nonexistent.conf"),
+            )
+        self.assertEqual(
+            ctx.exception.argv[:4],
+            ["nix", "run", "/etc/nixos#rebuild-inner", "--"],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
