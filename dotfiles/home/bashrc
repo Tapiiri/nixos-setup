@@ -128,8 +128,10 @@ rebuild() {
 
 	local tmp_err
 	tmp_err="$(mktemp -t nixos-setup-rebuild.XXXXXX)" || return 1
-	command nix run "$remote_ref" -- "$@" 2> >(tee -a "$tmp_err" >&2)
-	local rc=$?
+	# Capture output synchronously so the temp file is complete before we grep it.
+	# (Process substitution here can be async and race with grep/rm.)
+	command nix run "$remote_ref" -- "$@" 2>&1 | tee -a "$tmp_err" >&2
+	local rc=${PIPESTATUS[0]}
 
 	if [ $rc -ne 0 ] && [ "$allow_offline_fallback" -eq 1 ]; then
 		# Only fall back on failures that look like fetch/network/eval problems.
