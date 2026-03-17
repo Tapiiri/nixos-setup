@@ -15,6 +15,7 @@
     actionlint
     markdownlint-cli2
     shellcheck
+    entr
 
     # Python tooling pinned together (works even without devenv python module).
     (python313.withPackages (ps:
@@ -107,11 +108,13 @@
 
     python-pytest = {
       enable = true;
-      name = "pytest";
-      # On retries after failure, pytest's --lf re-runs only previously-failed
-      # tests (--lfnf=all means "run everything when there's nothing to retry").
-      # PYTEST_ADDOPTS is scoped to pre-commit; CI/manual runs are unaffected.
-      entry = "scripts/ensure-password-manager-login -- env PYTEST_ADDOPTS='--lf --lfnf=all' devenv tasks run tests:python:pytest";
+      name = "pytest (cached)";
+      # Uses file-level attestation caching: when all affected tests already
+      # have a passing attestation (from the background watcher or a previous
+      # commit attempt) the hook exits instantly.  Falls back to running pytest
+      # on uncached test files.  PYTEST_ADDOPTS (--lf) still applies when
+      # pytest actually runs.
+      entry = "scripts/ensure-password-manager-login -- env PYTEST_ADDOPTS='--lf --lfnf=all' scripts/cached-pytest";
       language = "system";
       files = "(.*\\.py$|^devenv\\.nix$|^pyproject\\.toml$|^scripts/)";
       pass_filenames = false;
@@ -126,6 +129,15 @@
       pass_filenames = false;
     };
   };
+
+  # Background test watcher: re-runs affected tests on file change and caches
+  # attestations so the pre-commit hook can skip redundant runs.
+  # Start with: devenv up  (or: devenv processes up)
+  processes.test-watcher.exec = ''
+    while true; do
+      find scripts_py tests -name '*.py' | entr -d -p scripts/cached-pytest --watch
+    done
+  '';
 
   # Canonical automation entrypoints.
   #
@@ -192,6 +204,11 @@
     "tests:python:pytest" = {
       description = "Run Python tests (pytest)";
       exec = "python -m pytest -q tests";
+    };
+
+    "tests:python:cached-pytest" = {
+      description = "Run Python tests with file-level attestation caching";
+      exec = "scripts/cached-pytest";
     };
 
     # --- Tooling audit ---

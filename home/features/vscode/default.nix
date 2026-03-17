@@ -83,6 +83,11 @@
     # Repo convention: dev tooling comes from `devenv.nix`.
     "nixEnvSelector.nixFile" = "devenv.nix";
 
+    # Enable native Python test explorer (inline pass/fail, gutter decorations).
+    "python.testing.pytestEnabled" = true;
+    "python.testing.pytestArgs" = ["tests"];
+    "python.testing.autoTestDiscoverOnSaveEnabled" = true;
+
     # Use alejandra for Nix formatting.
     "[nix]" = {
       "editor.defaultFormatter" = "jnoortheen.nix-ide";

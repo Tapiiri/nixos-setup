@@ -27,6 +27,9 @@ HOOK_TASK_OVERRIDES: dict[str, str] = {
     # for incremental per-file validation.  The devenv task runs --all instead.
     # See the comment on the hook definition in devenv.nix.
     "schemastore-schemas": "lint:schemastore:validate",
+    # Uses scripts/cached-pytest directly for file-level attestation caching.
+    # Falls through to python -m pytest when attestations are stale/missing.
+    "python-pytest": "tests:python:pytest",
 }
 
 # Hook IDs to exclude from coverage analysis entirely (not checks/lints).
