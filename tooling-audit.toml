@@ -1,0 +1,88 @@
+# Tooling coverage registry.
+#
+# Declares which file types exist in this repo and what dev-tooling
+# (linters, formatters, VSCode extensions) is expected for each.
+#
+# The `audit-tooling` script reads this file and cross-references it
+# with auto-discovered tools to produce a coverage matrix.
+#
+# Sections
+# --------
+#   [file_types.<key>]
+#     extensions        – file extensions to match (e.g. [".nix"])
+#     glob_patterns     – extra glob patterns for sub-type matching
+#     shebang_patterns  – for extensionless files (e.g. ["python3"])
+#     linters           – [{name = "…", source = "devenv|precommit|vscode|other"}]
+#     formatters        – same structure
+#     vscode_extensions – list of extension IDs (publisher.name)
+#     muted             – categories where a gap is intentional; suppresses
+#                         warnings in --strict mode.  Valid values:
+#                         "linter", "formatter", "vscode_extension"
+#
+# Auto-discovery can add entries that are NOT in this file.  The audit
+# report will show both registry and discovered tools.
+
+[file_types.nix]
+extensions = [".nix"]
+linters = [{ name = "nix flake check", source = "devenv" }]
+formatters = [{ name = "alejandra", source = "devenv" }]
+vscode_extensions = ["jnoortheen.nix-ide"]
+
+[file_types.python]
+extensions = [".py"]
+shebang_patterns = ["python3", "python"]
+linters = [{ name = "ruff", source = "devenv" }]
+formatters = [{ name = "ruff (fix-on-save)", source = "vscode" }]
+vscode_extensions = ["ms-python.python", "charliermarsh.ruff"]
+
+[file_types.yaml]
+extensions = [".yml", ".yaml"]
+linters = [{ name = "yamllint", source = "devenv" }]
+formatters = []
+vscode_extensions = ["redhat.vscode-yaml"]
+muted = ["formatter"]
+
+[file_types.github-actions]
+# Sub-type of YAML – matched by glob, not extension.
+extensions = []
+glob_patterns = [".github/workflows/*.yml", ".github/workflows/*.yaml"]
+linters = [{ name = "actionlint", source = "devenv" }]
+formatters = []
+vscode_extensions = ["github.vscode-github-actions"]
+muted = ["formatter"]
+
+[file_types.json]
+extensions = [".json"]
+linters = []
+formatters = []
+vscode_extensions = []
+muted = ["linter", "formatter", "vscode_extension"]
+
+[file_types.markdown]
+extensions = [".md"]
+linters = [{ name = "markdownlint-cli2", source = "devenv" }]
+formatters = [{ name = "markdownlint-cli2 --fix", source = "devenv" }]
+vscode_extensions = ["davidanson.vscode-markdownlint"]
+
+[file_types.shell]
+extensions = [".sh"]
+glob_patterns = ["dotfiles/home/bashrc"]
+shebang_patterns = ["bash", "sh"]
+linters = [{ name = "shellcheck", source = "devenv" }]
+formatters = []
+vscode_extensions = ["timonwong.shellcheck"]
+muted = ["formatter"]
+
+[file_types.shell-template]
+extensions = [".sh.tpl"]
+linters = [{ name = "shellcheck", source = "devenv" }]
+formatters = []
+vscode_extensions = []
+muted = ["formatter", "vscode_extension"]
+
+[file_types.toml]
+extensions = [".toml"]
+linters = []
+formatters = []
+vscode_extensions = ["tamasfe.even-better-toml"]
+muted = ["linter", "formatter"]

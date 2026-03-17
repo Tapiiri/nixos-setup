@@ -185,6 +185,17 @@
       exec = "python -m pytest -q tests";
     };
 
+    # --- Tooling audit ---
+    "audit:tooling" = {
+      description = "Audit tooling coverage for all file types";
+      exec = "scripts/audit-tooling";
+    };
+
+    "audit:tooling:strict" = {
+      description = "Audit tooling coverage (strict — fails on unmuted gaps)";
+      exec = "scripts/audit-tooling --strict";
+    };
+
     # --- Aggregates (for humans + CI) ---
     "lint:all" = {
       description = "All linters";

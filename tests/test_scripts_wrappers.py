@@ -45,6 +45,10 @@ class TestScriptsWrappers(unittest.TestCase):
                 Path(__file__).resolve().parent.parent / "scripts" / "validate-schemastore-schemas",
                 ["--help"],
             ),
+            (
+                Path(__file__).resolve().parent.parent / "scripts" / "audit-tooling",
+                ["--help"],
+            ),
         ]
 
         for wrapper, extra_argv in wrappers:
