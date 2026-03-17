@@ -58,6 +58,10 @@
     schemastore-schemas = {
       enable = true;
       name = "schemastore schema validation";
+      # Calls the script directly (not via devenv task) so pre-commit can pass
+      # only changed filenames for fast incremental validation.  The devenv task
+      # lint:schemastore:validate runs --all instead.  Parity with check:all is
+      # verified by tests/test_devenv_task_coverage.py (HOOK_TASK_OVERRIDES).
       entry = "scripts/ensure-password-manager-login -- scripts/validate-schemastore-schemas";
       language = "system";
       # Include extensionless YAML configs we have in-repo (e.g. .yamllint).
