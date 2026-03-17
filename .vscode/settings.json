@@ -1,5 +1,6 @@
 {
   "nixEnvSelector.nixFile": "devenv.nix",
+  "python.defaultInterpreterPath": "${workspaceFolder}/.devenv/profile/bin/python",
   "python.testing.pytestEnabled": true,
   "python.testing.pytestArgs": [
     "tests"
