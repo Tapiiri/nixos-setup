@@ -5,9 +5,10 @@ plugin records per-file pass/fail attestations in the devenv state directory.
 The pre-commit hook (``scripts/cached-pytest``) can then skip re-running
 tests that already have a fresh passing attestation.
 
-This means enabling Test Explorer's **auto-run** (the circular-arrow toggle
-in the Testing sidebar) gives you both inline pass/fail feedback *and*
-instant pre-commit resolution — no separate background watcher needed.
+The ``pucelle.run-on-save`` VS Code extension triggers ``testing.runAll`` on
+every ``.py`` save, which feeds through Test Explorer and ends up here.
+This gives you inline pass/fail gutter decorations *and* instant pre-commit
+resolution — no separate background watcher needed.
 """
 
 from __future__ import annotations

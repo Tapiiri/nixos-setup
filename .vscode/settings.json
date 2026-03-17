@@ -20,6 +20,13 @@
   "files.associations": {
     "*.sh.tpl": "shellscript"
   },
+  "runOnSave.commands": [
+    {
+      "match": "\\.py$",
+      "command": "testing.runAll",
+      "runIn": "vscode"
+    }
+  ],
   "chat.tools.terminal.autoApprove": {
     "devenv": true,
     "git rev-parse": true

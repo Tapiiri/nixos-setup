@@ -178,6 +178,16 @@ class TestAffectedTests(unittest.TestCase):
         self.assertNotIn(src, result)
         self.assertEqual(result, {tf})
 
+    def test_conftest_excluded(self) -> None:
+        """conftest.py should never appear in affected tests (no test functions)."""
+        conftest = Path("/repo/tests/conftest.py")
+        tf = Path("/repo/tests/test_a.py")
+        src = Path("/repo/scripts_py/a.py")
+        graph = {conftest: {src}, tf: {src}, src: set()}
+        result = affected_tests(graph, {src})
+        self.assertNotIn(conftest, result)
+        self.assertEqual(result, {tf})
+
 
 if __name__ == "__main__":
     unittest.main()

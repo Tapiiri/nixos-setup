@@ -33,6 +33,17 @@
   RuffExt = pkgs.vscode-extensions.charliermarsh.ruff;
   DirenvExt = pkgs.vscode-extensions.mkhl.direnv;
 
+  # Auto-run tests on file save (triggers VS Code Test Explorer, which writes
+  # attestations via tests/conftest.py).  Not packaged in nixpkgs.
+  RunOnSaveExt = pkgs.vscode-utils.buildVscodeMarketplaceExtension {
+    mktplcRef = {
+      publisher = "pucelle";
+      name = "run-on-save";
+      version = "1.11.2";
+      hash = "sha256-SnaQpOWBjLbzu/HLLwFhj7RsVO3k5gZwsQgk0S+SK0Y=";
+    };
+  };
+
   # 1Password VS Code extension (not packaged in nixpkgs in this repo's snapshot).
   OnePasswordExt = pkgs.vscode-utils.buildVscodeMarketplaceExtension {
     mktplcRef = {
@@ -87,6 +98,19 @@
     "python.testing.pytestEnabled" = true;
     "python.testing.pytestArgs" = ["tests"];
     "python.testing.autoTestDiscoverOnSaveEnabled" = true;
+
+    # Auto-run all tests on every .py save via pucelle.run-on-save.
+    # The Python extension doesn't natively support VS Code's continuous-run
+    # API, so we use this extension to trigger testing.runAll on save.
+    # Our tests/conftest.py plugin writes attestations on each run, keeping
+    # the pre-commit hook fast.
+    "runOnSave.commands" = [
+      {
+        match = ".*\\.py$";
+        command = "testing.runAll";
+        runIn = "vscode";
+      }
+    ];
 
     # Use alejandra for Nix formatting.
     "[nix]" = {
@@ -166,6 +190,7 @@ in {
         OnePasswordExt
         RuffExt
         ActionsExt
+        RunOnSaveExt
       ];
 
       # IMPORTANT: Do NOT set userSettings here.
