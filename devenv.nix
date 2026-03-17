@@ -132,6 +132,9 @@
 
   # Background test watcher: re-runs affected tests on file change and caches
   # attestations so the pre-commit hook can skip redundant runs.
+  # VS Code users: this is optional — tests/conftest.py writes attestations
+  # automatically whenever Test Explorer runs tests (enable auto-run for best
+  # results).  This watcher is useful for terminal-only workflows.
   # Start with: devenv up  (or: devenv processes up)
   processes.test-watcher.exec = ''
     while true; do

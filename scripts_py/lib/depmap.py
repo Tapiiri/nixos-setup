@@ -139,8 +139,11 @@ def affected_tests(
 
     test_files: set[Path] = set()
     for f in graph:
-        # Only consider files inside the tests directory.
+        # Only consider test files inside the tests directory.
+        # Skip conftest.py — it's a pytest plugin, not a test module.
         if tests_dir_name not in f.parts:
+            continue
+        if f.name == "conftest.py":
             continue
         if f in changed_files:
             test_files.add(f)
