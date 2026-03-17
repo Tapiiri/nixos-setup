@@ -13,13 +13,13 @@
     - `devenv shell`
 - Canonical checks live in **devenv tasks** (single source of truth):
   - Full CI-equivalent pipeline:
-    - `devenv shell -- devenv tasks run check:all`
+    - `devenv shell -- devenv tasks run -m all check:all`
   - Targeted checks (prefer these when appropriate):
     - Python lint: `devenv shell -- devenv tasks run lint:python:ruff`
     - Python tests: `devenv shell -- devenv tasks run tests:python:pytest`
     - Nix evaluation: `devenv shell -- devenv tasks run check:nix:flake`
-    - All lint: `devenv shell -- devenv tasks run lint:all`
-    - All format: `devenv shell -- devenv tasks run fmt:all`
+    - All lint: `devenv shell -- devenv tasks run -m all lint:all`
+    - All format: `devenv shell -- devenv tasks run -m all fmt:all`
 - Pre-commit is a local convenience layer and delegates hook logic to devenv tasks:
   - `devenv shell -- pre-commit run --all-files`
 

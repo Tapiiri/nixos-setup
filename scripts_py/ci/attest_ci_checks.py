@@ -160,7 +160,7 @@ def attest_ci_checks(*, opts: Options, runner: Runner, out, err) -> None:
 
     if opts.run_task:
         log_info(f"Running devenv task: {opts.task}", out=out)
-        runner.run_check(["devenv", "tasks", "run", opts.task])
+        runner.run_check(["devenv", "tasks", "run", "-m", "all", opts.task])
 
     devenv_version = _maybe_devenv_version(runner=runner)
     msg = _attestation_message(task=opts.task, devenv_version=devenv_version)

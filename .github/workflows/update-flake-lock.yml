@@ -49,7 +49,7 @@ jobs:
 
       # Sanity-check the update using the same checks as CI.
       - name: Run checks (devenv tasks)
-        run: nix run nixpkgs#devenv -- shell -- devenv tasks run check:all
+        run: nix run nixpkgs#devenv -- shell -- devenv tasks run -m all check:all
 
   refresh-schemastore-cache:
     permissions:

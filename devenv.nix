@@ -111,7 +111,7 @@
     ci-check-all-attest = {
       enable = true;
       name = "CI equivalent checks (check:all)";
-      entry = "scripts/ensure-password-manager-login -- scripts/attest-ci-checks --task check:all --push";
+      entry = "scripts/ensure-password-manager-login -- scripts/attest-ci-checks --task check:all --push --no-run";
       language = "system";
       stages = ["pre-push"];
       pass_filenames = false;

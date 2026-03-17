@@ -74,11 +74,11 @@ These tasks are the single source of truth for:
 Common entrypoints:
 
 - Full CI-equivalent pipeline:
-  - `devenv shell -- devenv tasks run check:all`
+  - `devenv shell -- devenv tasks run -m all check:all`
 - Lint:
-  - `devenv shell -- devenv tasks run lint:all`
+  - `devenv shell -- devenv tasks run -m all lint:all`
 - Format:
-  - `devenv shell -- devenv tasks run fmt:all`
+  - `devenv shell -- devenv tasks run -m all fmt:all`
 - Python tests:
   - `devenv shell -- devenv tasks run tests:python:pytest`
 
@@ -93,7 +93,7 @@ exact CI-equivalent task locally:
   - A `pre-push` hook runs the same command automatically.
 
 On direct pushes to `main`, GitHub Actions will look for that git note and can skip running
-`devenv tasks run check:all` again when it finds a matching successful attestation.
+`devenv tasks run -m all check:all` again when it finds a matching successful attestation.
 
 This is mainly a convenience for personal/solo workflows. Git notes are not a strong security
 boundary; PRs still run CI normally.

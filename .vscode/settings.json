@@ -20,6 +20,7 @@
     "*.sh.tpl": "shellscript"
   },
   "chat.tools.terminal.autoApprove": {
-    "devenv": true
+    "devenv": true,
+    "git rev-parse": true
   }
 }
