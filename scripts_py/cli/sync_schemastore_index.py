@@ -97,6 +97,12 @@ def sync_index(
     catalog_schemas = _parse_catalog_schemas(catalog)
     files = _git_ls_files(repo_root)
 
+    # Exclude the index file itself and the vendored schema cache — they are
+    # tooling artifacts, not user configuration files that should be validated.
+    index_rel = str(index_path.relative_to(repo_root).as_posix())
+    schemas_prefix = str(schemas_dir.relative_to(repo_root).as_posix()) + "/"
+    files = [f for f in files if f != index_rel and not f.startswith(schemas_prefix)]
+
     file_to_schema_url: dict[str, str] = {}
     used_schema_urls: set[str] = set()
 

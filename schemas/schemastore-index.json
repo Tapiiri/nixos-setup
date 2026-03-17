@@ -2,6 +2,7 @@
   "files": {
     ".github/dependabot.yml": "https://www.schemastore.org/dependabot-2.0.json",
     ".github/workflows/ci.yml": "https://www.schemastore.org/github-workflow.json",
+    ".github/workflows/scorecard.yml": "https://www.schemastore.org/github-workflow.json",
     ".github/workflows/update-flake-lock.yml": "https://www.schemastore.org/github-workflow.json",
     ".pre-commit-config.yaml": "https://www.schemastore.org/pre-commit-config.json",
     ".yamllint": "https://www.schemastore.org/yamllint.json",
@@ -10,8 +11,8 @@
   "schemaStore": {
     "catalogUrl": "https://www.schemastore.org/api/json/catalog.json",
     "catalogVersion": 1,
-    "fetchedAt": "2026-02-22T00:11:52+00:00",
-    "schemaCount": 1107
+    "fetchedAt": "2026-03-17T23:41:43+00:00",
+    "schemaCount": 1119
   },
   "schemas": {
     "https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/pyproject.json": {

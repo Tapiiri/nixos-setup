@@ -53,5 +53,27 @@ class TestSchemaStoreMatching(unittest.TestCase):
         self.assertEqual(pattern, "**/.github/workflows/ci.yml")
 
 
+class TestSchemaStoreIndex(unittest.TestCase):
+    """Guards against false-positive schema matches in the committed index."""
+
+    def test_index_does_not_map_files_under_schemas_dir(self) -> None:
+        """The schemas/ directory contains tooling artifacts, not user configs."""
+        import json
+        from pathlib import Path
+
+        repo_root = Path(__file__).resolve().parent.parent
+        index_path = repo_root / "schemas" / "schemastore-index.json"
+        if not index_path.exists():
+            self.skipTest("schemastore-index.json not found")
+
+        index = json.loads(index_path.read_text(encoding="utf-8"))
+        bad = [f for f in index.get("files", {}) if f.startswith("schemas/")]
+        self.assertEqual(
+            bad,
+            [],
+            f"Index should not map files under schemas/ — found: {bad}",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
