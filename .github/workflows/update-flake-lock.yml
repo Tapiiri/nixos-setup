@@ -7,9 +7,6 @@ name: Update flake.lock
     # Weekly on Sunday at 06:00 UTC
     - cron: "0 6 * * 0"
 
-env:
-  SECRETSPEC_PROVIDER: env
-
 concurrency:
   group: update-flake-lock
   cancel-in-progress: false
@@ -24,6 +21,8 @@ jobs:
       pull-requests: write
       issues: write
     runs-on: ubuntu-latest
+    env:
+      SECRETSPEC_PROVIDER: env
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.2
