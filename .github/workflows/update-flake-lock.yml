@@ -6,6 +6,9 @@ on:
     # Weekly on Sunday at 06:00 UTC
     - cron: "0 6 * * 0"
 
+env:
+  SECRETSPEC_PROVIDER: env
+
 concurrency:
   group: update-flake-lock
   cancel-in-progress: false
