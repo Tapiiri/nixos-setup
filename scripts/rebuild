@@ -4,7 +4,7 @@
 This file is meant to be runnable as a standalone executable (including via
 `sudo rebuild`). When installed or symlinked into a PATH directory, Python's
 import path won't include the repo checkout. To keep things maintainable and
-testable, we keep the implementation in `scripts_py.rebuild` and bootstrap the
+testable, we keep the implementation in `scripts_py.cli.rebuild_dispatch` and bootstrap the
 import path here.
 """
 
@@ -27,7 +27,7 @@ def _bootstrap() -> None:
 
 _bootstrap()
 
-from scripts_py.rebuild_dispatch import main  # noqa: E402
+from scripts_py.cli.rebuild_dispatch import main  # noqa: E402
 
 if __name__ == "__main__":
     raise SystemExit(main())

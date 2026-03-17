@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from scripts_py.setup_links import (
+from scripts_py.cli.setup_links import (
     LinkMapping,
     SetupConfig,
     compute_config,
@@ -163,7 +163,7 @@ class TestSetupLinks(unittest.TestCase):
             out = StringIO()
             err = StringIO()
 
-            with patch("scripts_py.setup_links.owner_uid_for_path", return_value=0):
+            with patch("scripts_py.cli.setup_links.owner_uid_for_path", return_value=0):
                 rc = process_mapping(
                     LinkMapping(source=src, target=dst),
                     runner=runner,
@@ -190,7 +190,7 @@ class TestSetupLinks(unittest.TestCase):
             out = StringIO()
             err = StringIO()
             # Simulate root-owned path
-            with patch("scripts_py.setup_links.owner_uid_for_path", return_value=0):
+            with patch("scripts_py.cli.setup_links.owner_uid_for_path", return_value=0):
                 rc = process_mapping(
                     LinkMapping(source=src, target=dst),
                     runner=runner,

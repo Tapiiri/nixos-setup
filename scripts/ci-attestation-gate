@@ -4,7 +4,7 @@
 Decides whether CI can be skipped based on a git-notes attestation, and writes
 `skip=true/false` to $GITHUB_OUTPUT when available.
 
-Implementation lives in `scripts_py.ci_attestation_gate`.
+Implementation lives in `scripts_py.ci.ci_attestation_gate`.
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ def _bootstrap() -> None:
 
 def main() -> int:
     _bootstrap()
-    from scripts_py.ci_attestation_gate import main as impl_main
+    from scripts_py.ci.ci_attestation_gate import main as impl_main
 
     return int(impl_main(sys.argv[1:]))
 

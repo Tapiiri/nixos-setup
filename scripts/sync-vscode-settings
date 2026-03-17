@@ -2,7 +2,7 @@
 """Executable entrypoint for `sync-vscode-settings`.
 
 This script syncs VS Code runtime settings back to Nix configuration.
-The implementation lives in `scripts_py.sync_vscode_settings` for unit testing.
+The implementation lives in `scripts_py.cli.sync_vscode_settings` for unit testing.
 """
 
 from __future__ import annotations
@@ -23,8 +23,7 @@ def _bootstrap() -> None:
 
 _bootstrap()
 
-from scripts_py.sync_vscode_settings import main  # noqa: E402
-
+from scripts_py.cli.sync_vscode_settings import main  # noqa: E402
 
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -3,7 +3,7 @@
 
 Checks whether a commit has a successful CI-equivalent attestation stored in git notes.
 
-Implementation lives in `scripts_py.check_ci_attestation`.
+Implementation lives in `scripts_py.ci.check_ci_attestation`.
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ def _bootstrap() -> None:
 
 def main() -> int:
     _bootstrap()
-    from scripts_py.check_ci_attestation import main as impl_main
+    from scripts_py.ci.check_ci_attestation import main as impl_main
 
     return int(impl_main(sys.argv[1:]))
 

@@ -27,7 +27,7 @@ def _bootstrap() -> None:
 
 def main() -> int:
     _bootstrap()
-    from scripts_py.sync_github_labels import main as impl_main
+    from scripts_py.cli.sync_github_labels import main as impl_main
 
     return int(impl_main(sys.argv[1:]))
 

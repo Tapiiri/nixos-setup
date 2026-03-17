@@ -1,7 +1,7 @@
 #!/usr/bin/env -S python3
 """Executable entrypoint for `import-dotfiles`.
 
-The implementation lives in `scripts_py.import_dotfiles` for unit testing.
+The implementation lives in `scripts_py.cli.import_dotfiles` for unit testing.
 """
 
 from __future__ import annotations
@@ -22,8 +22,7 @@ def _bootstrap() -> None:
 
 _bootstrap()
 
-from scripts_py.import_dotfiles import main  # noqa: E402
-
+from scripts_py.cli.import_dotfiles import main  # noqa: E402
 
 if __name__ == "__main__":
     raise SystemExit(main())

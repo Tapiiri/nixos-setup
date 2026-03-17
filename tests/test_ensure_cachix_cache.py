@@ -3,7 +3,7 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 
-from scripts_py import ensure_cachix_cache
+from scripts_py.cli import ensure_cachix_cache
 
 
 class TestEnsureCachixCache(unittest.TestCase):

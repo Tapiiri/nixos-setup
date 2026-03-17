@@ -5,32 +5,32 @@ import sys
 
 
 def _bootstrap() -> None:
-	"""Bootstrap sys.path so `scripts_py.*` imports work.
+    """Bootstrap sys.path so `scripts_py.*` imports work.
 
-	This wrapper is designed to be runnable from the repo checkout and also when
-	symlinked into ~/.local/bin.
-	"""
+    This wrapper is designed to be runnable from the repo checkout and also when
+    symlinked into ~/.local/bin.
+    """
 
-	from pathlib import Path
+    from pathlib import Path
 
-	here = Path(__file__).resolve()
-	sys.path.insert(0, str(here.parent.parent))
+    here = Path(__file__).resolve()
+    sys.path.insert(0, str(here.parent.parent))
 
-	from scripts_py.utils import RepoMarkers, bootstrap_repo_import_path
+    from scripts_py.utils import RepoMarkers, bootstrap_repo_import_path
 
-	bootstrap_repo_import_path(
-		script_file=here,
-		markers=RepoMarkers(),
-		extra_candidates=(Path.cwd(),),
-	)
+    bootstrap_repo_import_path(
+        script_file=here,
+        markers=RepoMarkers(),
+        extra_candidates=(Path.cwd(),),
+    )
 
 
 def main() -> int:
-	_bootstrap()
-	from scripts_py.ensure_cachix_cache import main as impl_main
+    _bootstrap()
+    from scripts_py.cli.ensure_cachix_cache import main as impl_main
 
-	return int(impl_main(sys.argv[1:]))
+    return int(impl_main(sys.argv[1:]))
 
 
 if __name__ == "__main__":
-	raise SystemExit(main())
+    raise SystemExit(main())

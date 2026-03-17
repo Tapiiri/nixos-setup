@@ -1,7 +1,7 @@
 #!/usr/bin/env -S python3
 """Executable entrypoint for `setup-links`.
 
-The implementation lives in `scripts_py.setup_links` for unit testing.
+The implementation lives in `scripts_py.cli.setup_links` for unit testing.
 
 This wrapper bootstraps sys.path so it works when symlinked/installed on $PATH
 (and in "different cwd" situations).
@@ -25,7 +25,7 @@ def _bootstrap() -> None:
 
 def main() -> int:
     _bootstrap()
-    from scripts_py.setup_links import main as impl_main
+    from scripts_py.cli.setup_links import main as impl_main
 
     return int(impl_main(sys.argv[1:]))
 

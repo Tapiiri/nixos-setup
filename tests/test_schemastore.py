@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from scripts_py.schemastore import (
+from scripts_py.lib.schemastore import (
     CatalogSchema,
     choose_schema_for_file,
     match_filematch,

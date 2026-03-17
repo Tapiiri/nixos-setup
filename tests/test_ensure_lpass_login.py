@@ -4,7 +4,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from scripts_py.ensure_lpass_login import check_lpass_logged_in
+from scripts_py.cli.ensure_lpass_login import check_lpass_logged_in
 
 
 class TestEnsureLpassLogin(unittest.TestCase):

@@ -3,7 +3,7 @@ from __future__ import annotations
 import io
 import unittest
 
-from scripts_py.update_github_env import (
+from scripts_py.cli.update_github_env import (
     EnvLine,
     Gh,
     SimpleCompletedProcess,

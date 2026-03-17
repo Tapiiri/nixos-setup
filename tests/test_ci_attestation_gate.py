@@ -4,7 +4,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from unittest import TestCase
 
-from scripts_py import ci_attestation_gate
+from scripts_py.ci import ci_attestation_gate
 
 
 @contextmanager

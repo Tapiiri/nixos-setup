@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from scripts_py.sync_github_labels import LabelSpec, normalize_color, plan_changes
+from scripts_py.cli.sync_github_labels import LabelSpec, normalize_color, plan_changes
 
 
 class TestNormalizeColor(unittest.TestCase):

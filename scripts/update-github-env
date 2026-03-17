@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Wrapper to call scripts_py.update_github_env.
+"""Wrapper to call scripts_py.cli.update_github_env.
 
 This mirrors the pattern used by other `scripts/*` entrypoints: fix up
 sys.path so `import scripts_py.*` works both from the repo checkout and when
@@ -29,7 +29,7 @@ def _bootstrap() -> None:
 
 def main() -> int:
     _bootstrap()
-    from scripts_py.update_github_env import main as impl_main
+    from scripts_py.cli.update_github_env import main as impl_main
 
     return int(impl_main(sys.argv[1:]))
 

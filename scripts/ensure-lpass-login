@@ -4,7 +4,7 @@
 This script preflights LastPass CLI authentication (used by secretspec) and can
 optionally exec a command only when authentication is present.
 
-Implementation lives in `scripts_py.ensure_lpass_login`.
+Implementation lives in `scripts_py.cli.ensure_lpass_login`.
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ def _bootstrap() -> None:
 
 def main() -> int:
     _bootstrap()
-    from scripts_py.ensure_lpass_login import main as impl_main
+    from scripts_py.cli.ensure_lpass_login import main as impl_main
 
     return int(impl_main(sys.argv[1:]))
 

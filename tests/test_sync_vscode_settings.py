@@ -7,7 +7,7 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
-from scripts_py import sync_vscode_settings
+from scripts_py.cli import sync_vscode_settings
 
 
 def test_format_nix_value_primitives():
@@ -23,15 +23,15 @@ def test_format_nix_value_primitives():
 def test_format_nix_value_string_escaping():
     """Test string escaping in Nix format."""
     assert sync_vscode_settings.format_nix_value('test"quote') == '"test\\"quote"'
-    assert sync_vscode_settings.format_nix_value('test\\slash') == '"test\\\\slash"'
-    assert sync_vscode_settings.format_nix_value('test\nline') == '"test\\nline"'
+    assert sync_vscode_settings.format_nix_value("test\\slash") == '"test\\\\slash"'
+    assert sync_vscode_settings.format_nix_value("test\nline") == '"test\\nline"'
 
 
 def test_format_nix_value_list():
     """Test formatting of lists."""
     assert sync_vscode_settings.format_nix_value([]) == "[]"
     result = sync_vscode_settings.format_nix_value([1, 2, 3])
-    assert result == '[\n    1\n    2\n    3\n  ]'
+    assert result == "[\n    1\n    2\n    3\n  ]"
 
 
 def test_format_nix_value_dict():
@@ -52,7 +52,7 @@ def test_get_managed_keys():
 def test_get_user_settings_filters_managed():
     """Test that user settings filtering works."""
     # Create a temporary settings file
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         settings = {
             "nix.serverPath": "/nix/store/...",  # Managed - should be filtered
             "editor.formatOnSave": True,  # Managed - should be filtered
@@ -61,19 +61,19 @@ def test_get_user_settings_filters_managed():
         }
         json.dump(settings, f)
         temp_path = Path(f.name)
-    
+
     try:
         # Mock the settings path
         with patch(
-            "scripts_py.sync_vscode_settings.get_vscode_settings_path",
+            "scripts_py.cli.sync_vscode_settings.get_vscode_settings_path",
             return_value=temp_path,
         ):
             user_settings = sync_vscode_settings.get_user_settings()
-            
+
             # Should not contain managed keys
             assert "nix.serverPath" not in user_settings
             assert "editor.formatOnSave" not in user_settings
-            
+
             # Should contain user keys
             assert user_settings["window.zoomLevel"] == 1
             assert user_settings["telemetry.telemetryLevel"] == "off"
@@ -94,7 +94,7 @@ def test_generate_nix_config_with_settings():
         "editor.fontSize": 14,
     }
     result = sync_vscode_settings.generate_nix_config(settings)
-    
+
     assert '"editor.fontSize" = 14;' in result
     assert '"window.zoomLevel" = 1;' in result
     assert result.startswith("  {")
@@ -115,11 +115,11 @@ def test_read_json_file_missing():
 
 def test_read_json_file_valid():
     """Test reading a valid JSON file."""
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         data = {"test": "value"}
         json.dump(data, f)
         temp_path = Path(f.name)
-    
+
     try:
         result = sync_vscode_settings.read_json_file(temp_path)
         assert result == {"test": "value"}
@@ -129,10 +129,10 @@ def test_read_json_file_valid():
 
 def test_read_json_file_invalid():
     """Test reading an invalid JSON file."""
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         f.write("not valid json{")
         temp_path = Path(f.name)
-    
+
     try:
         result = sync_vscode_settings.read_json_file(temp_path)
         assert result == {}

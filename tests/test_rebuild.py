@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts_py.rebuild import (
+from scripts_py.cli.rebuild import (
     RebuildConfig,
     build_exec_command,
     build_nixos_rebuild_command,
@@ -412,7 +412,7 @@ class TestRebuild(unittest.TestCase):
         """Simulate PATH installation: symlink entrypoint outside repo.
 
         We don't actually exec nixos-rebuild; we just check it can import
-        `scripts_py.rebuild` and show help.
+        `scripts_py.cli.rebuild` and show help.
         """
 
         import subprocess

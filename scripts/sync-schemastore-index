@@ -23,7 +23,7 @@ def _bootstrap() -> None:
 
 _bootstrap()
 
-from scripts_py.sync_schemastore_index import main  # noqa: E402
+from scripts_py.cli.sync_schemastore_index import main  # noqa: E402
 
 if __name__ == "__main__":
     raise SystemExit(main())

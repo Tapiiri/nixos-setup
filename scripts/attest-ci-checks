@@ -4,7 +4,7 @@
 Runs a devenv task (default: check:all) and writes a git-notes attestation so CI
 can detect that the exact CI-equivalent checks already ran locally.
 
-Implementation lives in `scripts_py.attest_ci_checks`.
+Implementation lives in `scripts_py.ci.attest_ci_checks`.
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ def _bootstrap() -> None:
 
 def main() -> int:
     _bootstrap()
-    from scripts_py.attest_ci_checks import main as impl_main
+    from scripts_py.ci.attest_ci_checks import main as impl_main
 
     return int(impl_main(sys.argv[1:]))
 

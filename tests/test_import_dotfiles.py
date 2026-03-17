@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts_py.import_dotfiles import ImportPaths, copy_one, planned_imports
+from scripts_py.cli.import_dotfiles import ImportPaths, copy_one, planned_imports
 
 
 class TestImportDotfiles(unittest.TestCase):

@@ -23,7 +23,7 @@ def _bootstrap() -> None:
 
 _bootstrap()
 
-from scripts_py.audit_tooling import main  # noqa: E402
+from scripts_py.cli.audit_tooling import main  # noqa: E402
 
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -2,7 +2,7 @@ import subprocess
 
 import pytest
 
-from scripts_py.add_secret import (
+from scripts_py.cli.add_secret import (
     AddSecretOptions,
     add_secret_to_lastpass,
     add_secret_to_secretspec,
