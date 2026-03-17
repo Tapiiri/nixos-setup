@@ -1,10 +1,10 @@
+---
 # markdownlint-cli2 configuration
 # https://github.com/DavidAnson/markdownlint-cli2
 
 config:
   # This repo has lots of long paths/commands; wrapping them hurts readability.
   MD013: false
-
 # Exclude generated/vendor-like paths if needed (none for now)
 # globs:
 #   - "!**/vendor/**"

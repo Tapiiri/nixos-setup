@@ -1,6 +1,7 @@
+---
 name: Update flake.lock
 
-on:
+"on":
   workflow_dispatch:
   schedule:
     # Weekly on Sunday at 06:00 UTC
