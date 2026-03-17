@@ -101,14 +101,19 @@
       name = "ruff check";
       entry = "scripts/ensure-password-manager-login -- devenv tasks run lint:python:ruff";
       language = "system";
+      files = ".*\\.py$";
       pass_filenames = false;
     };
 
     python-pytest = {
       enable = true;
       name = "pytest";
-      entry = "scripts/ensure-password-manager-login -- devenv tasks run tests:python:pytest";
+      # On retries after failure, pytest's --lf re-runs only previously-failed
+      # tests (--lfnf=all means "run everything when there's nothing to retry").
+      # PYTEST_ADDOPTS is scoped to pre-commit; CI/manual runs are unaffected.
+      entry = "scripts/ensure-password-manager-login -- env PYTEST_ADDOPTS='--lf --lfnf=all' devenv tasks run tests:python:pytest";
       language = "system";
+      files = "(.*\\.py$|^devenv\\.nix$|^pyproject\\.toml$|^scripts/)";
       pass_filenames = false;
     };
 
