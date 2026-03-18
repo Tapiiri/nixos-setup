@@ -31,8 +31,11 @@
   git-hooks.hooks = {
     nix-flake-check = {
       enable = true;
-      name = "nix flake check";
-      entry = "scripts/ensure-password-manager-login -- devenv tasks run check:nix:flake";
+      name = "nix flake check (cached)";
+      # Uses file-level attestation caching: when all .nix files + flake.lock
+      # match a previous passing attestation, the hook exits instantly.
+      # Falls back to running ``nix flake check --no-build`` otherwise.
+      entry = "scripts/ensure-password-manager-login -- scripts/cached-nix-check";
       language = "system";
       files = "(\\.nix$|^flake\\.nix$|^flake\\.lock$)";
       pass_filenames = false;

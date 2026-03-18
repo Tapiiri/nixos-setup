@@ -30,6 +30,9 @@ HOOK_TASK_OVERRIDES: dict[str, str] = {
     # Uses scripts/cached-pytest directly for file-level attestation caching.
     # Falls through to python -m pytest when attestations are stale/missing.
     "python-pytest": "tests:python:pytest",
+    # Uses scripts/cached-nix-check for nix-check attestation caching.
+    # Falls through to nix flake check --no-build when attestations are stale.
+    "nix-flake-check": "check:nix:flake",
 }
 
 # Hook IDs to exclude from coverage analysis entirely (not checks/lints).

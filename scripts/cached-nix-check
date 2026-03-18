@@ -1,0 +1,30 @@
+#!/usr/bin/env -S python3
+"""Executable entrypoint for ``cached-nix-check``.
+
+Runs ``nix flake check --no-build`` with attestation caching.  When
+nothing Nix-related has changed since the last passing run, the hook
+exits instantly.
+"""
+
+from __future__ import annotations
+
+import sys
+
+
+def _bootstrap() -> None:
+    from pathlib import Path
+
+    here = Path(__file__).resolve()
+    sys.path.insert(0, str(here.parent.parent))
+
+    from scripts_py.utils import RepoMarkers, bootstrap_repo_import_path
+
+    bootstrap_repo_import_path(script_file=here, markers=RepoMarkers())
+
+
+_bootstrap()
+
+from scripts_py.cli.cached_nix_check import main  # noqa: E402
+
+if __name__ == "__main__":
+    raise SystemExit(main())
