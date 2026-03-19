@@ -15,6 +15,9 @@
     actionlint
     markdownlint-cli2
     shellcheck
+    shfmt
+    taplo
+    jq
     entr
 
     # Python tooling pinned together (works even without devenv python module).
@@ -88,6 +91,42 @@
       entry = "scripts/ensure-password-manager-login -- devenv tasks run lint:shell:shellcheck";
       language = "system";
       files = "(.*\\.sh$|^dotfiles/home/bashrc$|^home/.*\\.sh\\.tpl$)";
+      pass_filenames = false;
+    };
+
+    shfmt = {
+      enable = true;
+      name = "shfmt";
+      entry = "scripts/ensure-password-manager-login -- devenv tasks run fmt:shell:shfmt";
+      language = "system";
+      files = "(.*\\.sh$|^dotfiles/home/bashrc$)";
+      pass_filenames = false;
+    };
+
+    taplo-check = {
+      enable = true;
+      name = "taplo check (toml lint)";
+      entry = "scripts/ensure-password-manager-login -- devenv tasks run lint:toml:taplo";
+      language = "system";
+      files = ".*\\.toml$";
+      pass_filenames = false;
+    };
+
+    taplo-fmt = {
+      enable = true;
+      name = "taplo fmt (toml format)";
+      entry = "scripts/ensure-password-manager-login -- devenv tasks run fmt:toml:taplo";
+      language = "system";
+      files = ".*\\.toml$";
+      pass_filenames = false;
+    };
+
+    jq-fmt = {
+      enable = true;
+      name = "jq (json format)";
+      entry = "scripts/ensure-password-manager-login -- devenv tasks run fmt:json:jq";
+      language = "system";
+      files = ".*\\.json$";
       pass_filenames = false;
     };
 
@@ -190,6 +229,38 @@
       exec = "shellcheck $(git ls-files '*.sh' 'dotfiles/home/bashrc' 'home/**/*.sh.tpl')";
     };
 
+    "fmt:shell:shfmt" = {
+      description = "Format shell scripts with shfmt";
+      exec = "shfmt -w -i 2 -ci $(git ls-files '*.sh' 'dotfiles/home/bashrc')";
+    };
+
+    # --- TOML ---
+    "lint:toml:taplo" = {
+      description = "Lint TOML files with taplo";
+      exec = "taplo check $(git ls-files '*.toml')";
+    };
+
+    "fmt:toml:taplo" = {
+      description = "Format TOML files with taplo";
+      exec = "taplo fmt $(git ls-files '*.toml')";
+    };
+
+    # --- JSON ---
+    "lint:json:check-jsonschema" = {
+      description = "Validate JSON files against SchemaStore schemas";
+      after = ["lint:schemastore:validate"];
+      exec = "true";
+    };
+
+    "fmt:json:jq" = {
+      description = "Format JSON files with jq";
+      exec = ''
+        for f in $(git ls-files '*.json' | grep -v '^\.vscode/'); do
+          jq . "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+        done
+      '';
+    };
+
     # --- Markdown ---
     "lint:md:markdownlint" = {
       description = "Lint Markdown with markdownlint-cli2";
@@ -238,13 +309,15 @@
         "lint:schemastore:validate"
         "lint:gha:actionlint"
         "lint:md:markdownlint"
+        "lint:toml:taplo"
+        "lint:json:check-jsonschema"
       ];
       exec = "true";
     };
 
     "fmt:all" = {
       description = "All formatters";
-      after = ["fmt:nix:alejandra" "fmt:md:markdownlint"];
+      after = ["fmt:nix:alejandra" "fmt:md:markdownlint" "fmt:shell:shfmt" "fmt:toml:taplo" "fmt:json:jq"];
       exec = "true";
     };
 
