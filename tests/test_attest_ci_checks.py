@@ -1,0 +1,326 @@
+"""Tests for scripts_py.ci.attest_ci_checks — especially --verify-local."""
+
+from __future__ import annotations
+
+import io
+import tempfile
+import time
+import unittest
+from pathlib import Path
+from typing import Sequence
+
+from scripts_py.ci.attest_ci_checks import (
+    _VERIFY_LOCAL_MAX_AGE_S,
+    Options,
+    attest_ci_checks,
+    parse_args,
+    verify_local_attestations,
+)
+from scripts_py.lib.nix_check_attestation import (
+    compute_nix_hash,
+    store_nix_attestation,
+)
+from scripts_py.lib.test_attestation import (
+    store_attestation as store_test_attestation,
+)
+
+# ------------------------------------------------------------------
+# Helpers
+# ------------------------------------------------------------------
+
+
+def _make_repo(root: Path) -> None:
+    """Create a minimal repo tree that satisfies hash computation + import graph."""
+    (root / "flake.nix").write_text("{ }")
+    (root / "flake.lock").write_text("{}")
+    (root / "devenv.nix").write_text("{pkgs}: {}")
+    (root / "pyproject.toml").write_text("[tool.pytest]")
+    scripts_py = root / "scripts_py"
+    scripts_py.mkdir(parents=True, exist_ok=True)
+    (scripts_py / "__init__.py").write_text("")
+    tests = root / "tests"
+    tests.mkdir(parents=True, exist_ok=True)
+    (tests / "__init__.py").write_text("")
+    (tests / "conftest.py").write_text("")
+    (tests / "test_alpha.py").write_text(
+        "import unittest\nclass T(unittest.TestCase):\n    def test_ok(self): pass\n"
+    )
+    (tests / "test_beta.py").write_text(
+        "import unittest\nclass T(unittest.TestCase):\n    def test_ok(self): pass\n"
+    )
+
+
+def _store_fresh_nix_attestation(root: Path) -> None:
+    state = root / ".devenv" / "state"
+    nix_hash = compute_nix_hash(root)
+    store_nix_attestation(state, nix_hash, ok=True)
+
+
+def _store_fresh_test_attestations(root: Path) -> None:
+    """Write passing attestation for every test_*.py file in tests/."""
+    from scripts_py.lib.depmap import build_import_graph, transitive_deps
+    from scripts_py.lib.test_attestation import compute_composite_hash
+
+    state = root / ".devenv" / "state"
+    graph = build_import_graph(root)
+    for f in graph:
+        if "tests" in f.parts and f.name.startswith("test_") and f.suffix == ".py":
+            deps = transitive_deps(graph, f)
+            ch = compute_composite_hash(f, deps, root)
+            store_test_attestation(state, f, ch, ok=True)
+
+
+# ------------------------------------------------------------------
+# Tests: verify_local_attestations
+# ------------------------------------------------------------------
+
+
+class TestVerifyLocalAttestations(unittest.TestCase):
+    def setUp(self) -> None:
+        self.td = tempfile.TemporaryDirectory()
+        self.root = Path(self.td.name)
+        _make_repo(self.root)
+
+    def tearDown(self) -> None:
+        self.td.cleanup()
+
+    def test_returns_true_when_all_fresh(self) -> None:
+        _store_fresh_nix_attestation(self.root)
+        _store_fresh_test_attestations(self.root)
+        out, err = io.StringIO(), io.StringIO()
+        self.assertTrue(verify_local_attestations(self.root, out=out, err=err))
+        self.assertIn("verified", out.getvalue().lower())
+
+    def test_returns_false_when_nix_missing(self) -> None:
+        # Only store test attestations, not nix.
+        _store_fresh_test_attestations(self.root)
+        err = io.StringIO()
+        self.assertFalse(verify_local_attestations(self.root, err=err))
+        self.assertIn("nix", err.getvalue().lower())
+
+    def test_returns_false_when_tests_missing(self) -> None:
+        # Only store nix attestation, not tests.
+        _store_fresh_nix_attestation(self.root)
+        err = io.StringIO()
+        self.assertFalse(verify_local_attestations(self.root, err=err))
+        self.assertIn("not attested", err.getvalue().lower())
+
+    def test_returns_false_when_nix_stale(self) -> None:
+        """Attestation older than max_age_s should be treated as missing."""
+        _store_fresh_nix_attestation(self.root)
+        _store_fresh_test_attestations(self.root)
+        # Backdate nix attestation beyond verify-local limit.
+        import json
+
+        state = self.root / ".devenv" / "state"
+        nix_dir = state / "nix-check-attestations"
+        for p in nix_dir.glob("*.json"):
+            data = json.loads(p.read_text())
+            data["ts"] = time.time() - _VERIFY_LOCAL_MAX_AGE_S - 60
+            p.write_text(json.dumps(data))
+
+        err = io.StringIO()
+        self.assertFalse(verify_local_attestations(self.root, err=err))
+
+    def test_returns_false_when_tests_stale(self) -> None:
+        """Stale test attestations should fail verification."""
+        _store_fresh_nix_attestation(self.root)
+        _store_fresh_test_attestations(self.root)
+        import json
+
+        state = self.root / ".devenv" / "state"
+        test_dir = state / "test-attestations"
+        for p in test_dir.glob("*.json"):
+            data = json.loads(p.read_text())
+            data["ts"] = time.time() - _VERIFY_LOCAL_MAX_AGE_S - 60
+            p.write_text(json.dumps(data))
+
+        err = io.StringIO()
+        self.assertFalse(verify_local_attestations(self.root, err=err))
+
+    def test_returns_false_when_nix_file_changed(self) -> None:
+        """If a nix file changed after the attestation, hash won't match."""
+        _store_fresh_nix_attestation(self.root)
+        _store_fresh_test_attestations(self.root)
+        # Modify a nix file after attestation.
+        (self.root / "flake.nix").write_text("{ outputs = {}; }")
+        err = io.StringIO()
+        self.assertFalse(verify_local_attestations(self.root, err=err))
+
+    def test_returns_false_when_test_file_changed(self) -> None:
+        """If a test file changed, its attestation hash won't match."""
+        _store_fresh_nix_attestation(self.root)
+        _store_fresh_test_attestations(self.root)
+        (self.root / "tests" / "test_alpha.py").write_text("# changed\n")
+        err = io.StringIO()
+        self.assertFalse(verify_local_attestations(self.root, err=err))
+
+    def test_returns_false_when_no_test_files(self) -> None:
+        """Repo with no test_*.py files should fail verification."""
+        _store_fresh_nix_attestation(self.root)
+        # Remove all test files.
+        for f in (self.root / "tests").glob("test_*.py"):
+            f.unlink()
+        err = io.StringIO()
+        self.assertFalse(verify_local_attestations(self.root, err=err))
+        self.assertIn("no test files", err.getvalue().lower())
+
+    def test_custom_max_age(self) -> None:
+        """Caller can pass a tighter max_age_s."""
+        _store_fresh_nix_attestation(self.root)
+        _store_fresh_test_attestations(self.root)
+        # With a very tight max_age (0 seconds), everything is stale.
+        self.assertFalse(verify_local_attestations(self.root, max_age_s=0.0))
+
+
+# ------------------------------------------------------------------
+# Tests: parse_args
+# ------------------------------------------------------------------
+
+
+class TestParseArgs(unittest.TestCase):
+    def test_verify_local_flag(self) -> None:
+        opts = parse_args(["--verify-local", "--no-run"])
+        self.assertTrue(opts.verify_local)
+        self.assertFalse(opts.run_task)
+
+    def test_default_no_verify_local(self) -> None:
+        opts = parse_args([])
+        self.assertFalse(opts.verify_local)
+
+
+# ------------------------------------------------------------------
+# Tests: attest_ci_checks with --verify-local
+# ------------------------------------------------------------------
+
+
+class FakeRunner:
+    """Records calls and returns configurable results."""
+
+    def __init__(self, rev_parse_sha: str = "abc123def456") -> None:
+        self.rev_parse_sha = rev_parse_sha
+        self.calls: list[list[str]] = []
+
+    def run_capture(self, argv: Sequence[str]) -> object:
+        self.calls.append(list(argv))
+
+        class Result:
+            pass
+
+        r = Result()
+        if argv[:2] == ["git", "rev-parse"]:
+            r.returncode = 0
+            r.stdout = self.rev_parse_sha
+            r.stderr = ""
+        elif argv[:2] == ["devenv", "version"]:
+            r.returncode = 0
+            r.stdout = "1.0.0"
+            r.stderr = ""
+        else:
+            r.returncode = 1
+            r.stdout = ""
+            r.stderr = "unexpected"
+        return r
+
+    def run_check(self, argv: Sequence[str]) -> None:
+        self.calls.append(list(argv))
+
+
+class TestAttestCiChecksVerifyLocal(unittest.TestCase):
+    def setUp(self) -> None:
+        self.td = tempfile.TemporaryDirectory()
+        self.root = Path(self.td.name)
+        _make_repo(self.root)
+
+    def tearDown(self) -> None:
+        self.td.cleanup()
+
+    def test_skips_note_when_verify_local_fails(self) -> None:
+        """With --verify-local and no caches, no git note should be written."""
+        runner = FakeRunner()
+        out, err = io.StringIO(), io.StringIO()
+        opts = Options(
+            task="check:all",
+            notes_ref="refs/notes/test",
+            remote="origin",
+            push=False,
+            strict_push=False,
+            commit="HEAD",
+            run_task=False,
+            verify_local=True,
+        )
+        # Monkey-patch repo_root resolution for the test.
+        import scripts_py.ci.attest_ci_checks as mod
+
+        original = mod.repo_root_from_script_path
+        mod.repo_root_from_script_path = lambda _p, **kw: self.root
+        try:
+            wrote = attest_ci_checks(opts=opts, runner=runner, out=out, err=err)
+        finally:
+            mod.repo_root_from_script_path = original
+
+        self.assertFalse(wrote)
+        # No git notes commands should have been issued.
+        note_cmds = [c for c in runner.calls if c[:2] == ["git", "notes"]]
+        self.assertEqual(note_cmds, [])
+
+    def test_writes_note_when_verify_local_passes(self) -> None:
+        """With --verify-local and fresh caches, note should be written."""
+        _store_fresh_nix_attestation(self.root)
+        _store_fresh_test_attestations(self.root)
+
+        runner = FakeRunner()
+        out, err = io.StringIO(), io.StringIO()
+        opts = Options(
+            task="check:all",
+            notes_ref="refs/notes/test",
+            remote="origin",
+            push=False,
+            strict_push=False,
+            commit="HEAD",
+            run_task=False,
+            verify_local=True,
+        )
+        import scripts_py.ci.attest_ci_checks as mod
+
+        original = mod.repo_root_from_script_path
+        mod.repo_root_from_script_path = lambda _p, **kw: self.root
+        try:
+            wrote = attest_ci_checks(opts=opts, runner=runner, out=out, err=err)
+        finally:
+            mod.repo_root_from_script_path = original
+
+        self.assertTrue(wrote)
+        note_cmds = [c for c in runner.calls if c[:2] == ["git", "notes"]]
+        self.assertEqual(len(note_cmds), 1)
+
+    def test_writes_note_without_verify_local(self) -> None:
+        """Without --verify-local, note should always be written."""
+        runner = FakeRunner()
+        out, err = io.StringIO(), io.StringIO()
+        opts = Options(
+            task="check:all",
+            notes_ref="refs/notes/test",
+            remote="origin",
+            push=False,
+            strict_push=False,
+            commit="HEAD",
+            run_task=False,
+            verify_local=False,
+        )
+        import scripts_py.ci.attest_ci_checks as mod
+
+        original = mod.repo_root_from_script_path
+        mod.repo_root_from_script_path = lambda _p, **kw: self.root
+        try:
+            wrote = attest_ci_checks(opts=opts, runner=runner, out=out, err=err)
+        finally:
+            mod.repo_root_from_script_path = original
+
+        self.assertTrue(wrote)
+        note_cmds = [c for c in runner.calls if c[:2] == ["git", "notes"]]
+        self.assertEqual(len(note_cmds), 1)
+
+
+if __name__ == "__main__":
+    unittest.main()

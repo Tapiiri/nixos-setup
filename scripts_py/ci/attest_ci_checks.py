@@ -12,6 +12,10 @@ from typing import Protocol, Sequence
 from scripts_py.lib.utils import log_error, log_info, log_warn
 from scripts_py.repo.context import repo_root_from_script_path
 
+# Tighter max-age for --verify-local: attestations must be very recent
+# (i.e. written during the pre-commit phase that just completed).
+_VERIFY_LOCAL_MAX_AGE_S = 300.0  # 5 minutes
+
 
 class CompletedProcess(Protocol):
     returncode: int
@@ -52,6 +56,7 @@ class Options:
     strict_push: bool
     commit: str
     run_task: bool
+    verify_local: bool
 
 
 DEFAULT_NOTES_REF = "refs/notes/nixos-setup-ci"
@@ -102,6 +107,15 @@ def parse_args(argv: Sequence[str]) -> Options:
         action="store_true",
         help="Do not run the task; only write/push the attestation note",
     )
+    p.add_argument(
+        "--verify-local",
+        action="store_true",
+        help=(
+            "Before writing the attestation, verify that local attestation caches "
+            "(nix check + test results) are fresh.  Used by the post-commit hook to "
+            "ensure pre-commit hooks actually ran."
+        ),
+    )
 
     ns = p.parse_args(list(argv))
     return Options(
@@ -112,6 +126,7 @@ def parse_args(argv: Sequence[str]) -> Options:
         strict_push=bool(ns.strict_push),
         commit=str(ns.commit),
         run_task=not bool(ns.no_run),
+        verify_local=bool(ns.verify_local),
     )
 
 
@@ -140,6 +155,80 @@ def _push_git_notes_ref(*, remote: str, ref: str, runner: Runner) -> None:
     runner.run_check(["git", "push", "--no-verify", remote, ref])
 
 
+# ------------------------------------------------------------------
+# Local attestation verification
+# ------------------------------------------------------------------
+
+
+def verify_local_attestations(
+    repo_root: Path,
+    *,
+    max_age_s: float = _VERIFY_LOCAL_MAX_AGE_S,
+    out=None,
+    err=None,
+) -> bool:
+    """Check that local attestation caches prove all check:all checks passed recently.
+
+    Returns ``True`` only when:
+
+    1. The nix flake check attestation is fresh and passing for the current
+       composite hash of all ``.nix`` files + ``flake.lock``.
+    2. Every test file discovered in the import graph has a fresh passing
+       attestation that matches its current content + dependency hashes.
+
+    This is used by the post-commit hook to decide whether writing a
+    git-notes CI attestation is justified.  If pre-commit hooks were skipped
+    (``git commit --no-verify``), these caches will be stale or missing and
+    this function returns ``False``, causing CI to run normally.
+    """
+    # Lazy imports to keep module loading lightweight.
+    from scripts_py.lib.depmap import build_import_graph
+    from scripts_py.lib.nix_check_attestation import compute_nix_hash, lookup_nix_attestation
+    from scripts_py.lib.test_attestation import check_all_attested
+
+    if out is None:
+        out = sys.stdout
+    if err is None:
+        err = sys.stderr
+
+    state_dir = repo_root / ".devenv" / "state"
+
+    # 1. Verify nix flake check attestation.
+    nix_hash = compute_nix_hash(repo_root)
+    nix_result = lookup_nix_attestation(state_dir, nix_hash, max_age_s=max_age_s)
+    if nix_result is not True:
+        log_warn("[verify-local] Nix check attestation missing or stale.", err=err)
+        return False
+
+    # 2. Verify test attestations for ALL test files.
+    graph = build_import_graph(repo_root)
+    all_test_files = {
+        f for f in graph if "tests" in f.parts and f.name.startswith("test_") and f.suffix == ".py"
+    }
+
+    if not all_test_files:
+        log_warn("[verify-local] No test files found in import graph.", err=err)
+        return False
+
+    attested, unattested = check_all_attested(
+        state_dir,
+        all_test_files,
+        graph,
+        repo_root,
+        max_age_s=max_age_s,
+    )
+    if unattested:
+        names = sorted(str(f.relative_to(repo_root)) for f in unattested)
+        log_warn(f"[verify-local] {len(unattested)} test(s) not attested: {names}", err=err)
+        return False
+
+    log_info(
+        f"[verify-local] All checks verified (nix + {len(attested)} test file(s)).",
+        out=out,
+    )
+    return True
+
+
 def _attestation_message(*, task: str, devenv_version: str | None) -> str:
     payload: dict[str, object] = {
         "schema": 1,
@@ -152,11 +241,21 @@ def _attestation_message(*, task: str, devenv_version: str | None) -> str:
     return json.dumps(payload, separators=(",", ":"), sort_keys=True)
 
 
-def attest_ci_checks(*, opts: Options, runner: Runner, out, err) -> None:
+def attest_ci_checks(*, opts: Options, runner: Runner, out, err) -> bool:
+    """Run the attestation flow.  Returns ``True`` if a note was written."""
     # Ensure we are in the repo (helps when scripts are invoked via symlinks).
-    repo_root_from_script_path(Path(__file__))
+    repo_root = repo_root_from_script_path(Path(__file__))
 
     commit_sha = _git_rev_parse(opts.commit, runner=runner)
+
+    if opts.verify_local:
+        if not verify_local_attestations(repo_root, out=out, err=err):
+            log_info(
+                "[attest-ci-checks] Local attestations not verified "
+                "— skipping CI attestation.  CI will run checks for this commit.",
+                out=out,
+            )
+            return False
 
     if opts.run_task:
         log_info(f"Running devenv task: {opts.task}", out=out)
@@ -177,6 +276,8 @@ def attest_ci_checks(*, opts: Options, runner: Runner, out, err) -> None:
                 raise
             log_warn(f"Failed to push git notes (continuing): {e}", err=err)
 
+    return True
+
 
 def main(argv: Sequence[str] | None = None) -> int:
     if argv is None:
@@ -184,8 +285,11 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     try:
         opts = parse_args(argv)
-        attest_ci_checks(opts=opts, runner=SubprocessRunner(), out=sys.stdout, err=sys.stderr)
-        log_info("✓ Local CI attestation written", out=sys.stdout)
+        wrote = attest_ci_checks(
+            opts=opts, runner=SubprocessRunner(), out=sys.stdout, err=sys.stderr
+        )
+        if wrote:
+            log_info("✓ Local CI attestation written", out=sys.stdout)
         return 0
     except subprocess.CalledProcessError as e:
         log_error(f"Command failed: {e}", err=sys.stderr)

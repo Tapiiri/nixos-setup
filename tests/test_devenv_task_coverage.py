@@ -1,9 +1,12 @@
 """Ensure pre-commit hooks cover every leaf task in the check:all tree.
 
-The pre-push ``ci-check-all-attest`` hook writes a local attestation claiming
-that ``check:all`` passed.  It trusts that the individual pre-commit hooks
-already ran each leaf check.  This test validates that assumption by parsing
-``devenv.nix`` and asserting parity between the two definitions.
+The post-commit ``ci-attest-post-commit`` hook writes a local CI attestation
+(as a git note) claiming that ``check:all`` passed — but only after verifying
+that local attestation caches (nix check + test results) are fresh.  This
+guarantees that pre-commit hooks actually ran before the attestation is written.
+
+This test validates that every leaf task in ``check:all`` has a corresponding
+pre-commit hook, so the post-commit verification covers the full check surface.
 
 If this test fails you most likely need to either:
   - add a pre-commit hook for a newly added leaf task, or
@@ -37,7 +40,7 @@ HOOK_TASK_OVERRIDES: dict[str, str] = {
 
 # Hook IDs to exclude from coverage analysis entirely (not checks/lints).
 _EXCLUDED_HOOKS: set[str] = {
-    "ci-check-all-attest",  # pre-push attestation, not a check
+    "ci-attest-post-commit",  # post-commit attestation, not a check
 }
 
 

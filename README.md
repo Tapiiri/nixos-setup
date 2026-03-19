@@ -90,7 +90,10 @@ exact CI-equivalent task locally:
 - Local command:
   - `scripts/attest-ci-checks --task check:all --push`
 - Git hook:
-  - A `pre-push` hook runs the same command automatically.
+  - A `post-commit` hook automatically verifies that pre-commit checks ran
+    (via `--verify-local`) and writes the attestation if they did. If
+    pre-commit was skipped (`git commit --no-verify`), no attestation is
+    written and CI runs normally.
 
 On direct pushes to `main`, GitHub Actions will look for that git note and can skip running
 `devenv tasks run -m all check:all` again when it finds a matching successful attestation.

@@ -162,12 +162,16 @@
       pass_filenames = false;
     };
 
-    ci-check-all-attest = {
+    ci-attest-post-commit = {
       enable = true;
-      name = "CI equivalent checks (check:all)";
-      entry = "scripts/ensure-password-manager-login -- scripts/attest-ci-checks --task check:all --push --no-run";
+      name = "Post-commit CI attestation";
+      # Verifies that local attestation caches (nix check + test results)
+      # are fresh before writing a git-notes CI attestation.  If pre-commit
+      # was skipped (--no-verify), caches will be stale/missing and the note
+      # is NOT written, so CI runs normally.
+      entry = "scripts/ensure-password-manager-login -- scripts/attest-ci-checks --task check:all --push --no-run --verify-local";
       language = "system";
-      stages = ["pre-push"];
+      stages = ["post-commit"];
       pass_filenames = false;
     };
   };
