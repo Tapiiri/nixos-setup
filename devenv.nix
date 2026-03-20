@@ -206,8 +206,8 @@
   tasks = {
     # --- Nix ---
     "check:nix:flake" = {
-      description = "nix flake check --no-build";
-      exec = "nix flake check --no-build";
+      description = "nix flake check --no-build (with attestation)";
+      exec = "scripts/cached-nix-check --force";
     };
 
     "fmt:nix:alejandra" = {
