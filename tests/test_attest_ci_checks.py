@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import Any, Sequence
 
 from scripts_py.ci.attest_ci_checks import (
-    _VERIFY_LOCAL_MAX_AGE_S,  # pyright: ignore[reportPrivateUsage]
     Options,
     SimpleCompletedProcess,
     attest_ci_checks,
@@ -106,25 +105,25 @@ class TestVerifyLocalAttestations(unittest.TestCase):
         self.assertFalse(verify_local_attestations(self.root, err=err))
         self.assertIn("not attested", err.getvalue().lower())
 
-    def test_returns_false_when_nix_stale(self) -> None:
-        """Attestation older than max_age_s should be treated as missing."""
+    def test_accepts_old_nix_attestation_with_matching_hash(self) -> None:
+        """Old attestations are valid as long as the content hash matches."""
         _store_fresh_nix_attestation(self.root)
         _store_fresh_test_attestations(self.root)
-        # Backdate nix attestation beyond verify-local limit.
+        # Backdate nix attestation to 2 hours ago.
         import json
 
         state = self.root / ".devenv" / "state"
         nix_dir = state / "nix-check-attestations"
         for p in nix_dir.glob("*.json"):
             data = json.loads(p.read_text())
-            data["ts"] = time.time() - _VERIFY_LOCAL_MAX_AGE_S - 60
+            data["ts"] = time.time() - 7200
             p.write_text(json.dumps(data))
 
-        err = io.StringIO()
-        self.assertFalse(verify_local_attestations(self.root, err=err))
+        out, err = io.StringIO(), io.StringIO()
+        self.assertTrue(verify_local_attestations(self.root, out=out, err=err))
 
-    def test_returns_false_when_tests_stale(self) -> None:
-        """Stale test attestations should fail verification."""
+    def test_accepts_old_test_attestation_with_matching_hash(self) -> None:
+        """Old test attestations are valid as long as the content hash matches."""
         _store_fresh_nix_attestation(self.root)
         _store_fresh_test_attestations(self.root)
         import json
@@ -133,11 +132,11 @@ class TestVerifyLocalAttestations(unittest.TestCase):
         test_dir = state / "test-attestations"
         for p in test_dir.glob("*.json"):
             data = json.loads(p.read_text())
-            data["ts"] = time.time() - _VERIFY_LOCAL_MAX_AGE_S - 60
+            data["ts"] = time.time() - 7200
             p.write_text(json.dumps(data))
 
-        err = io.StringIO()
-        self.assertFalse(verify_local_attestations(self.root, err=err))
+        out, err = io.StringIO(), io.StringIO()
+        self.assertTrue(verify_local_attestations(self.root, out=out, err=err))
 
     def test_returns_false_when_nix_file_changed(self) -> None:
         """If a nix file changed after the attestation, hash won't match."""
@@ -166,12 +165,14 @@ class TestVerifyLocalAttestations(unittest.TestCase):
         self.assertFalse(verify_local_attestations(self.root, err=err))
         self.assertIn("no test files", err.getvalue().lower())
 
-    def test_custom_max_age(self) -> None:
-        """Caller can pass a tighter max_age_s."""
-        _store_fresh_nix_attestation(self.root)
+    def test_returns_false_when_nix_attestation_marked_failed(self) -> None:
+        """A nix attestation with ok=False should fail verification."""
+        state = self.root / ".devenv" / "state"
+        nix_hash = compute_nix_hash(self.root)
+        store_nix_attestation(state, nix_hash, ok=False)
         _store_fresh_test_attestations(self.root)
-        # With a very tight max_age (0 seconds), everything is stale.
-        self.assertFalse(verify_local_attestations(self.root, max_age_s=0.0))
+        err = io.StringIO()
+        self.assertFalse(verify_local_attestations(self.root, err=err))
 
 
 # ------------------------------------------------------------------

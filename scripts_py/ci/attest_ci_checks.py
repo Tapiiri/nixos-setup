@@ -12,10 +12,6 @@ from typing import Protocol, Sequence, TextIO
 from scripts_py.lib.utils import log_error, log_info, log_warn
 from scripts_py.repo.context import repo_root_from_script_path
 
-# Tighter max-age for --verify-local: attestations must be very recent
-# (i.e. written during the pre-commit phase that just completed).
-_VERIFY_LOCAL_MAX_AGE_S = 300.0  # 5 minutes
-
 
 class CompletedProcess(Protocol):
     returncode: int
@@ -163,25 +159,31 @@ def _push_git_notes_ref(*, remote: str, ref: str, runner: Runner) -> None:
 def verify_local_attestations(
     repo_root: Path,
     *,
-    max_age_s: float = _VERIFY_LOCAL_MAX_AGE_S,
     out: TextIO | None = None,
     err: TextIO | None = None,
 ) -> bool:
-    """Check that local attestation caches prove all check:all checks passed recently.
+    """Check that local attestation caches prove all check:all checks passed.
 
     Returns ``True`` only when:
 
-    1. The nix flake check attestation is fresh and passing for the current
-       composite hash of all ``.nix`` files + ``flake.lock``.
-    2. Every test file discovered in the import graph has a fresh passing
-       attestation that matches its current content + dependency hashes.
+    1. A passing nix flake check attestation exists whose composite hash
+       matches the current ``.nix`` files + ``flake.lock``.
+    2. Every test file discovered in the import graph has a passing
+       attestation whose composite hash matches its current content +
+       dependency hashes.
+
+    No age limit is enforced — the content hash already proves the
+    attestation is still valid.  If files changed since the attestation
+    was written the hash will differ and the lookup returns ``None``.
 
     This is used by the post-commit hook to decide whether writing a
     git-notes CI attestation is justified.  If pre-commit hooks were skipped
-    (``git commit --no-verify``), these caches will be stale or missing and
-    this function returns ``False``, causing CI to run normally.
+    (``git commit --no-verify``), these caches will be missing and this
+    function returns ``False``, causing CI to run normally.
     """
     # Lazy imports to keep module loading lightweight.
+    import math
+
     from scripts_py.lib.depmap import build_import_graph
     from scripts_py.lib.nix_check_attestation import compute_nix_hash, lookup_nix_attestation
     from scripts_py.lib.test_attestation import check_all_attested
@@ -191,14 +193,14 @@ def verify_local_attestations(
 
     state_dir = repo_root / ".devenv" / "state"
 
-    # 1. Verify nix flake check attestation.
+    # 1. Verify nix flake check attestation (hash match only, no age limit).
     nix_hash = compute_nix_hash(repo_root)
-    nix_result = lookup_nix_attestation(state_dir, nix_hash, max_age_s=max_age_s)
+    nix_result = lookup_nix_attestation(state_dir, nix_hash, max_age_s=math.inf)
     if nix_result is not True:
-        log_warn("[verify-local] Nix check attestation missing or stale.", err=_err)
+        log_warn("[verify-local] Nix check attestation missing or failed.", err=_err)
         return False
 
-    # 2. Verify test attestations for ALL test files.
+    # 2. Verify test attestations for ALL test files (hash match only).
     graph = build_import_graph(repo_root)
     all_test_files = {
         f for f in graph if "tests" in f.parts and f.name.startswith("test_") and f.suffix == ".py"
@@ -213,7 +215,7 @@ def verify_local_attestations(
         all_test_files,
         graph,
         repo_root,
-        max_age_s=max_age_s,
+        max_age_s=math.inf,
     )
     if unattested:
         names = sorted(str(f.relative_to(repo_root)) for f in unattested)
