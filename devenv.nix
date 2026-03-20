@@ -182,6 +182,7 @@
       entry = "scripts/ensure-password-manager-login -- scripts/attest-ci-checks --task check:all --push --no-run --verify-local";
       language = "system";
       stages = ["post-commit"];
+      always_run = true;
       pass_filenames = false;
     };
   };
