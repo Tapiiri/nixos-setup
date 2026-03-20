@@ -26,6 +26,7 @@
 
   # Other repo/devtools helpers.
   PythonExt = pkgs.vscode-extensions.ms-python.python;
+  PylanceExt = pkgs.vscode-extensions.ms-python.vscode-pylance;
   ShellCheckExt = pkgs.vscode-extensions.timonwong.shellcheck;
   YamlExt = pkgs.vscode-extensions.redhat.vscode-yaml;
   TomlExt = pkgs.vscode-extensions.tamasfe.even-better-toml;
@@ -98,6 +99,11 @@
     "python.testing.pytestEnabled" = true;
     "python.testing.pytestArgs" = ["tests"];
     "python.testing.autoTestDiscoverOnSaveEnabled" = true;
+
+    # Pylance type checking: use pyright strict mode (matches pyproject.toml).
+    # Pylance uses pyright under the hood; this gives inline type errors in the editor.
+    "python.analysis.typeCheckingMode" = "strict";
+    "python.analysis.diagnosticSeverityOverrides" = {};
 
     # Auto-run all tests on every .py save via pucelle.run-on-save.
     # The Python extension doesn't natively support VS Code's continuous-run
@@ -183,6 +189,7 @@ in {
         CodexExt
         DirenvExt
         PythonExt
+        PylanceExt
         ShellCheckExt
         YamlExt
         TomlExt

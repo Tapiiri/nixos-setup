@@ -36,7 +36,11 @@ linters = [
   { name = "pyright", source = "devenv" },
 ]
 formatters = [{ name = "ruff (fix-on-save)", source = "vscode" }]
-vscode_extensions = ["ms-python.python", "charliermarsh.ruff"]
+vscode_extensions = [
+  "ms-python.python",
+  "ms-python.vscode-pylance",
+  "charliermarsh.ruff",
+]
 
 [file_types.yaml]
 extensions = [".yml", ".yaml"]
