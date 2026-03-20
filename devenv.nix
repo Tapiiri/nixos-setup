@@ -1,7 +1,6 @@
 {pkgs, ...}: {
   # Keep devenv usable even when the user is not a trusted Nix user.
   # (Otherwise devenv tries to auto-manage Cachix config and can fail.)
-  # CI attestation pipeline: pre-commit → post-commit → git notes → CI gate.
   cachix.pull = ["nixos-setup-devenv"];
   cachix.push = "nixos-setup-devenv";
 

@@ -147,19 +147,28 @@ def run_cached_pytest(
         # In watch mode also include staged changes.
         changed |= _changed_py_files(runner, repo_root, staged_only=True)
 
-    # Check for global config changes — if any, invalidate all attestations.
-    if _global_configs_changed(runner, repo_root, staged_only=staged_only):
+    # Check for global config changes — if any, invalidate all attestations
+    # and mark all test files as affected (since their composite hashes changed).
+    global_changed = _global_configs_changed(runner, repo_root, staged_only=staged_only)
+    if global_changed:
         log_info("[cached-pytest] Global config changed — invalidating all attestations.", out=_out)
         invalidate_all(state_dir)
-        changed |= {repo_root / cfg for cfg in GLOBAL_CONFIG_FILES if (repo_root / cfg).is_file()}
 
-    # If no Python files changed (and no global configs), nothing to do.
-    if not changed:
+    # If no Python files changed and no global configs changed, nothing to do.
+    if not changed and not global_changed:
         log_info("[cached-pytest] No Python files changed.", out=_out)
         return 0
 
     # 3. Determine which tests are affected.
-    affected = affected_tests(graph, changed)
+    if global_changed:
+        # Global config change invalidates all test hashes — every test must run.
+        affected: set[Path] = {
+            f
+            for f in graph
+            if "tests" in f.parts and f.name.startswith("test_") and f.suffix == ".py"
+        }
+    else:
+        affected = affected_tests(graph, changed)
     if not affected:
         log_info("[cached-pytest] No tests affected by changes.", out=_out)
         return 0

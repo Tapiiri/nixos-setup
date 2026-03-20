@@ -288,5 +288,70 @@ class TestWatchModeIncludesUnstaged(unittest.TestCase):
             self.assertEqual(len(runner.passthrough_calls), 1)
 
 
+class TestGlobalConfigChangeRunsAllTests(unittest.TestCase):
+    def test_runs_all_tests_when_global_config_staged(self) -> None:
+        """When a global config (devenv.nix) changes, ALL test files should run."""
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            _make_repo(root)
+
+            runner = FakeRunner(
+                # No Python files changed, only global config.
+                git_diff_staged="",
+                git_diff_global_staged="devenv.nix\n",
+                pytest_rc=0,
+            )
+            out, err = io.StringIO(), io.StringIO()
+
+            rc = run_cached_pytest(
+                repo_root=root,
+                runner=runner,
+                out=out,
+                err=err,
+            )
+
+            self.assertEqual(rc, 0)
+            # pytest should have been invoked.
+            self.assertEqual(len(runner.passthrough_calls), 1)
+            # Both test files should be in the args.
+            cmd = runner.passthrough_calls[0]
+            self.assertIn("test_foo", " ".join(cmd))
+            self.assertIn("test_utils", " ".join(cmd))
+
+    def test_invalidates_existing_attestations_on_global_change(self) -> None:
+        """Existing attestations should be cleared when global config changes."""
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            _make_repo(root)
+            state_dir = root / ".devenv" / "state"
+
+            # Pre-populate cache for test_foo.py.
+            graph = build_import_graph(root)
+            test_foo = root / "tests" / "test_foo.py"
+            deps = transitive_deps(graph, test_foo)
+            ch = compute_composite_hash(test_foo, deps, root)
+            store_attestation(state_dir, test_foo, ch, ok=True, elapsed=0.5)
+
+            runner = FakeRunner(
+                git_diff_staged="",
+                git_diff_global_staged="devenv.nix\n",
+                pytest_rc=0,
+            )
+            out = io.StringIO()
+
+            rc = run_cached_pytest(
+                repo_root=root,
+                runner=runner,
+                out=out,
+                err=io.StringIO(),
+            )
+
+            self.assertEqual(rc, 0)
+            # Despite test_foo being previously cached, it should still run
+            # because global config change invalidated all attestations.
+            self.assertEqual(len(runner.passthrough_calls), 1)
+            self.assertIn("invalidat", out.getvalue().lower())
+
+
 if __name__ == "__main__":
     unittest.main()
