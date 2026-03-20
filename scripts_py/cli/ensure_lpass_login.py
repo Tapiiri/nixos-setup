@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sys
-from typing import Sequence
+from typing import Sequence, TextIO
 
 from scripts_py.cli.ensure_password_manager_login import main as _pm_main
 from scripts_py.lib.password_manager import CheckResult, get_password_manager_backend
@@ -12,7 +12,7 @@ def check_lpass_logged_in() -> CheckResult:
     return get_password_manager_backend("lastpass").check_logged_in()
 
 
-def ensure_lpass_logged_in_or_exit(*, err, out) -> None:
+def ensure_lpass_logged_in_or_exit(*, err: TextIO, out: TextIO) -> None:
     res = check_lpass_logged_in()
     if res.ok:
         return
@@ -22,7 +22,7 @@ def ensure_lpass_logged_in_or_exit(*, err, out) -> None:
     raise SystemExit(1)
 
 
-def warn_if_lpass_not_logged_in(*, err) -> None:
+def warn_if_lpass_not_logged_in(*, err: TextIO) -> None:
     res = check_lpass_logged_in()
     if res.ok:
         return

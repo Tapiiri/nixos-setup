@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import io
 import os
+import subprocess
 import tempfile
 import unittest
+from collections.abc import Sequence
 from pathlib import Path
 
 from scripts_py.cli.rebuild import (
@@ -288,26 +291,28 @@ class TestRebuild(unittest.TestCase):
 
         calls: list[list[str]] = []
 
-        def fake_run(argv, **kwargs):
+        def fake_run(argv: Sequence[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
             calls.append(list(argv))
             # `remote get-url origin` returns a GitHub SSH URL
-            if argv[:6] == ["sudo", "git", "-C", "/etc/nixos", "remote", "get-url"]:
-                return type(
-                    "CP",
-                    (),
-                    {
-                        "returncode": 0,
-                        "stdout": "git@github.com:Tapiiri/nixos-setup.git\n",
-                        "stderr": "",
-                    },
-                )()
-            return type("CP", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+            if list(argv)[:6] == ["sudo", "git", "-C", "/etc/nixos", "remote", "get-url"]:
+                return subprocess.CompletedProcess(
+                    list(argv),
+                    0,
+                    stdout="git@github.com:Tapiiri/nixos-setup.git\n",
+                    stderr="",
+                )
+            return subprocess.CompletedProcess(
+                list(argv),
+                0,
+                stdout="",
+                stderr="",
+            )
 
         with patch("subprocess.run", side_effect=fake_run):
             rc = root_set_origin_to_mirror(
                 etc_dir=Path("/etc/nixos"),
                 mirror_dir=Path("/var/lib/nixos-setup/mirror.git"),
-                stderr=None,
+                stderr=io.StringIO(),
             )
 
         self.assertEqual(rc, 0)
@@ -330,23 +335,29 @@ class TestRebuild(unittest.TestCase):
 
         calls: list[list[str]] = []
 
-        def fake_run(argv, **kwargs):
+        def fake_run(argv: Sequence[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
             calls.append(list(argv))
             # origin already points to local mirror
-            if argv[:6] == ["sudo", "git", "-C", "/etc/nixos", "remote", "get-url"]:
-                return type(
-                    "CP",
-                    (),
-                    {"returncode": 0, "stdout": "/var/lib/nixos-setup/mirror.git\n", "stderr": ""},
-                )()
-            return type("CP", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+            if list(argv)[:6] == ["sudo", "git", "-C", "/etc/nixos", "remote", "get-url"]:
+                return subprocess.CompletedProcess(
+                    list(argv),
+                    0,
+                    stdout="/var/lib/nixos-setup/mirror.git\n",
+                    stderr="",
+                )
+            return subprocess.CompletedProcess(
+                list(argv),
+                0,
+                stdout="",
+                stderr="",
+            )
 
         with patch("subprocess.run", side_effect=fake_run):
             rc = root_update_from_mirror(
                 etc_dir=Path("/etc/nixos"),
                 mirror_dir=Path("/var/lib/nixos-setup/mirror.git"),
                 ref="origin/main",
-                stderr=None,
+                stderr=io.StringIO(),
             )
 
         self.assertEqual(rc, 0)
@@ -360,10 +371,10 @@ class TestRebuild(unittest.TestCase):
 
         calls: list[list[str]] = []
 
-        def fake_run(argv, **kwargs):
+        def fake_run(argv: Sequence[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
             calls.append(list(argv))
             # mv and git clone both succeed
-            return type("CP", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+            return subprocess.CompletedProcess(list(argv), 0, stdout="", stderr="")
 
         with tempfile.TemporaryDirectory() as td:
             etc_dir = Path(td) / "etc-nixos"
@@ -375,7 +386,7 @@ class TestRebuild(unittest.TestCase):
                 rc = root_ensure_etc_nixos_clone(
                     mirror_dir=Path("/var/lib/nixos-setup/mirror.git"),
                     etc_dir=etc_dir,
-                    stderr=None,
+                    stderr=io.StringIO(),
                 )
 
         self.assertEqual(rc, 0)
@@ -388,20 +399,20 @@ class TestRebuild(unittest.TestCase):
 
         calls: list[list[str]] = []
 
-        def fake_run(argv, **kwargs):
+        def fake_run(argv: Sequence[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
             calls.append(list(argv))
             # rev-parse ok
-            if argv[:5] == ["git", "-C", "/repo", "rev-parse", "--verify"]:
-                return type("CP", (), {"returncode": 0, "stdout": "deadbeef\n", "stderr": ""})()
+            if list(argv)[:5] == ["git", "-C", "/repo", "rev-parse", "--verify"]:
+                return subprocess.CompletedProcess(list(argv), 0, stdout="deadbeef\n", stderr="")
             # push ok
-            return type("CP", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+            return subprocess.CompletedProcess(list(argv), 0, stdout="", stderr="")
 
         with patch("subprocess.run", side_effect=fake_run):
             rc = mirror_push_from_dev(
                 repo_root=Path("/repo"),
                 mirror_dir=Path("/mirror.git"),
                 branch="main",
-                stderr=None,
+                stderr=io.StringIO(),
             )
 
         self.assertEqual(rc, 0)

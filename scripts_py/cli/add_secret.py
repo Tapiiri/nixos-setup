@@ -13,7 +13,7 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import tomlkit
 
@@ -42,10 +42,10 @@ def _write_text(path: Path, txt: str) -> None:
 
 def _get_project_name(text: str) -> str:
     try:
-        doc = tomlkit.parse(text)
-        proj = doc.get("project")
-        if proj and isinstance(proj, dict):
-            name = proj.get("name")
+        doc: Any = tomlkit.parse(text)
+        proj: Any = doc.get("project")
+        if proj:
+            name: Any = proj.get("name")
             if isinstance(name, str):
                 return name
     except Exception:
@@ -58,16 +58,8 @@ def _get_project_name(text: str) -> str:
     return Path.cwd().name
 
 
-def _ensure_profile_section(text: str, profile: str) -> str:
-    """No-op when using tomlkit; left for compatibility with tests that
-    construct file contents. We leave the textual append to the toml writer
-    below when necessary.
-    """
-    return text
-
-
-def _format_entry(name: str, description: Optional[str], required: bool) -> dict:
-    data: dict = {}
+def _format_entry(name: str, description: Optional[str], required: bool) -> dict[str, object]:
+    data: dict[str, object] = {}
     if description is not None:
         data["description"] = description
     data["required"] = required
@@ -82,18 +74,19 @@ def add_secret_to_secretspec(opts: AddSecretOptions) -> None:
 
     txt = _read_text(opts.secretspec_path)
     # parse existing document (tomlkit preserves comments)
+    doc: Any
     try:
         doc = tomlkit.parse(txt)
     except Exception:
         # start with an empty TOML document if parsing fails
         doc = tomlkit.document()
 
-    profiles = doc.get("profiles")
+    profiles: Any = doc.get("profiles")
     if profiles is None:
         profiles = tomlkit.table()
         doc["profiles"] = profiles
 
-    profile_tbl = profiles.get(opts.profile)
+    profile_tbl: Any = profiles.get(opts.profile)
     if profile_tbl is None:
         profile_tbl = tomlkit.table()
         profiles[opts.profile] = profile_tbl
@@ -102,14 +95,14 @@ def add_secret_to_secretspec(opts: AddSecretOptions) -> None:
         raise ValueError(f"Secret {opts.name} already defined in profile {opts.profile}")
 
     entry_data = _format_entry(opts.name, opts.description, required=True)
-    inline = tomlkit.inline_table()
+    inline: Any = tomlkit.inline_table()
     for k, v in entry_data.items():
         inline[k] = v
 
     # assign inline table to keep one-line inline representation
     profile_tbl[opts.name] = inline
 
-    new_txt = tomlkit.dumps(doc)
+    new_txt = str(tomlkit.dumps(doc))  # type: ignore[reportUnknownMemberType]
     _write_text(opts.secretspec_path, new_txt)
 
 

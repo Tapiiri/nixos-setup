@@ -6,7 +6,7 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, TextIO
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
@@ -42,13 +42,13 @@ def _git_ls_files(repo_root: Path) -> list[str]:
 def _parse_catalog_schemas(catalog: dict[str, Any]) -> list[CatalogSchema]:
     schemas: list[CatalogSchema] = []
     for entry in catalog.get("schemas", []):
-        url = entry.get("url")
-        name = entry.get("name")
+        url: Any = entry.get("url")
+        name: Any = entry.get("name")
         if not url or not name:
             continue
 
-        file_match = tuple(entry.get("fileMatch") or ())
-        if not file_match:
+        raw_match: Any = entry.get("fileMatch")
+        if not raw_match:
             continue
 
         schemas.append(
@@ -56,7 +56,7 @@ def _parse_catalog_schemas(catalog: dict[str, Any]) -> list[CatalogSchema]:
                 name=str(name),
                 url=str(url),
                 description=(str(entry.get("description")) if entry.get("description") else None),
-                file_match=tuple(str(p) for p in file_match),
+                file_match=tuple(str(p) for p in raw_match),
             )
         )
     return schemas
@@ -85,8 +85,8 @@ def sync_index(
     index_path: Path,
     schemas_dir: Path,
     refresh_schemas: bool,
-    out,
-    err,
+    out: TextIO,
+    err: TextIO,
 ) -> int:
     try:
         catalog = _http_get_json(catalog_url)

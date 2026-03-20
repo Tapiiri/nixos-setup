@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
+from typing import TextIO
 
 from scripts_py.lib.tooling_audit import (
     classify_files,
@@ -27,8 +28,8 @@ def audit(
     *,
     repo_root: Path,
     registry_path: Path,
-    out,
-    err,
+    out: TextIO,
+    err: TextIO,
     strict: bool = False,
     json_output: bool = False,
     no_discover: bool = False,
@@ -109,8 +110,9 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
 
-    repo_root = repo_root_from_script_path(Path(__file__))
-    if repo_root is None:
+    try:
+        repo_root = repo_root_from_script_path(Path(__file__))
+    except FileNotFoundError:
         print("[ERROR] Could not locate repo root.", file=sys.stderr)
         return 2
 

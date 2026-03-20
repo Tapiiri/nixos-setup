@@ -180,7 +180,7 @@ def cachix_api_create_cache(*, cfg: CachixConfig, cache_name: str, visibility: s
     )
 
 
-def _run(argv: list[str]) -> subprocess.CompletedProcess:
+def _run(argv: list[str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(argv, check=False, text=True, capture_output=True)
 
 

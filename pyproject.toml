@@ -17,3 +17,8 @@ select = ["E", "F", "I", "B"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["scripts_py", "tests"]
+
+[tool.pyright]
+typeCheckingMode = "strict"
+pythonVersion = "3.13"
+include = ["scripts_py", "tests"]

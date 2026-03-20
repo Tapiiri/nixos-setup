@@ -7,7 +7,7 @@ import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Protocol, Sequence
+from typing import Protocol, Sequence, TextIO
 
 from scripts_py.lib.utils import log_error, log_info, log_warn
 from scripts_py.repo.context import repo_root_from_script_path
@@ -164,8 +164,8 @@ def verify_local_attestations(
     repo_root: Path,
     *,
     max_age_s: float = _VERIFY_LOCAL_MAX_AGE_S,
-    out=None,
-    err=None,
+    out: TextIO | None = None,
+    err: TextIO | None = None,
 ) -> bool:
     """Check that local attestation caches prove all check:all checks passed recently.
 
@@ -186,10 +186,8 @@ def verify_local_attestations(
     from scripts_py.lib.nix_check_attestation import compute_nix_hash, lookup_nix_attestation
     from scripts_py.lib.test_attestation import check_all_attested
 
-    if out is None:
-        out = sys.stdout
-    if err is None:
-        err = sys.stderr
+    _out: TextIO = out if out is not None else sys.stdout
+    _err: TextIO = err if err is not None else sys.stderr
 
     state_dir = repo_root / ".devenv" / "state"
 
@@ -197,7 +195,7 @@ def verify_local_attestations(
     nix_hash = compute_nix_hash(repo_root)
     nix_result = lookup_nix_attestation(state_dir, nix_hash, max_age_s=max_age_s)
     if nix_result is not True:
-        log_warn("[verify-local] Nix check attestation missing or stale.", err=err)
+        log_warn("[verify-local] Nix check attestation missing or stale.", err=_err)
         return False
 
     # 2. Verify test attestations for ALL test files.
@@ -207,7 +205,7 @@ def verify_local_attestations(
     }
 
     if not all_test_files:
-        log_warn("[verify-local] No test files found in import graph.", err=err)
+        log_warn("[verify-local] No test files found in import graph.", err=_err)
         return False
 
     attested, unattested = check_all_attested(
@@ -219,12 +217,12 @@ def verify_local_attestations(
     )
     if unattested:
         names = sorted(str(f.relative_to(repo_root)) for f in unattested)
-        log_warn(f"[verify-local] {len(unattested)} test(s) not attested: {names}", err=err)
+        log_warn(f"[verify-local] {len(unattested)} test(s) not attested: {names}", err=_err)
         return False
 
     log_info(
         f"[verify-local] All checks verified (nix + {len(attested)} test file(s)).",
-        out=out,
+        out=_out,
     )
     return True
 
@@ -241,7 +239,7 @@ def _attestation_message(*, task: str, devenv_version: str | None) -> str:
     return json.dumps(payload, separators=(",", ":"), sort_keys=True)
 
 
-def attest_ci_checks(*, opts: Options, runner: Runner, out, err) -> bool:
+def attest_ci_checks(*, opts: Options, runner: Runner, out: TextIO, err: TextIO) -> bool:
     """Run the attestation flow.  Returns ``True`` if a note was written."""
     # Ensure we are in the repo (helps when scripts are invoked via symlinks).
     repo_root = repo_root_from_script_path(Path(__file__))

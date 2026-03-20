@@ -22,7 +22,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Protocol, Sequence
+from typing import Protocol, Sequence, TextIO
 
 from scripts_py.lib.depmap import (
     GLOBAL_CONFIG_FILES,
@@ -125,17 +125,15 @@ def run_cached_pytest(
     force: bool = False,
     watch_mode: bool = False,
     extra_pytest_args: Sequence[str] = (),
-    out=None,
-    err=None,
+    out: TextIO | None = None,
+    err: TextIO | None = None,
 ) -> int:
     """Main implementation.
 
     Returns the exit code (0 = success, non-zero = test failure or error).
     """
-    if out is None:
-        out = sys.stdout
-    if err is None:
-        err = sys.stderr
+    _out = out if out is not None else sys.stdout
+    _err = err if err is not None else sys.stderr
 
     state_dir = repo_root / _STATE_REL
 
@@ -151,19 +149,19 @@ def run_cached_pytest(
 
     # Check for global config changes — if any, invalidate all attestations.
     if _global_configs_changed(runner, repo_root, staged_only=staged_only):
-        log_info("[cached-pytest] Global config changed — invalidating all attestations.", out=out)
+        log_info("[cached-pytest] Global config changed — invalidating all attestations.", out=_out)
         invalidate_all(state_dir)
         changed |= {repo_root / cfg for cfg in GLOBAL_CONFIG_FILES if (repo_root / cfg).is_file()}
 
     # If no Python files changed (and no global configs), nothing to do.
     if not changed:
-        log_info("[cached-pytest] No Python files changed.", out=out)
+        log_info("[cached-pytest] No Python files changed.", out=_out)
         return 0
 
     # 3. Determine which tests are affected.
     affected = affected_tests(graph, changed)
     if not affected:
-        log_info("[cached-pytest] No tests affected by changes.", out=out)
+        log_info("[cached-pytest] No tests affected by changes.", out=_out)
         return 0
 
     # 4. Check attestation cache (unless --force).
@@ -174,20 +172,20 @@ def run_cached_pytest(
         if attested and not to_run:
             log_info(
                 f"[cached-pytest] All {len(attested)} affected test(s) cached — skipping.",
-                out=out,
+                out=_out,
             )
             return 0
         if attested:
             log_info(
                 f"[cached-pytest] {len(attested)} test(s) cached, {len(to_run)} need running.",
-                out=out,
+                out=_out,
             )
 
     # 5. Run pytest on the unattested test files.
     test_paths = sorted(str(t) for t in to_run)
     pytest_argv = ["python", "-m", "pytest", "-q", *test_paths, *list(extra_pytest_args)]
 
-    log_info(f"[cached-pytest] Running: {' '.join(pytest_argv)}", out=out)
+    log_info(f"[cached-pytest] Running: {' '.join(pytest_argv)}", out=_out)
     t0 = time.time()
     rc = runner.run_passthrough(pytest_argv, cwd=str(repo_root))
     elapsed = time.time() - t0
@@ -207,12 +205,12 @@ def run_cached_pytest(
     if rc == 0:
         log_info(
             f"[cached-pytest] {len(to_run)} test(s) passed in {elapsed:.1f}s — attested.",
-            out=out,
+            out=_out,
         )
     else:
         log_warn(
             f"[cached-pytest] {len(to_run)} test(s) FAILED in {elapsed:.1f}s — fail-attested.",
-            err=err,
+            err=_err,
         )
 
     return rc

@@ -5,7 +5,7 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Mapping, Protocol, Sequence
+from typing import Callable, Mapping, Protocol, Sequence
 
 from scripts_py.ci.check_ci_attestation import Options as CheckOptions
 from scripts_py.ci.check_ci_attestation import has_attestation
@@ -177,7 +177,7 @@ def compute_skip(
     allow_events: Sequence[str] = ("push",),
     allow_refs: Sequence[str] = ("refs/heads/main",),
     verbose: bool = False,
-    has_attestation_fn=has_attestation,
+    has_attestation_fn: Callable[..., bool] = has_attestation,
 ) -> bool:
     repo_root_from_script_path(Path(__file__))
 
@@ -221,9 +221,9 @@ def main(
     *,
     env: Mapping[str, str] | None = None,
     runner: Runner | None = None,
-    compute_skip_fn=compute_skip,
-    has_attestation_fn=has_attestation,
-    print_fn=None,
+    compute_skip_fn: Callable[..., bool] = compute_skip,
+    has_attestation_fn: Callable[..., bool] = has_attestation,
+    print_fn: Callable[[str], object] | None = None,
 ) -> int:
     if argv is None:
         argv = sys.argv[1:]
@@ -236,8 +236,7 @@ def main(
     if runner is None:
         runner = SubprocessRunner()
 
-    if print_fn is None:
-        print_fn = sys.stdout.write
+    _print_fn = print_fn if print_fn is not None else sys.stdout.write
 
     try:
         opts = parse_args(argv, env=env)
@@ -262,16 +261,16 @@ def main(
         if opts.github_output_path is not None:
             write_github_output(output_path=opts.github_output_path, key=opts.output_key, value=out)
         else:
-            print_fn(out)
+            _print_fn(out)
         return 0
     except Exception as e:  # pragma: no cover - defensive
         log_error(str(e), err=sys.stderr)
         # Default safe behavior: do not skip.
-        go = env.get("GITHUB_OUTPUT") if env is not None else None
+        go = env.get("GITHUB_OUTPUT")
         if go:
             write_github_output(output_path=Path(go), key="skip", value="false")
         else:
-            print_fn("false")
+            _print_fn("false")
         return 0
 
 

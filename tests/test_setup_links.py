@@ -1,6 +1,7 @@
 import os
 import tempfile
 import unittest
+from collections.abc import Sequence
 from pathlib import Path
 from unittest.mock import patch
 
@@ -16,11 +17,11 @@ from scripts_py.cli.setup_links import (
 
 
 class FakeRunner:
-    def __init__(self):
-        self.calls = []
+    def __init__(self) -> None:
+        self.calls: list[list[str]] = []
         self.returncode = 0
 
-    def run(self, argv):
+    def run(self, argv: Sequence[str]) -> int:
         self.calls.append(list(argv))
         return self.returncode
 

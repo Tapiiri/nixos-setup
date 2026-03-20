@@ -14,33 +14,37 @@ resolution — no separate background watcher needed.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import cast
+
+import pytest
 
 
-def pytest_configure(config):
+def pytest_configure(config: pytest.Config) -> None:
     """Initialise per-file result tracking on the config object."""
-    config._attestation_file_results = {}  # Path -> bool
+    config._attestation_file_results = {}  # type: ignore[attr-defined]  # Path -> bool
 
 
-def pytest_runtest_makereport(item, call):
+def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo[None]) -> None:
     """Record per-file pass/fail during the ``call`` phase."""
     if call.when != "call":
         return
 
     # item.path is pathlib.Path (pytest >= 7); item.fspath is the legacy py.path.
     test_file = Path(getattr(item, "path", item.fspath)).resolve()
-    results = item.config._attestation_file_results
+    results: dict[Path, bool] = item.config._attestation_file_results  # type: ignore[attr-defined]
+    _results = cast(dict[Path, bool], results)
 
     if call.excinfo is not None:
         # Any failure in a file marks the whole file as failed.
-        results[test_file] = False
-    elif results.get(test_file) is not False:
+        _results[test_file] = False
+    elif _results.get(test_file) is not False:
         # Only mark as passed if not already failed by another test in the file.
-        results[test_file] = True
+        _results[test_file] = True
 
 
-def pytest_sessionfinish(session, exitstatus):
+def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
     """Write attestations for every collected test file after the session ends."""
-    results = getattr(session.config, "_attestation_file_results", {})
+    results: dict[Path, bool] = getattr(session.config, "_attestation_file_results", {})
     if not results:
         return
 

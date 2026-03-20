@@ -2,30 +2,31 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import NoReturn, Protocol, Sequence
+from typing import NoReturn, Protocol, Sequence, TextIO
 
 
-def log_info(msg: str, *, out) -> None:
+def log_info(msg: str, *, out: TextIO) -> None:
     print(f"[INFO] {msg}", file=out)
 
 
-def log_warn(msg: str, *, err) -> None:
+def log_warn(msg: str, *, err: TextIO) -> None:
     print(f"[WARN] {msg}", file=err)
 
 
-def log_error(msg: str, *, err) -> None:
+def log_error(msg: str, *, err: TextIO) -> None:
     print(f"[ERROR] {msg}", file=err)
 
 
 class Runner(Protocol):
     def exec(self, argv: Sequence[str]) -> NoReturn:  # pragma: no cover
         """Replace the current process with argv[0] and arguments."""
+        ...
 
 
 class OsExecRunner:
     def exec(self, argv: Sequence[str]) -> NoReturn:
         os.execvp(argv[0], list(argv))
-        raise AssertionError("os.execvp returned")
+        raise AssertionError("unreachable: os.execvp returned")  # pragma: no cover
 
 
 def read_hostname(path: Path = Path("/etc/hostname")) -> str | None:

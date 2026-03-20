@@ -6,7 +6,7 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Protocol, Sequence
+from typing import Any, Protocol, Sequence, cast
 
 from scripts_py.lib.utils import log_error
 from scripts_py.repo.context import repo_root_from_script_path
@@ -90,15 +90,16 @@ def _note_is_valid_attestation(note: str, *, expected_task: str) -> bool:
     if not note:
         return False
     try:
-        data = json.loads(note)
+        data: Any = json.loads(note)
     except Exception:
         return False
 
     if not isinstance(data, dict):
         return False
 
-    ok = data.get("ok") is True
-    task = data.get("task")
+    d = cast(Any, data)
+    ok = d.get("ok") is True
+    task: Any = d.get("task")
     return ok and task == expected_task
 
 

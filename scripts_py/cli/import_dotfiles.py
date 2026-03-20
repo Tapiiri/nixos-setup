@@ -6,7 +6,7 @@ import shutil
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, Sequence
+from typing import Iterable, Sequence, TextIO
 
 from scripts_py.repo.context import repo_root_from_script_path
 
@@ -77,7 +77,7 @@ def planned_imports(
     return pairs
 
 
-def copy_one(src: Path, dst: Path, *, out, err) -> int:
+def copy_one(src: Path, dst: Path, *, out: TextIO, err: TextIO) -> int:
     """Copy src -> dst preserving metadata, without overwriting.
 
     Returns 0 on success/skip, non-zero on copy failure.
@@ -113,13 +113,16 @@ def copy_one(src: Path, dst: Path, *, out, err) -> int:
         return 1
 
 
-def main(argv: Sequence[str] | None = None, *, out=None, err=None) -> int:
+def main(
+    argv: Sequence[str] | None = None,
+    *,
+    out: TextIO | None = None,
+    err: TextIO | None = None,
+) -> int:
     if argv is None:
         argv = sys.argv[1:]
-    if out is None:
-        out = sys.stdout
-    if err is None:
-        err = sys.stderr
+    _out: TextIO = out if out is not None else sys.stdout
+    _err: TextIO = err if err is not None else sys.stderr
 
     args = parse_args(argv)
     if not args.from_home and not args.from_config:
@@ -131,7 +134,7 @@ def main(argv: Sequence[str] | None = None, *, out=None, err=None) -> int:
 
     rc = 0
     for src, dst in planned_imports(paths, from_home=args.from_home, from_config=args.from_config):
-        rc = max(rc, copy_one(src, dst, out=out, err=err))
+        rc = max(rc, copy_one(src, dst, out=_out, err=_err))
     return rc
 
 

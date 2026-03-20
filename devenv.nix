@@ -19,6 +19,7 @@
     taplo
     jq
     entr
+    pyright
 
     # Python tooling pinned together (works even without devenv python module).
     (python313.withPackages (ps:
@@ -143,6 +144,15 @@
       enable = true;
       name = "ruff check";
       entry = "scripts/ensure-password-manager-login -- devenv tasks run lint:python:ruff";
+      language = "system";
+      files = ".*\\.py$";
+      pass_filenames = false;
+    };
+
+    pyright-check = {
+      enable = true;
+      name = "pyright";
+      entry = "scripts/ensure-password-manager-login -- devenv tasks run lint:python:pyright";
       language = "system";
       files = ".*\\.py$";
       pass_filenames = false;
@@ -282,6 +292,11 @@
       exec = "ruff check scripts_py tests";
     };
 
+    "lint:python:pyright" = {
+      description = "Type-check Python with pyright (strict)";
+      exec = "pyright scripts_py tests";
+    };
+
     "tests:python:pytest" = {
       description = "Run Python tests (pytest)";
       exec = "python -m pytest -q tests";
@@ -308,6 +323,7 @@
       description = "All linters";
       after = [
         "lint:python:ruff"
+        "lint:python:pyright"
         "lint:shell:shellcheck"
         "lint:yaml:yamllint"
         "lint:schemastore:validate"

@@ -121,12 +121,12 @@ class TestBuildImportGraph(unittest.TestCase):
 class TestTransitiveDeps(unittest.TestCase):
     def test_linear_chain(self) -> None:
         a, b, c = Path("a"), Path("b"), Path("c")
-        graph = {a: {b}, b: {c}, c: set()}
+        graph: dict[Path, set[Path]] = {a: {b}, b: {c}, c: set()}
         self.assertEqual(transitive_deps(graph, a), {b, c})
 
     def test_diamond(self) -> None:
         a, b, c, d = Path("a"), Path("b"), Path("c"), Path("d")
-        graph = {a: {b, c}, b: {d}, c: {d}, d: set()}
+        graph: dict[Path, set[Path]] = {a: {b, c}, b: {d}, c: {d}, d: set()}
         self.assertEqual(transitive_deps(graph, a), {b, c, d})
 
     def test_cycle_safe(self) -> None:
@@ -149,7 +149,7 @@ class TestAffectedTests(unittest.TestCase):
     def test_direct_test_change(self) -> None:
         tf = Path("/repo/tests/test_a.py")
         src = Path("/repo/scripts_py/a.py")
-        graph = {tf: {src}, src: set()}
+        graph: dict[Path, set[Path]] = {tf: {src}, src: set()}
         result = affected_tests(graph, {tf})
         self.assertEqual(result, {tf})
 
@@ -157,7 +157,7 @@ class TestAffectedTests(unittest.TestCase):
         tf = Path("/repo/tests/test_a.py")
         src = Path("/repo/scripts_py/a.py")
         lib = Path("/repo/scripts_py/lib/utils.py")
-        graph = {tf: {src}, src: {lib}, lib: set()}
+        graph: dict[Path, set[Path]] = {tf: {src}, src: {lib}, lib: set()}
         result = affected_tests(graph, {lib})
         self.assertEqual(result, {tf})
 
@@ -165,7 +165,7 @@ class TestAffectedTests(unittest.TestCase):
         tf = Path("/repo/tests/test_a.py")
         src = Path("/repo/scripts_py/a.py")
         other = Path("/repo/scripts_py/b.py")
-        graph = {tf: {src}, src: set(), other: set()}
+        graph: dict[Path, set[Path]] = {tf: {src}, src: set(), other: set()}
         result = affected_tests(graph, {other})
         self.assertEqual(result, set())
 
@@ -173,7 +173,7 @@ class TestAffectedTests(unittest.TestCase):
         """Only test files are returned, not the changed source files themselves."""
         tf = Path("/repo/tests/test_a.py")
         src = Path("/repo/scripts_py/a.py")
-        graph = {tf: {src}, src: set()}
+        graph: dict[Path, set[Path]] = {tf: {src}, src: set()}
         result = affected_tests(graph, {src})
         self.assertNotIn(src, result)
         self.assertEqual(result, {tf})
@@ -183,7 +183,7 @@ class TestAffectedTests(unittest.TestCase):
         conftest = Path("/repo/tests/conftest.py")
         tf = Path("/repo/tests/test_a.py")
         src = Path("/repo/scripts_py/a.py")
-        graph = {conftest: {src}, tf: {src}, src: set()}
+        graph: dict[Path, set[Path]] = {conftest: {src}, tf: {src}, src: set()}
         result = affected_tests(graph, {src})
         self.assertNotIn(conftest, result)
         self.assertEqual(result, {tf})

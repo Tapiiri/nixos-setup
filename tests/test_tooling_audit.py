@@ -142,15 +142,15 @@ class TestClassifyFiles(unittest.TestCase):
 
     def test_classifies_by_extension(self) -> None:
         files = ["foo.py", "bar.nix", "baz.txt"]
-        classified, unmapped = classify_files(files, self.specs)
+        classified, _unmapped = classify_files(files, self.specs)
 
         self.assertEqual(classified["python"], ["foo.py"])
         self.assertEqual(classified["nix"], ["bar.nix"])
-        self.assertIn("baz.txt", unmapped)
+        self.assertIn("baz.txt", _unmapped)
 
     def test_classifies_by_glob(self) -> None:
         files = [".github/workflows/ci.yml", "config.yml"]
-        classified, unmapped = classify_files(files, self.specs)
+        classified, _unmapped = classify_files(files, self.specs)
 
         # ci.yml matches both github-actions (glob) AND yaml (extension)
         self.assertIn(".github/workflows/ci.yml", classified["github-actions"])
@@ -172,7 +172,7 @@ class TestClassifyFiles(unittest.TestCase):
 
     def test_unmapped_files(self) -> None:
         files = ["README.txt", "data.csv"]
-        classified, unmapped = classify_files(files, self.specs)
+        _classified, unmapped = classify_files(files, self.specs)
 
         self.assertEqual(sorted(unmapped), ["README.txt", "data.csv"])
 
@@ -255,7 +255,7 @@ class TestComputeCoverage(unittest.TestCase):
                 muted=(),
             ),
         ]
-        classified = {"python": []}
+        classified: dict[str, list[str]] = {"python": []}
 
         result = compute_coverage(specs, classified, [])
         self.assertEqual(result.records[0].gaps, [])

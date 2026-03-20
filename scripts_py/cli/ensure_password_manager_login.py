@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
-from typing import NoReturn, Sequence
+from typing import NoReturn, Sequence, TextIO
 
 from scripts_py.lib.password_manager import get_password_manager_backend
 from scripts_py.lib.utils import OsExecRunner, Runner, log_error, log_info
@@ -65,7 +65,7 @@ def _exec_cmd(cmd: Sequence[str], *, runner: Runner) -> NoReturn:
     runner.exec(cmd)
 
 
-def _ensure_logged_in_or_exit(*, provider: str | None, err) -> None:
+def _ensure_logged_in_or_exit(*, provider: str | None, err: TextIO) -> None:
     backend = get_password_manager_backend(provider)
     res = backend.check_logged_in()
     if res.ok:
@@ -76,7 +76,7 @@ def _ensure_logged_in_or_exit(*, provider: str | None, err) -> None:
     raise SystemExit(1)
 
 
-def _warn_if_not_logged_in(*, provider: str | None, err) -> None:
+def _warn_if_not_logged_in(*, provider: str | None, err: TextIO) -> None:
     backend = get_password_manager_backend(provider)
     res = backend.check_logged_in()
     if res.ok:

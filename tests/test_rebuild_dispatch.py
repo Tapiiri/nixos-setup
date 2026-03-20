@@ -3,8 +3,10 @@ from __future__ import annotations
 import io
 import tempfile
 import unittest
+from collections.abc import Sequence
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
+from typing import NoReturn
 
 from scripts_py.cli import rebuild_dispatch
 
@@ -15,7 +17,7 @@ class ExecCalled(RuntimeError):
         self.argv = argv
 
 
-def exec_capture(argv):
+def exec_capture(argv: Sequence[str]) -> NoReturn:
     raise ExecCalled(list(argv))
 
 

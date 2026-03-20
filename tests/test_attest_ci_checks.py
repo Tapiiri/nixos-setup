@@ -7,11 +7,12 @@ import tempfile
 import time
 import unittest
 from pathlib import Path
-from typing import Sequence
+from typing import Any, Sequence
 
 from scripts_py.ci.attest_ci_checks import (
-    _VERIFY_LOCAL_MAX_AGE_S,
+    _VERIFY_LOCAL_MAX_AGE_S,  # pyright: ignore[reportPrivateUsage]
     Options,
+    SimpleCompletedProcess,
     attest_ci_checks,
     parse_args,
     verify_local_attestations,
@@ -201,26 +202,15 @@ class FakeRunner:
         self.rev_parse_sha = rev_parse_sha
         self.calls: list[list[str]] = []
 
-    def run_capture(self, argv: Sequence[str]) -> object:
+    def run_capture(self, argv: Sequence[str]) -> SimpleCompletedProcess:
         self.calls.append(list(argv))
 
-        class Result:
-            pass
-
-        r = Result()
         if argv[:2] == ["git", "rev-parse"]:
-            r.returncode = 0
-            r.stdout = self.rev_parse_sha
-            r.stderr = ""
+            return SimpleCompletedProcess(returncode=0, stdout=self.rev_parse_sha, stderr="")
         elif argv[:2] == ["devenv", "version"]:
-            r.returncode = 0
-            r.stdout = "1.0.0"
-            r.stderr = ""
+            return SimpleCompletedProcess(returncode=0, stdout="1.0.0", stderr="")
         else:
-            r.returncode = 1
-            r.stdout = ""
-            r.stderr = "unexpected"
-        return r
+            return SimpleCompletedProcess(returncode=1, stdout="", stderr="unexpected")
 
     def run_check(self, argv: Sequence[str]) -> None:
         self.calls.append(list(argv))
@@ -253,7 +243,11 @@ class TestAttestCiChecksVerifyLocal(unittest.TestCase):
         import scripts_py.ci.attest_ci_checks as mod
 
         original = mod.repo_root_from_script_path
-        mod.repo_root_from_script_path = lambda _p, **kw: self.root
+
+        def _fake_root(_p: Any, **kw: Any) -> Path:
+            return self.root
+
+        mod.repo_root_from_script_path = _fake_root  # type: ignore[assignment]
         try:
             wrote = attest_ci_checks(opts=opts, runner=runner, out=out, err=err)
         finally:
@@ -284,7 +278,11 @@ class TestAttestCiChecksVerifyLocal(unittest.TestCase):
         import scripts_py.ci.attest_ci_checks as mod
 
         original = mod.repo_root_from_script_path
-        mod.repo_root_from_script_path = lambda _p, **kw: self.root
+
+        def _fake_root(_p: Any, **kw: Any) -> Path:
+            return self.root
+
+        mod.repo_root_from_script_path = _fake_root  # type: ignore[assignment]
         try:
             wrote = attest_ci_checks(opts=opts, runner=runner, out=out, err=err)
         finally:
@@ -311,7 +309,11 @@ class TestAttestCiChecksVerifyLocal(unittest.TestCase):
         import scripts_py.ci.attest_ci_checks as mod
 
         original = mod.repo_root_from_script_path
-        mod.repo_root_from_script_path = lambda _p, **kw: self.root
+
+        def _fake_root(_p: Any, **kw: Any) -> Path:
+            return self.root
+
+        mod.repo_root_from_script_path = _fake_root  # type: ignore[assignment]
         try:
             wrote = attest_ci_checks(opts=opts, runner=runner, out=out, err=err)
         finally:

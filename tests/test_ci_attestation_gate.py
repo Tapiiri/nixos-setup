@@ -1,14 +1,18 @@
 import os
 import tempfile
+from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
+from typing import Any, Sequence
 from unittest import TestCase
 
 from scripts_py.ci import ci_attestation_gate
+from scripts_py.ci.check_ci_attestation import Options as CheckOptions
+from scripts_py.ci.ci_attestation_gate import SimpleCompletedProcess
 
 
 @contextmanager
-def _temp_path() -> Path:
+def _temp_path() -> Iterator[Path]:
     fd, name = tempfile.mkstemp()
     os.close(fd)
     Path(name).unlink(missing_ok=True)
@@ -74,10 +78,10 @@ class TestCiAttestationGate(TestCase):
 
     def test_compute_skip_false_when_fetch_fails(self) -> None:
         class RunnerFailFetch:
-            def run_check(self, argv):
+            def run_check(self, argv: Sequence[str]) -> None:
                 raise ci_attestation_gate.subprocess.CalledProcessError(1, list(argv))
 
-            def run_capture(self, argv):
+            def run_capture(self, argv: Sequence[str]) -> SimpleCompletedProcess:
                 raise AssertionError("run_capture should not be called")
 
         skip = ci_attestation_gate.compute_skip(
@@ -95,13 +99,13 @@ class TestCiAttestationGate(TestCase):
         calls: list[list[str]] = []
 
         class RunnerOk:
-            def run_check(self, argv):
+            def run_check(self, argv: Sequence[str]) -> None:
                 calls.append(list(argv))
 
-            def run_capture(self, argv):
+            def run_capture(self, argv: Sequence[str]) -> SimpleCompletedProcess:
                 raise AssertionError("run_capture should not be called")
 
-        def has_attestation_fn(*, opts, runner) -> bool:
+        def has_attestation_fn(*, opts: CheckOptions, runner: Any) -> bool:
             self.assertEqual(opts.commit, "deadbeef")
             self.assertEqual(opts.task, "check:all")
             self.assertEqual(opts.notes_ref, "refs/notes/nixos-setup-ci")
@@ -130,10 +134,10 @@ class TestCiAttestationGate(TestCase):
             env["GITHUB_OUTPUT"] = str(output_path)
 
             class RunnerUnused:
-                def run_check(self, argv):
+                def run_check(self, argv: Sequence[str]) -> None:
                     raise AssertionError("runner should not be used")
 
-                def run_capture(self, argv):
+                def run_capture(self, argv: Sequence[str]) -> SimpleCompletedProcess:
                     raise AssertionError("runner should not be used")
 
             def compute_skip_fn(**_kwargs: object) -> bool:
@@ -156,10 +160,10 @@ class TestCiAttestationGate(TestCase):
         }
 
         class RunnerUnused:
-            def run_check(self, argv):
+            def run_check(self, argv: Sequence[str]) -> None:
                 raise AssertionError("runner should not be used")
 
-            def run_capture(self, argv):
+            def run_capture(self, argv: Sequence[str]) -> SimpleCompletedProcess:
                 raise AssertionError("runner should not be used")
 
         def compute_skip_fn(**_kwargs: object) -> bool:
@@ -188,10 +192,10 @@ class TestCiAttestationGate(TestCase):
         }
 
         class RunnerMustNotBeUsed:
-            def run_check(self, argv):
+            def run_check(self, argv: Sequence[str]) -> None:
                 raise AssertionError("runner should not be used")
 
-            def run_capture(self, argv):
+            def run_capture(self, argv: Sequence[str]) -> SimpleCompletedProcess:
                 raise AssertionError("runner should not be used")
 
         exit_code = ci_attestation_gate.main(

@@ -8,7 +8,7 @@ import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Mapping, Sequence
+from typing import Mapping, Sequence, TextIO
 
 from scripts_py.lib.utils import OsExecRunner, Runner, read_hostname
 from scripts_py.repo.context import repo_root_from_script_path
@@ -277,7 +277,7 @@ def ensure_mirror(
     *,
     mirror_dir: Path,
     upstream_url: str,
-    stderr,
+    stderr: TextIO,
 ) -> int:
     """Ensure bare mirror exists; create if missing.
 
@@ -297,7 +297,7 @@ def ensure_mirror(
     return int(cp.returncode)
 
 
-def _infer_upstream_from_repo_root(*, repo_root: Path, stderr) -> str | None:
+def _infer_upstream_from_repo_root(*, repo_root: Path, stderr: TextIO) -> str | None:
     if not (repo_root / ".git").exists():
         return None
     origin_cp = run_cp(["git", "-C", str(repo_root), "remote", "get-url", "origin"])
@@ -309,7 +309,7 @@ def _infer_upstream_from_repo_root(*, repo_root: Path, stderr) -> str | None:
     return upstream
 
 
-def _bootstrap_mirror_permissions(*, mirror_dir: Path, group: str, stderr) -> int:
+def _bootstrap_mirror_permissions(*, mirror_dir: Path, group: str, stderr: TextIO) -> int:
     parent = mirror_dir.parent
     print(f"Bootstrapping mirror permissions for {parent} (sudo)", file=stderr)
 
@@ -325,7 +325,7 @@ def _bootstrap_mirror_permissions(*, mirror_dir: Path, group: str, stderr) -> in
     return 0
 
 
-def mirror_push_from_dev(*, repo_root: Path, mirror_dir: Path, branch: str, stderr) -> int:
+def mirror_push_from_dev(*, repo_root: Path, mirror_dir: Path, branch: str, stderr: TextIO) -> int:
     """Push a local dev branch into the bare mirror.
 
     This is useful when working in --dev mode on a machine where you still want
@@ -367,7 +367,7 @@ def mirror_push_from_dev(*, repo_root: Path, mirror_dir: Path, branch: str, stde
     return int(cp2.returncode)
 
 
-def mirror_fetch(*, mirror_dir: Path, stderr) -> int:
+def mirror_fetch(*, mirror_dir: Path, stderr: TextIO) -> int:
     """Fetch updates into the bare mirror."""
 
     cp = run_cp(
@@ -387,7 +387,7 @@ def mirror_fetch(*, mirror_dir: Path, stderr) -> int:
     return int(cp.returncode)
 
 
-def root_ensure_etc_nixos_clone(*, mirror_dir: Path, etc_dir: Path, stderr) -> int:
+def root_ensure_etc_nixos_clone(*, mirror_dir: Path, etc_dir: Path, stderr: TextIO) -> int:
     """Ensure /etc/nixos exists as a root-owned clone of the mirror."""
 
     if (etc_dir / "flake.nix").is_file() and (etc_dir / ".git").exists():
@@ -422,7 +422,7 @@ def root_ensure_etc_nixos_clone(*, mirror_dir: Path, etc_dir: Path, stderr) -> i
     return int(cp.returncode)
 
 
-def root_set_origin_to_mirror(*, etc_dir: Path, mirror_dir: Path, stderr) -> int:
+def root_set_origin_to_mirror(*, etc_dir: Path, mirror_dir: Path, stderr: TextIO) -> int:
     """Point /etc/nixos origin remote to the local mirror.
 
     This avoids root needing network access/SSH keys. It's safe to run even if
@@ -460,7 +460,7 @@ def root_set_origin_to_mirror(*, etc_dir: Path, mirror_dir: Path, stderr) -> int
 
 
 def root_update_from_mirror(
-    *, etc_dir: Path, mirror_dir: Path | None = None, ref: str, stderr
+    *, etc_dir: Path, mirror_dir: Path | None = None, ref: str, stderr: TextIO
 ) -> int:
     """Fast-forward /etc/nixos from its origin (the local mirror)."""
 
@@ -484,7 +484,7 @@ def sync_worktree(
     repo_root: Path,
     ref: str,
     update_checkout: bool,
-    stderr,
+    stderr: TextIO,
 ) -> int:
     """Fast-forward a worktree to a given ref.
 
@@ -625,13 +625,17 @@ def build_exec_command(cmd: Sequence[str]) -> list[str]:
     return ["sudo", *list(cmd)]
 
 
-def main(argv: Sequence[str] | None = None, *, runner: Runner | None = None, stderr=None) -> int:
+def main(
+    argv: Sequence[str] | None = None,
+    *,
+    runner: Runner | None = None,
+    stderr: TextIO | None = None,
+) -> int:
     if argv is None:
         argv = sys.argv[1:]
     if runner is None:
         runner = OsExecRunner()
-    if stderr is None:
-        stderr = sys.stderr
+    _stderr = stderr if stderr is not None else sys.stderr
 
     try:
         args, passthrough = parse_args(argv)
@@ -647,50 +651,50 @@ def main(argv: Sequence[str] | None = None, *, runner: Runner | None = None, std
                     rc = _bootstrap_mirror_permissions(
                         mirror_dir=cfg.mirror_dir,
                         group="nixos-setup",
-                        stderr=stderr,
+                        stderr=_stderr,
                     )
                     if rc != 0:
                         return rc
 
                 upstream = cfg.upstream_url or _infer_upstream_from_repo_root(
                     repo_root=cfg.repo_root,
-                    stderr=stderr,
+                    stderr=_stderr,
                 )
                 if not upstream:
-                    print("Could not determine upstream URL for mirror creation.", file=stderr)
+                    print("Could not determine upstream URL for mirror creation.", file=_stderr)
                     print(
                         "Provide one of:\n"
                         f"- --upstream-url <git-url>\n"
                         f"- env {ENV_UPSTREAM_URL}\n"
                         f"- config {DEFAULT_CONFIG_PATH} with [rebuild] upstream_url=...",
-                        file=stderr,
+                        file=_stderr,
                     )
                     return 1
 
                 rc = ensure_mirror(
                     mirror_dir=cfg.mirror_dir,
                     upstream_url=upstream,
-                    stderr=stderr,
+                    stderr=_stderr,
                 )
                 if rc != 0:
                     if cfg.offline_ok and (DEFAULT_SYSTEM_FLAKE_DIR / "flake.nix").is_file():
                         print(
                             "Mirror creation failed; continuing with existing /etc/nixos.",
-                            file=stderr,
+                            file=_stderr,
                         )
                     else:
                         return rc
 
-            rc = mirror_fetch(mirror_dir=cfg.mirror_dir, stderr=stderr)
+            rc = mirror_fetch(mirror_dir=cfg.mirror_dir, stderr=_stderr)
             if rc != 0:
                 if cfg.offline_ok:
                     if (DEFAULT_SYSTEM_FLAKE_DIR / "flake.nix").is_file():
-                        print("Mirror fetch failed; continuing without updates.", file=stderr)
+                        print("Mirror fetch failed; continuing without updates.", file=_stderr)
                     else:
                         print(
                             "Mirror fetch failed and /etc/nixos is not bootstrapped yet; "
                             "cannot continue offline.",
-                            file=stderr,
+                            file=_stderr,
                         )
                         return rc
                 else:
@@ -699,7 +703,7 @@ def main(argv: Sequence[str] | None = None, *, runner: Runner | None = None, std
             rc = root_ensure_etc_nixos_clone(
                 mirror_dir=cfg.mirror_dir,
                 etc_dir=DEFAULT_SYSTEM_FLAKE_DIR,
-                stderr=stderr,
+                stderr=_stderr,
             )
             if rc != 0:
                 return rc
@@ -707,7 +711,7 @@ def main(argv: Sequence[str] | None = None, *, runner: Runner | None = None, std
             rc = root_set_origin_to_mirror(
                 etc_dir=DEFAULT_SYSTEM_FLAKE_DIR,
                 mirror_dir=cfg.mirror_dir,
-                stderr=stderr,
+                stderr=_stderr,
             )
             if rc != 0:
                 return rc
@@ -715,11 +719,11 @@ def main(argv: Sequence[str] | None = None, *, runner: Runner | None = None, std
             rc = root_update_from_mirror(
                 etc_dir=DEFAULT_SYSTEM_FLAKE_DIR,
                 ref=cfg.ref,
-                stderr=stderr,
+                stderr=_stderr,
             )
             if rc != 0:
                 if cfg.offline_ok:
-                    print("/etc/nixos update failed; continuing.", file=stderr)
+                    print("/etc/nixos update failed; continuing.", file=_stderr)
                 else:
                     return rc
 
@@ -728,10 +732,10 @@ def main(argv: Sequence[str] | None = None, *, runner: Runner | None = None, std
     except SystemExit:
         raise
     except Exception as e:
-        print(str(e), file=stderr)
+        print(str(e), file=_stderr)
         return 1
 
-    print("Running: " + " ".join(exec_cmd), file=stderr)
+    print("Running: " + " ".join(exec_cmd), file=_stderr)
     runner.exec(exec_cmd)
     return 0
 

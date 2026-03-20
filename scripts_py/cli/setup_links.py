@@ -6,7 +6,7 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Sequence
+from typing import Sequence, TextIO
 
 from scripts_py.lib.utils import log_error, log_info, log_warn, read_hostname
 from scripts_py.repo.context import repo_root_from_script_path
@@ -75,7 +75,7 @@ def compute_config(
     )
 
 
-def ensure_parent_dir(target: Path, *, out) -> None:
+def ensure_parent_dir(target: Path, *, out: TextIO) -> None:
     parent = target.parent
     if not parent.is_dir():
         log_info(f"Creating directory {parent}", out=out)
@@ -104,7 +104,7 @@ def is_already_linked(target: Path, source: Path) -> bool:
     return resolved == source
 
 
-def link_user_owned(source: Path, target: Path, *, out, err) -> None:
+def link_user_owned(source: Path, target: Path, *, out: TextIO, err: TextIO) -> None:
     ensure_parent_dir(target, out=out)
 
     if target.is_symlink():
@@ -135,8 +135,8 @@ def process_mapping(
     *,
     root_helper: object | None = None,
     runner: object | None = None,
-    out,
-    err,
+    out: TextIO,
+    err: TextIO,
 ) -> int:
     source, target = mapping.source, mapping.target
 
@@ -237,15 +237,13 @@ def main(
     argv: Sequence[str] | None = None,
     *,
     runner: object | None = None,
-    out=None,
-    err=None,
+    out: TextIO | None = None,
+    err: TextIO | None = None,
 ) -> int:
     if argv is None:
         argv = sys.argv[1:]
-    if out is None:
-        out = sys.stdout
-    if err is None:
-        err = sys.stderr
+    _out = out if out is not None else sys.stdout
+    _err = err if err is not None else sys.stderr
     if runner is None:
         runner = SubprocessRunner()
 
@@ -255,14 +253,14 @@ def main(
     except SystemExit:
         raise
     except Exception as e:
-        log_error(str(e), err=err)
+        log_error(str(e), err=_err)
         return 1
 
-    log_info(f"Using host configuration from {cfg.host_dir}", out=out)
+    log_info(f"Using host configuration from {cfg.host_dir}", out=_out)
 
     mappings = compute_mappings(cfg)
     if not mappings:
-        log_warn("No mappings found to process.", err=err)
+        log_warn("No mappings found to process.", err=_err)
         return 0
 
     rc = 0
@@ -273,8 +271,8 @@ def main(
                 m,
                 root_helper=cfg.root_helper,
                 runner=runner,
-                out=out,
-                err=err,
+                out=_out,
+                err=_err,
             ),
         )
 

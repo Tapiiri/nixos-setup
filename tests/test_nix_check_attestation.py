@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false
 """Tests for scripts_py.lib.nix_check_attestation."""
 
 from __future__ import annotations

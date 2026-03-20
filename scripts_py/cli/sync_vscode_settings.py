@@ -15,7 +15,7 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from scripts_py.lib.utils import log_error, log_info
 from scripts_py.repo.context import repo_root_from_script_path
@@ -98,13 +98,15 @@ def format_nix_value(value: Any, indent: int = 2) -> str:
     elif isinstance(value, list):
         if not value:
             return "[]"
-        items = "\n".join(f"{indent_str}  {format_nix_value(v, indent + 2)}" for v in value)
+        list_val: Any = cast(Any, value)
+        items = "\n".join(f"{indent_str}  {format_nix_value(v, indent + 2)}" for v in list_val)
         return f"[\n{items}\n{indent_str}]"
     elif isinstance(value, dict):
         if not value:
             return "{}"
+        dict_val: Any = cast(Any, value)
         items = "\n".join(
-            f'{indent_str}  "{k}" = {format_nix_value(v, indent + 2)};' for k, v in value.items()
+            f'{indent_str}  "{k}" = {format_nix_value(v, indent + 2)};' for k, v in dict_val.items()
         )
         return f"{{\n{items}\n{indent_str}}}"
     elif value is None:

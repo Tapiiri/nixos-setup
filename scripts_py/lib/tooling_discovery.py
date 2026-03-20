@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Callable, Sequence
+from typing import Any, Callable, Sequence, cast
 
 import tomlkit
 
@@ -38,7 +38,7 @@ def discover_from_pyproject(repo_root: Path) -> list[ToolEntry]:
     if not pyproject.is_file():
         return []
 
-    raw = tomlkit.loads(pyproject.read_text(encoding="utf-8"))
+    raw = cast(dict[str, Any], tomlkit.loads(pyproject.read_text(encoding="utf-8")))
     tools: list[ToolEntry] = []
 
     # ruff

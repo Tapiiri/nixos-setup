@@ -6,7 +6,7 @@ import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, Protocol, Sequence
+from typing import Iterable, Protocol, Sequence, TextIO
 
 from scripts_py.lib.utils import log_error, log_info, log_warn
 from scripts_py.repo.context import repo_root_from_script_path
@@ -252,7 +252,7 @@ def update_from_pairs(
     secrets_pairs: Iterable[EnvLine],
     repo: str | None,
     dry_run: bool,
-    out,
+    out: TextIO,
 ) -> None:
     for kv in vars_pairs:
         log_info(f"Setting variable: {kv.key}", out=out)

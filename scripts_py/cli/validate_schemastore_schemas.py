@@ -5,17 +5,18 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any, TextIO
 
 from scripts_py.lib.schemastore import CatalogSchema, choose_schema_for_file, normalize_posix
 from scripts_py.lib.utils import log_error, log_info
 from scripts_py.repo.context import RepoMarkers, repo_root_from_script_path
 
 
-def _load_index(index_path: Path) -> dict:
+def _load_index(index_path: Path) -> dict[str, Any]:
     return json.loads(index_path.read_text(encoding="utf-8"))
 
 
-def _index_schemas(index: dict) -> list[CatalogSchema]:
+def _index_schemas(index: dict[str, Any]) -> list[CatalogSchema]:
     out: list[CatalogSchema] = []
     for url, entry in index.get("schemas", {}).items():
         out.append(
@@ -64,8 +65,8 @@ def validate(
     index_path: Path,
     files: list[str],
     all_files: bool,
-    out,
-    err,
+    out: TextIO,
+    err: TextIO,
 ) -> int:
     if not index_path.exists():
         log_error(

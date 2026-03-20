@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import unittest
+from collections.abc import Sequence
 
 from scripts_py.cli.update_github_env import (
     EnvLine,
@@ -17,7 +18,12 @@ class FakeRunner:
         self.calls: list[tuple[list[str], str | None]] = []
         self.next_returncodes: list[int] = []
 
-    def run_capture(self, argv, *, input=None):  # type: ignore[no-untyped-def]
+    def run_capture(
+        self,
+        argv: Sequence[str],
+        *,
+        input: str | None = None,
+    ) -> SimpleCompletedProcess:
         self.calls.append((list(argv), input))
         rc = self.next_returncodes.pop(0) if self.next_returncodes else 0
         stderr = ""

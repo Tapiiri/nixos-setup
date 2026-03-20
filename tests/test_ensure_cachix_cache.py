@@ -1,7 +1,9 @@
+# pyright: reportPrivateUsage=false
 from __future__ import annotations
 
 import unittest
 from pathlib import Path
+from typing import Any
 
 from scripts_py.cli import ensure_cachix_cache
 
@@ -42,7 +44,7 @@ class TestEnsureCachixCache(unittest.TestCase):
 
         created = {"called": 0}
 
-        def _create(*, cfg, cache_name: str, visibility: str) -> None:
+        def _create(*, cfg: Any, cache_name: str, visibility: str) -> None:
             created["called"] += 1
 
         ensure_cachix_cache.cachix_api_create_cache = _create  # type: ignore[assignment]
@@ -69,7 +71,7 @@ class TestEnsureCachixCache(unittest.TestCase):
 
         created = {"called": 0}
 
-        def _create(*, cfg, cache_name: str, visibility: str) -> None:
+        def _create(*, cfg: Any, cache_name: str, visibility: str) -> None:
             created["called"] += 1
 
         ensure_cachix_cache.cachix_api_create_cache = _create  # type: ignore[assignment]

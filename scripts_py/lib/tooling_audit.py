@@ -12,7 +12,7 @@ import json
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
-from typing import Any, Sequence
+from typing import Any, Sequence, cast
 
 import tomlkit
 
@@ -60,20 +60,20 @@ class CoverageRecord:
     """Combined registry + discovery result for one file type."""
 
     file_type: str
-    matched_files: list[str] = field(default_factory=list)
-    linters: list[ToolEntry] = field(default_factory=list)
-    formatters: list[ToolEntry] = field(default_factory=list)
-    vscode_extensions: list[str] = field(default_factory=list)
-    muted: list[str] = field(default_factory=list)
-    gaps: list[Gap] = field(default_factory=list)
+    matched_files: list[str] = field(default_factory=list[str])
+    linters: list[ToolEntry] = field(default_factory=list[ToolEntry])
+    formatters: list[ToolEntry] = field(default_factory=list[ToolEntry])
+    vscode_extensions: list[str] = field(default_factory=list[str])
+    muted: list[str] = field(default_factory=list[str])
+    gaps: list[Gap] = field(default_factory=list[Gap])
 
 
 @dataclass
 class AuditResult:
     """Full audit output."""
 
-    records: list[CoverageRecord] = field(default_factory=list)
-    unmapped_files: list[str] = field(default_factory=list)
+    records: list[CoverageRecord] = field(default_factory=list[CoverageRecord])
+    unmapped_files: list[str] = field(default_factory=list[str])
 
 
 # ---------------------------------------------------------------------------
@@ -84,17 +84,19 @@ class AuditResult:
 def load_registry(path: Path) -> list[FileTypeSpec]:
     """Parse a tooling-audit.toml into a list of FileTypeSpec."""
 
-    raw = tomlkit.loads(path.read_text(encoding="utf-8"))
-    file_types = raw.get("file_types", {})
+    raw = cast(dict[str, Any], tomlkit.loads(path.read_text(encoding="utf-8")))
+    file_types: dict[str, Any] = raw.get("file_types", {})
     specs: list[FileTypeSpec] = []
     for key, block in file_types.items():
+        linters_raw: Any = block.get("linters") or []
         linters = tuple(
             ToolEntry(name=e["name"], source=e.get("source", "registry"), category="linter")
-            for e in (block.get("linters") or [])
+            for e in linters_raw
         )
+        formatters_raw: Any = block.get("formatters") or []
         formatters = tuple(
             ToolEntry(name=e["name"], source=e.get("source", "registry"), category="formatter")
-            for e in (block.get("formatters") or [])
+            for e in formatters_raw
         )
         specs.append(
             FileTypeSpec(

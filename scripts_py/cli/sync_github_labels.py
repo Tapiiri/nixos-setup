@@ -7,7 +7,7 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable, Sequence
+from typing import Any, Iterable, Sequence, TextIO
 
 from scripts_py.lib.utils import log_error, log_info
 from scripts_py.repo.context import repo_root_from_script_path
@@ -44,7 +44,7 @@ def _parse_simple_yaml_labels(text: str) -> list[LabelSpec]:
             continue
         # Remove inline comment only if it's preceded by whitespace.
         if "#" in line:
-            before, after = line.split("#", 1)
+            before, _after = line.split("#", 1)
             if before.endswith(" ") or before.endswith("\t"):
                 line = before.rstrip()
         if line.strip():
@@ -123,7 +123,7 @@ def normalize_color(color: str) -> str:
 
 
 class Gh:
-    def __init__(self, *, runner: "Runner" | None = None):
+    def __init__(self, *, runner: Runner | None = None):
         self._runner = runner or SubprocessRunner()
 
     def api_json(self, args: Sequence[str]) -> Any:
@@ -251,7 +251,7 @@ def apply_changes(
     to_update: Sequence[LabelSpec],
     to_delete: Sequence[str],
     dry_run: bool,
-    out,
+    out: TextIO,
 ) -> None:
     def repo_args() -> list[str]:
         return [f"--repo={repo}"] if repo else []

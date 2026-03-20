@@ -31,7 +31,10 @@ vscode_extensions = ["jnoortheen.nix-ide"]
 [file_types.python]
 extensions = [".py"]
 shebang_patterns = ["python3", "python"]
-linters = [{ name = "ruff", source = "devenv" }]
+linters = [
+  { name = "ruff", source = "devenv" },
+  { name = "pyright", source = "devenv" },
+]
 formatters = [{ name = "ruff (fix-on-save)", source = "vscode" }]
 vscode_extensions = ["ms-python.python", "charliermarsh.ruff"]
 

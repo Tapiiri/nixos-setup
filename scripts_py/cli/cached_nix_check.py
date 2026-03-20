@@ -16,7 +16,7 @@ from __future__ import annotations
 import sys
 import time
 from pathlib import Path
-from typing import Protocol, Sequence
+from typing import Protocol, Sequence, TextIO
 
 from scripts_py.lib.nix_check_attestation import (
     compute_nix_hash,
@@ -64,14 +64,12 @@ def run_cached_nix_check(
     repo_root: Path,
     runner: CmdRunner,
     force: bool = False,
-    out=None,
-    err=None,
+    out: TextIO | None = None,
+    err: TextIO | None = None,
 ) -> int:
     """Check the attestation cache and run ``nix flake check --no-build`` if needed."""
-    if out is None:
-        out = sys.stdout
-    if err is None:
-        err = sys.stderr
+    _out = out if out is not None else sys.stdout
+    _err = err if err is not None else sys.stderr
 
     state_dir = repo_root / _STATE_REL
     nix_hash = compute_nix_hash(repo_root)
@@ -80,14 +78,14 @@ def run_cached_nix_check(
     if not force:
         cached = lookup_nix_attestation(state_dir, nix_hash)
         if cached is True:
-            log_info("[cached-nix-check] Nix files unchanged — skipping.", out=out)
+            log_info("[cached-nix-check] Nix files unchanged — skipping.", out=_out)
             return 0
         if cached is False:
-            log_warn("[cached-nix-check] Previous check failed — re-running.", err=err)
+            log_warn("[cached-nix-check] Previous check failed — re-running.", err=_err)
 
     # Run the actual check.
     argv = ["nix", "flake", "check", "--no-build"]
-    log_info(f"[cached-nix-check] Running: {' '.join(argv)}", out=out)
+    log_info(f"[cached-nix-check] Running: {' '.join(argv)}", out=_out)
     t0 = time.time()
     rc = runner.run_passthrough(argv, cwd=str(repo_root))
     elapsed = time.time() - t0
@@ -98,12 +96,12 @@ def run_cached_nix_check(
     if rc == 0:
         log_info(
             f"[cached-nix-check] Passed in {elapsed:.1f}s — attested.",
-            out=out,
+            out=_out,
         )
     else:
         log_warn(
             f"[cached-nix-check] FAILED in {elapsed:.1f}s — fail-attested.",
-            err=err,
+            err=_err,
         )
 
     return rc
