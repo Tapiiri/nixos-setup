@@ -2,7 +2,11 @@
 #
 # Enter the dev shell with: devenv shell
 # Then use PlatformIO: pio run, pio run -t upload, pio device monitor
-{pkgs, ...}: let
+{
+  pkgs,
+  lib,
+  ...
+}: let
   pio = pkgs.platformio-core;
 in {
   dotenv.disableHint = true;
@@ -15,6 +19,16 @@ in {
     python3 # PlatformIO internals + scripting
     usbutils # lsusb — verify ESP32 detected
     git
+  ];
+
+  # Provide the dynamic linker + libraries that PlatformIO's downloaded
+  # toolchain binaries need (xtensa-esp32-elf-g++, esptool, etc.).
+  # This works together with programs.nix-ld.enable in the NixOS module.
+  env.NIX_LD = "${pkgs.stdenv.cc.libc}/lib/ld-linux-x86-64.so.2";
+  env.NIX_LD_LIBRARY_PATH = lib.makeLibraryPath [
+    pkgs.stdenv.cc.cc.lib # libstdc++
+    pkgs.zlib
+    pkgs.libusb1
   ];
 
   enterShell = ''
@@ -32,27 +46,27 @@ in {
   '';
 
   tasks = {
-    "build" = {
+    "pio:build" = {
       description = "Compile ESP32 firmware";
       exec = "pio run";
     };
 
-    "flash" = {
+    "pio:flash" = {
       description = "Flash firmware to ESP32";
       exec = "pio run -t upload";
     };
 
-    "monitor" = {
+    "pio:monitor" = {
       description = "Open serial monitor (115200 baud)";
       exec = "pio device monitor -b 115200";
     };
 
-    "clean" = {
+    "pio:clean" = {
       description = "Clean build artifacts";
       exec = "pio run -t clean";
     };
 
-    "build-and-monitor" = {
+    "pio:flash-and-monitor" = {
       description = "Build, flash, and open serial monitor";
       exec = "pio run -t upload && pio device monitor -b 115200";
     };
