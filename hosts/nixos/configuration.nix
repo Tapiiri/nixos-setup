@@ -9,6 +9,11 @@
 }: {
   my.tailscale.enable = true;
 
+  my.esp32-dev = {
+    enable = true;
+    users = ["tapiiri"];
+  };
+
   imports = [
     ./hardware-configuration.nix
   ];

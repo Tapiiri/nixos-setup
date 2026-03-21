@@ -29,6 +29,7 @@
       modules = [
         ./modules/tailscale.nix
         ./modules/rebuild.nix
+        ./modules/esp32-dev.nix
         ./hosts/nixos/configuration.nix
         inputs.home-manager.nixosModules.default
       ];
