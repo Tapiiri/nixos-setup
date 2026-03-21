@@ -1,6 +1,7 @@
 # NixOS module: ESP32 development support
 #
 # Provides:
+#   - nix-ld for running PlatformIO's dynamically-linked toolchains
 #   - udev rules for common ESP32 USB-serial chips (CP210x, CH340/CH341)
 #   - Adds configured users to the `dialout` group for serial port access
 #
@@ -30,6 +31,10 @@ in {
   };
 
   config = mkIf cfg.enable {
+    # nix-ld: provides a dynamic linker stub at /lib64/ld-linux-x86-64.so.2
+    # so PlatformIO's downloaded toolchains (xtensa-esp32-elf-gcc etc.) can run.
+    programs.nix-ld.enable = true;
+
     # udev rules for the most common ESP32 USB-to-serial bridges.
     services.udev.extraRules = ''
       # CP210x (Silicon Labs) — ESP32 DevKitC, many Espressif boards
