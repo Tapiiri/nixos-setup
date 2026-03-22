@@ -48,8 +48,8 @@ htmlcov/
 # nix build output symlink
 result
 
-# MkDocs build output
-site/
+# MkDocs build output (root-level only; don't ignore docs/site/ source)
+/site/
 
 # Local direnv state (if you use it)
 .direnv/
