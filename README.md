@@ -74,13 +74,13 @@ These tasks are the single source of truth for:
 Common entrypoints:
 
 - Full CI-equivalent pipeline:
-  - `devenv shell -- devenv tasks run -m all check:all`
+  - `devenv tasks run -m all check:all`
 - Lint:
-  - `devenv shell -- devenv tasks run -m all lint:all`
+  - `devenv tasks run -m all lint:all`
 - Format:
-  - `devenv shell -- devenv tasks run -m all fmt:all`
+  - `devenv tasks run -m all fmt:all`
 - Python tests:
-  - `devenv shell -- devenv tasks run tests:python:pytest`
+  - `devenv tasks run tests:python:pytest`
 
 ### Optional: skip CI when you already ran it locally
 
@@ -343,6 +343,6 @@ In mirror mode, `rebuild` refuses to overwrite an existing Git repo at `/etc/nix
 
 Prefer running pre-commit inside devenv:
 
-- `devenv shell -- pre-commit run --all-files`
+- `pre-commit run --all-files`
 
 This ensures the same versions and PATH as CI.
