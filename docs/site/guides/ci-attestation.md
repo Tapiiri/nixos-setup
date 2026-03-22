@@ -112,3 +112,25 @@ The gate is conservative: any doubt results in running CI.
 - Notes can be lost if the remote's notes ref is force-pushed
 - The system trusts the local machine — it doesn't verify *how* the checks ran
 - Only useful for direct pushes to `main`; PRs from forks always run CI
+
+## Merge commits and `pre-merge-commit` hooks
+
+Since Git 2.24, `git merge` triggers the `pre-merge-commit` hook **instead of**
+the `pre-commit` hook.  If pre-merge-commit is not installed, merges that bring
+in changes to `.nix` files, `flake.lock`, or Python sources silently skip all
+pre-commit checks — leaving the attestation caches stale.
+
+The post-commit hook (which **does** run after merge commits) then calls
+`verify_local_attestations()`, finds the stale caches, and refuses to write the
+git-notes attestation.  The result: CI runs the full check suite even though
+the developer is working inside the devenv environment.
+
+**Fix in this repo:** `git-hooks.default_stages` in `devenv.nix` is set to
+`["pre-commit" "pre-merge-commit"]`, ensuring all hooks run in both stages.
+When devenv detects a hook using the `pre-merge-commit` stage, it automatically
+installs `.git/hooks/pre-merge-commit` on the next `devenv shell` entry.
+
+!!! warning
+    If you see attestation failures after `git pull`, re-enter the devenv shell
+    (`devenv shell`) to ensure `.git/hooks/pre-merge-commit` is installed.
+    You can verify with: `ls -la .git/hooks/pre-merge-commit`

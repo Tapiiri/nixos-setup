@@ -197,7 +197,13 @@ def verify_local_attestations(
     nix_hash = compute_nix_hash(repo_root)
     nix_result = lookup_nix_attestation(state_dir, nix_hash, max_age_s=math.inf)
     if nix_result is not True:
-        log_warn("[verify-local] Nix check attestation missing or failed.", err=_err)
+        log_warn(
+            f"[verify-local] Nix check attestation missing or failed "
+            f"(hash={nix_hash[:16]}…).  This commonly happens after a merge "
+            f"that updated .nix files or flake.lock — ensure pre-merge-commit "
+            f"hooks are installed (see git-hooks.default_stages in devenv.nix).",
+            err=_err,
+        )
         return False
 
     # 2. Verify test attestations for ALL test files (hash match only).

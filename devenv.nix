@@ -36,6 +36,13 @@
 
   # Keep pre-commit as the runner (instead of the default prek).
   git-hooks.package = pkgs.pre-commit; # see devenv 1.11 changelog
+
+  # Run hooks on merge commits too (Git 2.24+ calls pre-merge-commit instead of
+  # pre-commit during `git merge`).  Without this, merges that bring in e.g.
+  # flake.lock changes never trigger nix-flake-check, leaving the attestation
+  # cache stale and causing the post-commit CI attestation to fail.
+  git-hooks.default_stages = ["pre-commit" "pre-merge-commit"];
+
   git-hooks.hooks = {
     nix-flake-check = {
       enable = true;

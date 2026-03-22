@@ -141,6 +141,78 @@ def _parse_hook_tasks(src: str) -> tuple[set[str], set[str]]:
 # ---------------------------------------------------------------------------
 
 
+_MERGE_CRITICAL_HOOKS = {
+    # Hooks whose attestation caches MUST be updated during merge commits.
+    # Without pre-merge-commit, merges that change flake.lock or Python
+    # deps leave caches stale and the post-commit attestation fails.
+    "nix-flake-check",
+    "python-pytest",
+}
+
+
+class TestDevenvHookStages(unittest.TestCase):
+    """Hook stage configuration prevents merge-commit attestation gaps."""
+
+    def test_default_stages_include_pre_merge_commit(self) -> None:
+        """git-hooks.default_stages must include pre-merge-commit.
+
+        Git 2.24+ calls the pre-merge-commit hook (not pre-commit) during
+        ``git merge``.  If default_stages omits pre-merge-commit, merge
+        commits that bring in flake.lock or Python changes never trigger
+        the nix-flake-check / cached-pytest hooks, leaving attestation
+        caches stale and causing the post-commit CI attestation to fail.
+        """
+        src = _read_devenv_nix()
+        m = re.search(
+            r"git-hooks\.default_stages\s*=\s*\[([^\]]*)\]",
+            src,
+        )
+        self.assertIsNotNone(m, "git-hooks.default_stages not set in devenv.nix")
+        stages = re.findall(r'"([^"]+)"', m.group(1))  # type: ignore[union-attr]
+        self.assertIn(
+            "pre-merge-commit",
+            stages,
+            "git-hooks.default_stages must include 'pre-merge-commit' — see "
+            "docs/site/guides/ci-attestation.md for rationale",
+        )
+        self.assertIn("pre-commit", stages, "default_stages must still include 'pre-commit'")
+
+    def test_merge_critical_hooks_inherit_default_stages(self) -> None:
+        """Hooks that produce attestation caches must NOT override stages.
+
+        If they set explicit ``stages = ["pre-commit"];``, they would lose
+        the pre-merge-commit stage from default_stages.
+        """
+        src = _read_devenv_nix()
+        hooks_section_re = re.compile(
+            r"git-hooks\.hooks\s*=\s*\{(.*?)^\s{2}\};", re.DOTALL | re.MULTILINE
+        )
+        m = hooks_section_re.search(src)
+        self.assertIsNotNone(m, "git-hooks.hooks block not found in devenv.nix")
+        hooks_body = m.group(1)  # type: ignore[union-attr]
+
+        # Parse each hook block for an explicit stages override.
+        hook_re = re.compile(
+            r"(\S+)\s*=\s*\{((?:(?!\n\s{4}\};).)*?)\n\s{4}\};",
+            re.DOTALL,
+        )
+        for hm in hook_re.finditer(hooks_body):
+            hook_id = hm.group(1).strip()
+            if hook_id not in _MERGE_CRITICAL_HOOKS:
+                continue
+            body = hm.group(2)
+            stages_m = re.search(r"stages\s*=\s*\[([^\]]*)\]", body)
+            if stages_m:
+                declared = re.findall(r'"([^"]+)"', stages_m.group(1))
+                self.assertIn(
+                    "pre-merge-commit",
+                    declared,
+                    f"Hook '{hook_id}' overrides stages to {declared} but omits "
+                    f"'pre-merge-commit' — either remove the explicit stages (to "
+                    f"inherit default_stages) or add 'pre-merge-commit'.",
+                )
+
+
 class TestDevenvTaskCoverage(unittest.TestCase):
     """Pre-commit hooks must cover every leaf task in check:all."""
 
