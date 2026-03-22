@@ -83,6 +83,7 @@ the system configuration.
 
 ## Where to look for examples
 
+- Code scanning skill (fetch / triage / fix GitHub code scanning alerts): `.github/instructions/code-scanning.instructions.md`.
 - Mirror + /etc/nixos flake workflow: `docs/site/guides/rebuild.md` and `scripts_py/cli/rebuild.py`.
 - Repo root/path bootstrapping patterns: `scripts_py/repo/context.py`.
 - VS Code settings sync: `docs/site/reference/vscode-settings.md` and `scripts_py/cli/sync_vscode_settings.py`.
