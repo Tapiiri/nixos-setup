@@ -1,0 +1,66 @@
+---
+site_name: nixos-setup
+site_url: https://Tapiiri.github.io/nixos-setup/
+repo_url: https://github.com/Tapiiri/nixos-setup
+repo_name: Tapiiri/nixos-setup
+edit_uri: edit/main/docs/site/
+
+docs_dir: docs/site
+site_dir: site
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.action.edit
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - toc:
+      permalink: true
+  - attr_list
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Quickstart: quickstart.md
+  - Architecture:
+      - Overview: architecture.md
+      - Scripts: scripts.md
+  - Development:
+      - Dev Environment: dev-environment.md
+      - Troubleshooting: troubleshooting.md
+  - Reference:
+      - VS Code Settings: reference/vscode-settings.md
+      - VS Code Extensions: reference/vscode-extensions.md

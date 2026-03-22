@@ -27,6 +27,10 @@
         pytest
         ruff
         tomlkit
+
+        # MkDocs documentation site
+        mkdocs
+        mkdocs-material
       ]))
   ];
 
@@ -172,6 +176,15 @@
       pass_filenames = false;
     };
 
+    mkdocs-build = {
+      enable = true;
+      name = "mkdocs build";
+      entry = "scripts/ensure-password-manager-login -- devenv tasks run docs:mkdocs:build";
+      language = "system";
+      files = "(^mkdocs\\.yml$|^docs/site/)";
+      pass_filenames = false;
+    };
+
     ci-attest-post-commit = {
       enable = true;
       name = "Post-commit CI attestation";
@@ -308,6 +321,23 @@
       exec = "scripts/cached-pytest";
     };
 
+    # --- Documentation ---
+    "docs:mkdocs:build" = {
+      description = "Build MkDocs site (strict mode)";
+      exec = "mkdocs build --strict";
+    };
+
+    "docs:mkdocs:serve" = {
+      description = "Start MkDocs dev server";
+      exec = "mkdocs serve";
+    };
+
+    "docs:all" = {
+      description = "All documentation checks";
+      after = ["docs:mkdocs:build"];
+      exec = "true";
+    };
+
     # --- Tooling audit ---
     "audit:tooling" = {
       description = "Audit tooling coverage for all file types";
@@ -350,7 +380,7 @@
 
     "check:all" = {
       description = "Full repository check (CI equivalent)";
-      after = ["check:nix:flake" "lint:all" "tests:all"];
+      after = ["check:nix:flake" "lint:all" "tests:all" "docs:all"];
       exec = "true";
     };
   };

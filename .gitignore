@@ -48,6 +48,9 @@ htmlcov/
 # nix build output symlink
 result
 
+# MkDocs build output
+site/
+
 # Local direnv state (if you use it)
 .direnv/
 .envrc
