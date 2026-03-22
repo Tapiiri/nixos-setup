@@ -37,7 +37,7 @@ jobs:
             experimental-features = nix-command flakes
 
       - name: Use Cachix
-        uses: cachix/cachix-action@v16
+        uses: cachix/cachix-action@v17
         with:
           name: nixos-setup
           extraPullNames: nix-community
@@ -71,7 +71,7 @@ jobs:
             experimental-features = nix-command flakes
 
       - name: Use Cachix
-        uses: cachix/cachix-action@v16
+        uses: cachix/cachix-action@v17
         with:
           name: nixos-setup
           extraPullNames: nix-community
