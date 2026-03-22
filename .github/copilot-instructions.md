@@ -83,6 +83,8 @@ the system configuration.
 
 ## Where to look for examples
 
-- Mirror + /etc/nixos flake workflow: `README.md` and `scripts_py/rebuild.py`.
-- Repo root/path bootstrapping patterns: `scripts_py/utils.py`.
-- VS Code settings sync: `home/features/vscode/README.md` and `scripts_py/sync_vscode_settings.py`.
+- Mirror + /etc/nixos flake workflow: `docs/site/guides/rebuild.md` and `scripts_py/cli/rebuild.py`.
+- Repo root/path bootstrapping patterns: `scripts_py/repo/context.py`.
+- VS Code settings sync: `docs/site/reference/vscode-settings.md` and `scripts_py/cli/sync_vscode_settings.py`.
+- CI attestation system: `docs/site/guides/ci-attestation.md`.
+- Full docs site: `docs/site/` (built with MkDocs, served at <https://Tapiiri.github.io/nixos-setup/>).

@@ -56,10 +56,15 @@ nav:
   - Getting Started:
       - Quickstart: quickstart.md
   - Architecture:
-      - Overview: architecture.md
-      - Scripts: scripts.md
+      - Repository Layout: architecture.md
+      - Scripts Overview: scripts.md
+  - Guides:
+      - Rebuild & System Updates: guides/rebuild.md
+      - Secrets Management: guides/secrets.md
+      - CI & Attestation: guides/ci-attestation.md
   - Development:
       - Dev Environment: dev-environment.md
+      - Git & GitHub: git-github.md
       - Troubleshooting: troubleshooting.md
   - Reference:
       - VS Code Settings: reference/vscode-settings.md
