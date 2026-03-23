@@ -98,6 +98,14 @@
   };
 
   nix.settings.trusted-users = ["root" "tapiiri"];
+  nix.settings.substituters = [
+    "https://nixos-setup.cachix.org"
+    "https://cache.nixos.org"
+  ];
+  nix.settings.trusted-public-keys = [
+    "nixos-setup.cachix.org-1:KFRmXZEp8aWIp7Dvlq99FYghDYj//lbcIW73dAAiWEY="
+    "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+  ];
 
   # Local mirror + permissions for nixos-setup tooling.
   # Goal: `rebuild --mirror` can update a shared local mirror as user and then
