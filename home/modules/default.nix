@@ -16,5 +16,6 @@
     (flakeRoot + "/home/modules/telegram.nix")
     (flakeRoot + "/home/modules/shell-bash.nix")
     (flakeRoot + "/home/modules/lastpass-cli.nix")
+    (flakeRoot + "/home/modules/thunderbird.nix")
   ];
 }

@@ -8,6 +8,7 @@
     onepassword.enable = true;
     tailscale.enable = true;
     lastpass-cli.enable = true;
+    thunderbird.enable = true;
   };
 
   # Home Manager module hub.
