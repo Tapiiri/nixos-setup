@@ -24,13 +24,14 @@ in {
       package = pkgs.gitFull;
 
       enable = true;
-      userName = "Tapiiri";
-      userEmail = "ilmari@tarpia.fi";
 
       # GitHub shows your avatar / marks commits as yours when the commit email
       # matches an email verified on your GitHub account. Keep this aligned.
 
-      extraConfig = {
+      settings = {
+        user.name = "Tapiiri";
+        user.email = "ilmari@tarpia.fi";
+
         init.defaultBranch = "main";
 
         # Git 2.27+ requires configuring how `git pull` reconciles divergent
@@ -40,7 +41,7 @@ in {
         # Optional signing setup.
         #
         # NOTE: We prefer using Home Manager's `programs.git.signing.*` options
-        # (below) to turn signing on/off. These extraConfig values only specify
+        # (below) to turn signing on/off. These settings values only specify
         # the signing mechanism when signing is enabled.
         gpg.format = mkIf config.my.git.signing.enable "ssh";
 
