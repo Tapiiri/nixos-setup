@@ -99,7 +99,7 @@
 
   users.users.ilmari = {
     isNormalUser = true;
-    description = "Ilmari Tarpila (Catalys Engineering)";
+    description = "Ilmari (Catalys)";
     home = "/home/ilmari";
     extraGroups = ["networkmanager"];
   };
