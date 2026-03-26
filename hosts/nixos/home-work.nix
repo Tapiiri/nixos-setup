@@ -12,7 +12,7 @@
     thunderbird.enable = true;
     # Personal modules intentionally disabled:
     # telegram.enable = false;   (default)
-    # onepassword.enable = false;  (default)
+    onepassword.enable = true;
     # lastpass-cli.enable = false; (default)
     # tailscale.enable = false;  (default)
   };
