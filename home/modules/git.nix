@@ -30,7 +30,7 @@ in {
 
       settings = {
         user.name = lib.mkDefault "Tapiiri";
-        user.email = lib.mkDefault "ilmari@tarpia.fi";
+        user.email = lib.mkDefault "ilmari@tarpila.fi";
 
         init.defaultBranch = "main";
 
