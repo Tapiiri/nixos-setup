@@ -97,6 +97,13 @@
     ];
   };
 
+  users.users.ilmari = {
+    isNormalUser = true;
+    description = "Ilmari Tarpila (Catalys Engineering)";
+    home = "/home/ilmari";
+    extraGroups = ["networkmanager"];
+  };
+
   nix.settings.trusted-users = ["root" "tapiiri"];
   nix.settings.substituters = [
     "https://nixos-setup.cachix.org"
@@ -182,6 +189,7 @@
     };
     users = {
       tapiiri = import ./home.nix;
+      ilmari = import ./home-work.nix;
     };
   };
 

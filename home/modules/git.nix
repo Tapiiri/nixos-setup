@@ -4,7 +4,7 @@
   pkgs,
   ...
 }: let
-  inherit (lib) mkEnableOption mkIf mkOption types;
+  inherit (lib) mkDefault mkEnableOption mkIf mkOption types;
 in {
   options.my.git.enable = mkEnableOption "Git (programs.git)";
 
@@ -29,8 +29,8 @@ in {
       # matches an email verified on your GitHub account. Keep this aligned.
 
       settings = {
-        user.name = "Tapiiri";
-        user.email = "ilmari@tarpia.fi";
+        user.name = lib.mkDefault "Tapiiri";
+        user.email = lib.mkDefault "ilmari@tarpia.fi";
 
         init.defaultBranch = "main";
 
