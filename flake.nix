@@ -96,8 +96,41 @@
           platforms = lib.platforms.linux;
         };
       };
+
+      switchUserPkg = pkgs.stdenvNoCC.mkDerivation {
+        pname = "nixos-setup-switch-user";
+        version = "0.1.0";
+        src = ./.;
+
+        nativeBuildInputs = [
+          pkgs.makeWrapper
+        ];
+
+        installPhase = ''
+          runHook preInstall
+
+          mkdir -p "$out/share/nixos-setup"
+          cp -R scripts scripts_py "$out/share/nixos-setup/"
+
+          chmod +x "$out/share/nixos-setup/scripts/switch-user"
+
+          mkdir -p "$out/bin"
+          makeWrapper "${pkgs.python3}/bin/python3" "$out/bin/switch-user" \
+            --add-flags "$out/share/nixos-setup/scripts/switch-user" \
+            --prefix PATH : "${lib.makeBinPath [pkgs.glib pkgs.systemd]}"
+
+          runHook postInstall
+        '';
+
+        meta = {
+          mainProgram = "switch-user";
+          description = "nixos-setup user switch helper (GDM session switcher)";
+          platforms = lib.platforms.linux;
+        };
+      };
     in {
       rebuild = rebuildPkg;
+      "switch-user" = switchUserPkg;
       default = rebuildPkg;
     });
 
