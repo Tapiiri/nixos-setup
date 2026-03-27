@@ -117,7 +117,7 @@
           mkdir -p "$out/bin"
           makeWrapper "${pkgs.python3}/bin/python3" "$out/bin/switch-user" \
             --add-flags "$out/share/nixos-setup/scripts/switch-user" \
-            --prefix PATH : "${lib.makeBinPath [pkgs.glib pkgs.systemd]}"
+            --prefix PATH : "${lib.makeBinPath [pkgs.systemd]}"
 
           runHook postInstall
         '';

@@ -192,7 +192,7 @@ def run_cached_pytest(
 
     # 5. Run pytest on the unattested test files.
     test_paths = sorted(str(t) for t in to_run)
-    pytest_argv = ["python", "-m", "pytest", "-q", *test_paths, *list(extra_pytest_args)]
+    pytest_argv = [sys.executable, "-m", "pytest", "-q", *test_paths, *list(extra_pytest_args)]
 
     log_info(f"[cached-pytest] Running: {' '.join(pytest_argv)}", out=_out)
     t0 = time.time()

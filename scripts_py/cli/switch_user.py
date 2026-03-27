@@ -10,43 +10,56 @@ class SubprocessRunner(Protocol):
     def run(self, argv: Sequence[str]) -> int:  # pragma: no cover
         ...
 
+    def run_output(self, argv: Sequence[str]) -> tuple[int, str]:  # pragma: no cover
+        ...
+
 
 class DefaultRunner:
     def run(self, argv: Sequence[str]) -> int:
         return subprocess.run(list(argv)).returncode
 
+    def run_output(self, argv: Sequence[str]) -> tuple[int, str]:
+        result = subprocess.run(list(argv), capture_output=True, text=True)
+        return result.returncode, result.stdout
 
-def build_gdbus_argv(target_user: str) -> list[str]:
-    return [
-        "gdbus",
-        "call",
-        "--system",
-        "--dest",
-        "org.gnome.DisplayManager",
-        "--object-path",
-        "/org/gnome/DisplayManager/Manager",
-        "--method",
-        "org.gnome.DisplayManager.Manager.SwitchToUser",
-        target_user,
-        "",
-    ]
+
+def build_list_sessions_argv() -> list[str]:
+    return ["loginctl", "list-sessions", "--no-legend"]
+
+
+def build_activate_argv(session_id: str) -> list[str]:
+    return ["loginctl", "activate", session_id]
 
 
 def build_lock_argv() -> list[str]:
     return ["loginctl", "lock-session"]
 
 
-def switch_to_user(target_user: str, runner: SubprocessRunner) -> int:
-    """Ask GDM to switch to target_user.
+def parse_sessions_output(output: str, target_user: str) -> str | None:
+    """Return the first session ID for target_user from loginctl list-sessions output.
 
-    First tries the D-Bus SwitchToUser method directly. If that fails
-    (e.g. running in a non-GDM session or insufficient D-Bus access),
-    falls back to locking the current session so GDM shows the user
+    loginctl list-sessions --no-legend format:
+      SESSION  UID  USER     SEAT   TTY
+      3        1001 ilmari   seat0
+    """
+    for line in output.splitlines():
+        parts = line.split()
+        if len(parts) >= 3 and parts[2] == target_user:
+            return parts[0]
+    return None
+
+
+def switch_to_user(target_user: str, runner: SubprocessRunner) -> int:
+    """Switch to target_user's session.
+
+    If the user already has an active session, activates it directly via
+    loginctl. Otherwise locks the current session so GDM shows the user
     switcher screen.
     """
-    rc = runner.run(build_gdbus_argv(target_user))
-    if rc == 0:
-        return 0
+    _, output = runner.run_output(build_list_sessions_argv())
+    session_id = parse_sessions_output(output, target_user)
+    if session_id is not None:
+        return runner.run(build_activate_argv(session_id))
     return runner.run(build_lock_argv())
 
 
