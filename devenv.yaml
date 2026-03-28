@@ -9,3 +9,5 @@ inputs:
 allowUnfree: true
 secretspec:
   enable: true
+  provider: "onepassword://Development"
+  profile: "default"

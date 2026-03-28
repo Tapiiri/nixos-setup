@@ -6,10 +6,6 @@
 
   dotenv.disableHint = true;
 
-  # Default secretspec to 1Password for local development.
-  # CI overrides this with SECRETSPEC_PROVIDER=env in workflow files.
-  env.SECRETSPEC_PROVIDER = "onepassword";
-
   packages = with pkgs; [
     git
     pre-commit
