@@ -60,79 +60,73 @@
         ]
         ++ lib.optional (nixosRebuildPkg != null) nixosRebuildPkg;
 
-      rebuildPkg = pkgs.stdenvNoCC.mkDerivation {
-        pname = "nixos-setup-rebuild";
-        version = "0.1.0";
-        src = ./.;
-
-        nativeBuildInputs = [
-          pkgs.makeWrapper
-        ];
-
-        installPhase = ''
-          runHook preInstall
-
-          mkdir -p "$out/share/nixos-setup"
-          cp -R scripts scripts_py flake.nix "$out/share/nixos-setup/"
-
-          chmod +x "$out/share/nixos-setup/scripts/rebuild"
-          chmod +x "$out/share/nixos-setup/scripts/rebuild-inner"
-
-          mkdir -p "$out/bin"
-          makeWrapper "${pkgs.python3}/bin/python3" "$out/bin/rebuild" \
-            --add-flags "$out/share/nixos-setup/scripts/rebuild" \
-            --prefix PATH : "${lib.makeBinPath runtimeInputs}"${wrapperExtraArgs}
-
-          makeWrapper "${pkgs.python3}/bin/python3" "$out/bin/rebuild-inner" \
-            --add-flags "$out/share/nixos-setup/scripts/rebuild-inner" \
-            --prefix PATH : "${lib.makeBinPath runtimeInputs}"${wrapperExtraArgs}
-
-          runHook postInstall
-        '';
-
-        meta = {
-          mainProgram = "rebuild";
+      # ── Script package specifications ──────────────────────────────
+      # Each entry defines a user-facing script to package.
+      # To add a new script:
+      #   1. Add an entry here (packages it as a Nix derivation)
+      #   2. Add a matching entry in home/modules/scripts.nix (HM option)
+      scriptSpecs = {
+        rebuild = {
+          pname = "nixos-setup-rebuild";
           description = "nixos-setup rebuild helper";
-          platforms = lib.platforms.linux;
+          scripts = ["rebuild" "rebuild-inner"];
+          runtimeDeps = runtimeInputs;
+          wrapperArgs = wrapperExtraArgs;
+          extraSrc = ["flake.nix"];
+          mainProgram = "rebuild";
         };
-      };
-
-      switchUserPkg = pkgs.stdenvNoCC.mkDerivation {
-        pname = "nixos-setup-switch-user";
-        version = "0.1.0";
-        src = ./.;
-
-        nativeBuildInputs = [
-          pkgs.makeWrapper
-        ];
-
-        installPhase = ''
-          runHook preInstall
-
-          mkdir -p "$out/share/nixos-setup"
-          cp -R scripts scripts_py "$out/share/nixos-setup/"
-
-          chmod +x "$out/share/nixos-setup/scripts/switch-user"
-
-          mkdir -p "$out/bin"
-          makeWrapper "${pkgs.python3}/bin/python3" "$out/bin/switch-user" \
-            --add-flags "$out/share/nixos-setup/scripts/switch-user" \
-            --prefix PATH : "${lib.makeBinPath [pkgs.systemd]}"
-
-          runHook postInstall
-        '';
-
-        meta = {
-          mainProgram = "switch-user";
+        "switch-user" = {
+          pname = "nixos-setup-switch-user";
           description = "nixos-setup user switch helper (GDM session switcher)";
-          platforms = lib.platforms.linux;
+          scripts = ["switch-user"];
+          runtimeDeps = [pkgs.systemd];
+          wrapperArgs = "";
+          extraSrc = [];
+          mainProgram = "switch-user";
         };
       };
-    in {
-      rebuild = rebuildPkg;
-      "switch-user" = switchUserPkg;
-      default = rebuildPkg;
-    });
+
+      mkScriptPackage = _name: spec:
+        pkgs.stdenvNoCC.mkDerivation {
+          inherit (spec) pname;
+          version = "0.1.0";
+          src = ./.;
+
+          nativeBuildInputs = [pkgs.makeWrapper];
+
+          installPhase = let
+            copySrc =
+              lib.concatMapStringsSep "\n" (
+                f: ''cp -R "${f}" "$out/share/nixos-setup/"''
+              )
+              spec.extraSrc;
+            installScripts =
+              lib.concatMapStringsSep "\n" (s: ''
+                chmod +x "$out/share/nixos-setup/scripts/${s}"
+                makeWrapper "${pkgs.python3}/bin/python3" "$out/bin/${s}" \
+                  --add-flags "$out/share/nixos-setup/scripts/${s}" \
+                  --prefix PATH : "${lib.makeBinPath spec.runtimeDeps}"${spec.wrapperArgs}
+              '')
+              spec.scripts;
+          in ''
+            runHook preInstall
+            mkdir -p "$out/share/nixos-setup"
+            cp -R scripts scripts_py "$out/share/nixos-setup/"
+            ${copySrc}
+            mkdir -p "$out/bin"
+            ${installScripts}
+            runHook postInstall
+          '';
+
+          meta = {
+            inherit (spec) mainProgram description;
+            platforms = lib.platforms.linux;
+          };
+        };
+
+      scriptPackages = lib.mapAttrs mkScriptPackage scriptSpecs;
+    in
+      scriptPackages // {default = scriptPackages.rebuild;});
 
     apps = forAllSystems (system: {
       rebuild = {

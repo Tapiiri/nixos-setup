@@ -17,6 +17,6 @@
     (flakeRoot + "/home/modules/shell-bash.nix")
     (flakeRoot + "/home/modules/lastpass-cli.nix")
     (flakeRoot + "/home/modules/thunderbird.nix")
-    (flakeRoot + "/home/modules/user-switch.nix")
+    (flakeRoot + "/home/modules/scripts.nix")
   ];
 }
