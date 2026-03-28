@@ -1,48 +1,17 @@
-{
-  config,
-  lib,
-  pkgs,
-  ...
-}: let
-  inherit (lib) mkEnableOption mkIf mkOption types;
-
-  # Package names differ slightly across nixpkgs versions; in 25.05 these
-  # should exist as unfree packages when `allowUnfree = true`.
-  onepasswordPkg = pkgs._1password-gui;
-  onepasswordCLIPkg = pkgs._1password-cli;
-
-  mkPkgOption = pkg:
-    mkOption {
-      type = types.package;
-      default = pkg;
-      defaultText = "pkgs.${pkg.pname or "<package>"}";
-      description = "Package to install.";
-    };
+# Home Manager companion for 1Password.
+#
+# The actual packages and permissions are handled by the NixOS system modules
+# (programs._1password and programs._1password-gui in configuration.nix).
+# This module exists so that `my.onepassword.enable = true` still works as a
+# feature flag in Home Manager configs — it's just a no-op now since the system
+# modules provide the binaries with proper suid/group permissions.
+{lib, ...}: let
+  inherit (lib) mkEnableOption;
 in {
   options.my.onepassword = {
     enable = mkEnableOption "1Password (GUI + CLI)";
-
-    installGui = mkOption {
-      type = types.bool;
-      default = true;
-      description = "Install the 1Password desktop app.";
-    };
-
-    installCli = mkOption {
-      type = types.bool;
-      default = true;
-      description = "Install the 1Password CLI (op).";
-    };
-
-    onepasswordPkg.polkitPolicyOwners = ["tapiiri"];
-
-    guiPackage = mkPkgOption onepasswordPkg;
-    cliPackage = mkPkgOption onepasswordCLIPkg;
   };
 
-  config = mkIf config.my.onepassword.enable {
-    home.packages =
-      (lib.optional config.my.onepassword.installGui config.my.onepassword.guiPackage)
-      ++ (lib.optional config.my.onepassword.installCli config.my.onepassword.cliPackage);
-  };
+  # No home.packages — the NixOS system modules install the binaries with the
+  # required suid wrappers and onepassword-cli group ownership.
 }

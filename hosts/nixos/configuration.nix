@@ -193,6 +193,15 @@
     };
   };
 
+  # 1Password: use the NixOS system modules so the CLI + GUI get the
+  # required suid wrappers, onepassword-cli group, and polkit policies.
+  # (Without these, `op signin` fails with "connection reset".)
+  programs._1password.enable = true;
+  programs._1password-gui = {
+    enable = true;
+    polkitPolicyOwners = ["tapiiri" "ilmari"];
+  };
+
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
 
