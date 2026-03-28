@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import subprocess
@@ -27,13 +28,13 @@ class PasswordManagerBackend(Protocol):
         raise NotImplementedError
 
 
-class LastPassBackend:
-    provider_id = "lastpass"
-    cli_binary = "lpass"
+class OnePasswordBackend:
+    provider_id = "onepassword"
+    cli_binary = "op"
 
-    def _run_status(self, *, lpass_path: str) -> CheckResult:
+    def _run_whoami(self, *, op_path: str) -> CheckResult:
         try:
-            cp = subprocess.run([lpass_path, "status"], capture_output=True, text=True)
+            cp = subprocess.run([op_path, "whoami"], capture_output=True, text=True)
         except OSError as e:
             return CheckResult(ok=False, hint=str(e))
 
@@ -44,73 +45,74 @@ class LastPassBackend:
         return CheckResult(ok=False, hint=hint)
 
     def check_logged_in(self) -> CheckResult:
-        lpass_path = shutil.which(self.cli_binary)
-        if not lpass_path:
+        op_path = shutil.which(self.cli_binary)
+        if not op_path:
             return CheckResult(
                 ok=False,
                 hint=(
-                    "lpass executable not found on PATH. secretspec is enabled in this repo and "
+                    "op executable not found on PATH. secretspec is enabled in this repo and "
                     "will try to use a password manager CLI to provide secrets. "
-                    "Install lastpass-cli (lpass) and log in."
+                    "Install 1Password CLI (op) and sign in."
                 ),
             )
 
-        return self._run_status(lpass_path=lpass_path)
+        return self._run_whoami(op_path=op_path)
 
     def format_help_message(self, *, hint: str | None) -> str:
         details = f"\n\nDetails: {hint}" if hint else ""
         return (
-            "Password manager CLI is not authenticated (LastPass: lpass is not logged in).\n"
+            "Password manager CLI is not authenticated (1Password: op is not signed in).\n"
             "This repo enables devenv+secretspec, which uses a password manager CLI to "
             "provide required secrets.\n\n"
-            "Fix: run `lpass login <email>` (and complete 2FA if prompted).\n"
+            "Fix: run `op signin` (or `eval $(op signin)` in bash).\n"
             "Then retry (for direnv: `direnv reload`; for pre-commit: re-run the git command)."
             f"{details}"
         )
 
     def store_secret(self, *, entry_path: str, value: str, username: str | None) -> None:
-        lpass_path = shutil.which(self.cli_binary)
-        if not lpass_path:
-            raise RuntimeError(
-                "lpass executable not found on PATH; please install LastPass CLI (lpass)"
-            )
+        op_path = shutil.which(self.cli_binary)
+        if not op_path:
+            raise RuntimeError("op executable not found on PATH; please install 1Password CLI (op)")
 
-        # Fail fast with a helpful hint if not logged in.
-        res = self._run_status(lpass_path=lpass_path)
+        # Fail fast with a helpful hint if not signed in.
+        res = self._run_whoami(op_path=op_path)
         if not res.ok:
             hint = res.hint or ""
             raise RuntimeError(
-                "lpass indicates you are not logged in or cannot access the account. "
-                f"Run `lpass login user@example.com` first. Details: {hint}"
+                "op indicates you are not signed in or cannot access the account. "
+                f"Run `op signin` first. Details: {hint}"
             )
 
-        cmd = [
-            lpass_path,
-            "add",
-            "--sync=now",
-            "--non-interactive",
+        # Build JSON template and pipe via stdin to avoid secrets in process args.
+        fields: list[dict[str, str]] = [
+            {"id": "password", "type": "CONCEALED", "value": value},
         ]
         if username:
-            cmd += ["--username", username]
+            fields.append({"id": "username", "value": username})
 
-        # NOTE: For the LastPass CLI shipped in Nixpkgs, `--password` is a flag and
-        # the actual password value is read from stdin (NOT as a flag argument).
-        cmd += ["--password", entry_path]
+        template = json.dumps(
+            {"title": entry_path, "category": "LOGIN", "fields": fields},
+        )
 
-        subprocess.run(cmd, input=value, text=True, check=True)
+        subprocess.run(
+            [op_path, "item", "create", "-"],
+            input=template,
+            text=True,
+            check=True,
+        )
 
 
 def _provider_from_env() -> str:
-    return os.environ.get("NIXOS_SETUP_PASSWORD_MANAGER", "lastpass").strip() or "lastpass"
+    return os.environ.get("NIXOS_SETUP_PASSWORD_MANAGER", "onepassword").strip() or "onepassword"
 
 
 def get_password_manager_backend(provider: str | None = None) -> PasswordManagerBackend:
     provider_id = (provider or _provider_from_env()).strip().lower()
-    if provider_id in {"lastpass", "lpass"}:
-        return LastPassBackend()
+    if provider_id in {"onepassword", "op", "1password"}:
+        return OnePasswordBackend()
 
     raise ValueError(
-        f"Unsupported password manager provider: {provider_id!r}. Supported providers: lastpass"
+        f"Unsupported password manager provider: {provider_id!r}. Supported providers: onepassword"
     )
 
 

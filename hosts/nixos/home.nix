@@ -7,7 +7,6 @@
     telegram.enable = true;
     onepassword.enable = true;
     tailscale.enable = true;
-    lastpass-cli.enable = true;
     thunderbird.enable = true;
     userSwitch.enable = true;
   };

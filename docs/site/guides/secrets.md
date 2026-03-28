@@ -15,14 +15,17 @@ tasks, giving clear instructions when something is wrong.
 
 ## Password manager setup
 
-Currently the only implemented backend is **LastPass** (`lpass`). The code is
-structured with a protocol-based abstraction so adding another backend later is
-straightforward.
+This repo uses **1Password** (`op`) as the password manager backend.
+Secretspec has native 1Password support — the provider is configured
+automatically via `SECRETSPEC_PROVIDER=onepassword` in `devenv.nix`.
 
-### Logging in
+The `op` CLI is installed via the NixOS system modules
+(`programs._1password.enable = true` in `configuration.nix`).
+
+### Signing in
 
 ```bash
-lpass login <your-email>
+op signin
 ```
 
 ### Verifying authentication
@@ -71,15 +74,15 @@ If you see errors during `devenv shell` or `devenv tasks run ...` that mention
 secrets or authentication:
 
 ```bash
-lpass login <your-email>
+op signin
 ```
 
 Then retry the command.
 
 ### "password manager not available"
 
-Make sure `lpass` (or your configured backend) is installed. In this repo it's
-provided via Home Manager — see `home/modules/lastpass-cli.nix`.
+Make sure `op` is installed. In this repo it's provided via the NixOS system
+module `programs._1password` in `configuration.nix`.
 
 ### Pre-commit hooks fail before running checks
 

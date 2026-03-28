@@ -119,15 +119,9 @@ def add_secret_to_password_manager(opts: AddSecretOptions, *, provider: str | No
     backend.store_secret(entry_path=entry_path, value=opts.value, username=opts.username)
 
 
-def add_secret_to_lastpass(opts: AddSecretOptions) -> None:
-    """Compatibility wrapper for older callers/tests."""
-
-    add_secret_to_password_manager(opts, provider="lastpass")
-
-
 def parse_args(argv: list[str]) -> tuple[AddSecretOptions, str | None]:
     p = argparse.ArgumentParser(
-        description="Add secret to secretspec and a password manager (default: LastPass)"
+        description="Add secret to secretspec and a password manager (default: 1Password)"
     )
     p.add_argument("name", help="Secret name (key)")
     p.add_argument("value", help="Secret value")
@@ -138,7 +132,8 @@ def parse_args(argv: list[str]) -> tuple[AddSecretOptions, str | None]:
     p.add_argument(
         "--provider",
         default=None,
-        help="Password manager provider id (default: $NIXOS_SETUP_PASSWORD_MANAGER or 'lastpass')",
+        help="Password manager provider id"
+        " (default: $NIXOS_SETUP_PASSWORD_MANAGER or 'onepassword')",
     )
 
     ns = p.parse_args(argv)

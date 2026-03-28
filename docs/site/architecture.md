@@ -63,7 +63,6 @@ Reusable, focused modules that each manage one concern:
 | `browsers.nix` | Browser packages |
 | `gh.nix` | GitHub CLI configuration |
 | `onepassword.nix` | 1Password integration |
-| `lastpass-cli.nix` | LastPass CLI |
 | `tailscale.nix` | Tailscale VPN |
 | `telegram.nix` | Telegram desktop |
 

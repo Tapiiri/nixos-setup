@@ -8,7 +8,7 @@ import pytest
 
 from scripts_py.cli.add_secret import (
     AddSecretOptions,
-    add_secret_to_lastpass,
+    add_secret_to_password_manager,
     add_secret_to_secretspec,
 )
 
@@ -67,8 +67,9 @@ def test_duplicate_definition_raises(tmp_path: Path) -> None:
         add_secret_to_secretspec(opts)
 
 
-def test_add_secret_to_lastpass_invokes_lpass(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+def test_add_secret_to_password_manager_invokes_op(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     p = tmp_path / "secretspec.toml"
     p.write_text(BASE_SECRETSPEC)
@@ -91,22 +92,24 @@ def test_add_secret_to_lastpass_invokes_lpass(
     monkeypatch.setattr(subprocess, "run", fake_run)
 
     def _fake_which(_name: str) -> str:
-        return "/bin/lpass"
+        return "/bin/op"
 
     monkeypatch.setattr("shutil.which", _fake_which)
 
-    add_secret_to_lastpass(opts)
+    add_secret_to_password_manager(opts)
 
-    # first call is lpass status
-    assert calls[0][0][1] == "status"
+    # first call is op whoami
+    assert calls[0][0] == ["/bin/op", "whoami"]
 
-    # second call is lpass add
-    add_cmd: Any
-    add_kwargs: dict[str, Any]
-    add_cmd, add_kwargs = calls[1]
+    # second call is op item create -
+    create_cmd: Any
+    create_kwargs: dict[str, Any]
+    create_cmd, create_kwargs = calls[1]
 
-    # should build path secretspec/myproj/development/API_KEY
-    assert any("secretspec/myproj/development/API_KEY" in str(c) for c in add_cmd)
-    assert add_kwargs["input"] == "abcd"
-    assert add_kwargs["text"] is True
-    assert add_kwargs["check"] is True
+    assert create_cmd == ["/bin/op", "item", "create", "-"]
+    # JSON template passed via stdin should contain the entry path and value
+    assert "secretspec/myproj/development/API_KEY" in create_kwargs["input"]
+    assert "abcd" in create_kwargs["input"]
+    assert "svc-user" in create_kwargs["input"]
+    assert create_kwargs["text"] is True
+    assert create_kwargs["check"] is True

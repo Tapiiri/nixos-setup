@@ -45,7 +45,6 @@ scripts_py/
 │   ├── cached_nix_check.py
 │   ├── cached_pytest.py
 │   ├── ensure_password_manager_login.py
-│   ├── ensure_lpass_login.py
 │   ├── ensure_cachix_cache.py
 │   ├── sync_github_labels.py
 │   ├── setup_github_pages.py
@@ -103,7 +102,6 @@ scripts_py/
 |--------|-------------|---------|
 | `add-secret` | Add secret to secretspec + password manager | [Secrets guide](guides/secrets.md) |
 | `ensure-password-manager-login` | Preflight authentication check | [Secrets guide](guides/secrets.md) |
-| `ensure-lpass-login` | LastPass-specific login preflight | [Secrets guide](guides/secrets.md) |
 
 ### GitHub & infrastructure
 

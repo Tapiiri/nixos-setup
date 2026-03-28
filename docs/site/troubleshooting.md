@@ -73,7 +73,7 @@ If pre-commit fails with an authentication error before running checks, the
 secretspec preflight couldn't verify your password manager login.
 
 ```bash
-lpass login <your-email>
+op signin
 ```
 
 See [Secrets Management](guides/secrets.md) for details.

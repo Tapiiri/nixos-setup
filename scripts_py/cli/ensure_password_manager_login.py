@@ -16,7 +16,8 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
             "Ensure password manager CLI is logged in (for secretspec), "
             "optionally exec a command.\n\n"
             "Provider selection:\n"
-            "- Default provider comes from $NIXOS_SETUP_PASSWORD_MANAGER (defaults to 'lastpass')\n"
+            "- Default provider comes from $NIXOS_SETUP_PASSWORD_MANAGER"
+            " (defaults to 'onepassword')\n"
             "- You can override for a single invocation with --provider\n\n"
             "Examples:\n"
             "  ensure-password-manager-login --check\n"
@@ -27,7 +28,8 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     p.add_argument(
         "--provider",
         default=None,
-        help="Password manager provider id (default: $NIXOS_SETUP_PASSWORD_MANAGER or 'lastpass')",
+        help="Password manager provider id"
+        " (default: $NIXOS_SETUP_PASSWORD_MANAGER or 'onepassword')",
     )
     p.add_argument(
         "--check",
