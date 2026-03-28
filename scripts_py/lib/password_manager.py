@@ -21,6 +21,10 @@ class PasswordManagerBackend(Protocol):
     def check_logged_in(self) -> CheckResult:
         raise NotImplementedError
 
+    def try_signin(self) -> CheckResult:
+        """Attempt interactive signin. Return result of post-signin check."""
+        raise NotImplementedError
+
     def format_help_message(self, *, hint: str | None) -> str:
         raise NotImplementedError
 
@@ -56,6 +60,22 @@ class OnePasswordBackend:
                 ),
             )
 
+        return self._run_whoami(op_path=op_path)
+
+    def try_signin(self) -> CheckResult:
+        op_path = shutil.which(self.cli_binary)
+        if not op_path:
+            return CheckResult(
+                ok=False,
+                hint="op executable not found on PATH.",
+            )
+        try:
+            subprocess.run(
+                [op_path, "signin"],
+                check=True,
+            )
+        except (OSError, subprocess.CalledProcessError) as e:
+            return CheckResult(ok=False, hint=str(e))
         return self._run_whoami(op_path=op_path)
 
     def format_help_message(self, *, hint: str | None) -> str:

@@ -67,9 +67,19 @@ def _exec_cmd(cmd: Sequence[str], *, runner: Runner) -> NoReturn:
     runner.exec(cmd)
 
 
-def _ensure_logged_in_or_exit(*, provider: str | None, err: TextIO) -> None:
+def _ensure_logged_in_or_exit(
+    *,
+    provider: str | None,
+    err: TextIO,
+) -> None:
     backend = get_password_manager_backend(provider)
     res = backend.check_logged_in()
+    if res.ok:
+        return
+
+    # Not authenticated — attempt interactive signin.
+    log_info("Not signed in, running op signin...", out=err)
+    res = backend.try_signin()
     if res.ok:
         return
 

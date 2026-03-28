@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import subprocess
 import unittest
 from types import SimpleNamespace
 from typing import Any
@@ -54,6 +55,35 @@ class TestOnePasswordBackend(unittest.TestCase):
                     entry_path="test/secret", value="val", username=None
                 )
         self.assertIn("op", str(ctx.exception))
+
+    def test_try_signin_missing_binary(self) -> None:
+        with patch("shutil.which", return_value=None):
+            res = OnePasswordBackend().try_signin()
+        self.assertFalse(res.ok)
+
+    def test_try_signin_success(self) -> None:
+        calls: list[tuple[Any, dict[str, Any]]] = []
+
+        def fake_run(cmd: Any, **kwargs: Any) -> SimpleNamespace:
+            calls.append((cmd, kwargs))
+            return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+        with patch("shutil.which", return_value="/bin/op"):
+            with patch("subprocess.run", side_effect=fake_run):
+                res = OnePasswordBackend().try_signin()
+        self.assertTrue(res.ok)
+        # Should have called op signin then op whoami
+        self.assertEqual(calls[0][0], ["/bin/op", "signin"])
+        self.assertEqual(calls[1][0], ["/bin/op", "whoami"])
+
+    def test_try_signin_fails(self) -> None:
+        with patch("shutil.which", return_value="/bin/op"):
+            with patch(
+                "subprocess.run",
+                side_effect=subprocess.CalledProcessError(1, "op signin"),
+            ):
+                res = OnePasswordBackend().try_signin()
+        self.assertFalse(res.ok)
 
     def test_store_secret_not_signed_in(self) -> None:
         with patch("shutil.which", return_value="/bin/op"):
