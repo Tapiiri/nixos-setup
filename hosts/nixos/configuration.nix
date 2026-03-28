@@ -106,11 +106,11 @@
 
   nix.settings.trusted-users = ["root" "tapiiri"];
   nix.settings.substituters = [
-    "https://nixos-setup.cachix.org"
+    "https://tapiiri-nixos-setup.cachix.org"
     "https://cache.nixos.org"
   ];
   nix.settings.trusted-public-keys = [
-    "nixos-setup.cachix.org-1:KFRmXZEp8aWIp7Dvlq99FYghDYj//lbcIW73dAAiWEY="
+    "tapiiri-nixos-setup.cachix.org-1:wBjh1nFp9lCRgdt6eOMPEv14KIE51cjYW0VczdgKYEU="
     "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
   ];
 

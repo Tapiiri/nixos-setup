@@ -1,8 +1,8 @@
 {pkgs, ...}: {
   # Keep devenv usable even when the user is not a trusted Nix user.
   # (Otherwise devenv tries to auto-manage Cachix config and can fail.)
-  cachix.pull = ["nixos-setup-devenv"];
-  cachix.push = "nixos-setup-devenv";
+  cachix.pull = ["tapiiri-nixos-setup-devenv"];
+  cachix.push = "tapiiri-nixos-setup-devenv";
 
   dotenv.disableHint = true;
 

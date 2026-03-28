@@ -32,17 +32,16 @@ jobs:
             - name: Checkout
               uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-            - name: Install Nix
-              uses: cachix/install-nix-action@1ca7d21a94afc7c957383a2d217460d980de4934 # v31.10.1
+            - name: Set up Python
+              uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
               with:
-                  extra_nix_config: |
-                      experimental-features = nix-command flakes
+                  python-version: "3.13"
 
-            - name: Install devenv.sh
-              run: nix profile install nixpkgs#devenv
+            - name: Install mkdocs
+              run: pip install mkdocs mkdocs-material
 
             - name: Build docs
-              run: devenv tasks run docs:mkdocs:build
+              run: mkdocs build --strict
 
             - name: Upload artifact
               uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4

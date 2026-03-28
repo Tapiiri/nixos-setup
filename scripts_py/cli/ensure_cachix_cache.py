@@ -95,7 +95,7 @@ def _http_json(
     token: str | None,
     body: bytes | None = None,
 ) -> tuple[int, str]:
-    headers = {"Accept": "application/json"}
+    headers = {"Accept": "application/json", "User-Agent": "nixos-setup/ensure-cachix-cache"}
     if body is not None:
         headers["Content-Type"] = "application/json"
     if token:
@@ -117,9 +117,10 @@ def cachix_api_cache_exists(*, cfg: CachixConfig, cache_name: str) -> bool:
         return True
     if status == 404:
         return False
-    if status == 401:
-        # Cachix returns 401 both for missing caches and for private caches.
-        # We'll treat this like "unknown" and let creation attempt resolve it.
+    if status in (401, 403):
+        # Cachix may return 401 or 403 for missing caches, private caches, or
+        # when the token lacks read permissions.  Treat as "unknown" and let
+        # the creation attempt resolve it.
         return False
     # Other codes mean auth/network/etc; treat as error.
     raise RuntimeError(f"Unexpected response from Cachix API (GET cache): HTTP {status}")

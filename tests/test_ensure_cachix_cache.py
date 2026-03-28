@@ -31,7 +31,9 @@ class TestEnsureCachixCache(unittest.TestCase):
 
         ensure_cachix_cache.cachix_use_cache = _use  # type: ignore[assignment]
 
-        res = ensure_cachix_cache.ensure_cache(cache_name="nixos-setup", visibility="public")
+        res = ensure_cachix_cache.ensure_cache(
+            cache_name="tapiiri-nixos-setup", visibility="public"
+        )
         self.assertTrue(res.configured)
         self.assertEqual(called["use"], 1)
 
@@ -56,7 +58,9 @@ class TestEnsureCachixCache(unittest.TestCase):
 
         ensure_cachix_cache.cachix_use_cache = _use  # type: ignore[assignment]
 
-        res = ensure_cachix_cache.ensure_cache(cache_name="nixos-setup", visibility="public")
+        res = ensure_cachix_cache.ensure_cache(
+            cache_name="tapiiri-nixos-setup", visibility="public"
+        )
         self.assertTrue(res.created)
         self.assertTrue(res.configured)
         self.assertEqual(created["called"], 1)
@@ -83,7 +87,9 @@ class TestEnsureCachixCache(unittest.TestCase):
 
         ensure_cachix_cache.cachix_use_cache = _use  # type: ignore[assignment]
 
-        res = ensure_cachix_cache.ensure_cache(cache_name="nixos-setup", visibility="public")
+        res = ensure_cachix_cache.ensure_cache(
+            cache_name="tapiiri-nixos-setup", visibility="public"
+        )
         self.assertFalse(res.created)
         self.assertTrue(res.configured)
         self.assertEqual(created["called"], 0)
