@@ -20,41 +20,41 @@ hm_profile_dir="${HOME_MANAGER_PROFILE_DIR:-$HOME/.nix-profile}"
 # Prefer the hm-session-vars.sh from the Home Manager profile (it’s guaranteed
 # to match the active generation). Fallback to ~/.nix-profile for older setups.
 if [ -f "$hm_profile_dir/etc/profile.d/hm-session-vars.sh" ]; then
-	# shellcheck source=/dev/null
-	. "$hm_profile_dir/etc/profile.d/hm-session-vars.sh"
+  # shellcheck source=/dev/null
+  . "$hm_profile_dir/etc/profile.d/hm-session-vars.sh"
 elif [ -f "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" ]; then
-	# shellcheck source=/dev/null
-	. "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"
+  # shellcheck source=/dev/null
+  . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"
 fi
 
 # Final fallback: ensure ~/.local/bin is on PATH for interactive shells.
 # (This keeps your repo-linked scripts discoverable even when the terminal
 # environment doesn't propagate Home Manager session variables.)
 case ":$PATH:" in
-	*":$HOME/.local/bin:"*) : ;;
-	*) export PATH="$HOME/.local/bin:$PATH" ;;
+  *":$HOME/.local/bin:"*) : ;;
+  *) export PATH="$HOME/.local/bin:$PATH" ;;
 esac
 
 if [ -f "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" ]; then
-	# Prefer the profile entrypoint when available.
-	# It sets up $HOME_MANAGER_* variables and points to the actual generated init.
-	:
+  # Prefer the profile entrypoint when available.
+  # It sets up $HOME_MANAGER_* variables and points to the actual generated init.
+  :
 fi
 
 # Home Manager may generate a dedicated bash init file under ~/.nix-profile.
 # The exact path can vary slightly across HM versions, so check common locations.
 for hm_bashrc in \
-	"$hm_profile_dir/etc/profile.d/hm-bashrc.sh" \
-	"$hm_profile_dir/etc/profile.d/hm-bash.sh" \
-	"$hm_profile_dir/etc/profile.d/hm-bashrc" \
-	"$hm_profile_dir/share/bash/home-manager.sh" \
-	"$hm_profile_dir/share/home-manager/bashrc" \
-	"$HOME/.config/home-manager/current-home/etc/profile.d/hm-bashrc.sh"; do
-	if [ -f "$hm_bashrc" ]; then
-		# shellcheck source=/dev/null
-		. "$hm_bashrc"
-		break
-	fi
+  "$hm_profile_dir/etc/profile.d/hm-bashrc.sh" \
+  "$hm_profile_dir/etc/profile.d/hm-bash.sh" \
+  "$hm_profile_dir/etc/profile.d/hm-bashrc" \
+  "$hm_profile_dir/share/bash/home-manager.sh" \
+  "$hm_profile_dir/share/home-manager/bashrc" \
+  "$HOME/.config/home-manager/current-home/etc/profile.d/hm-bashrc.sh"; do
+  if [ -f "$hm_bashrc" ]; then
+    # shellcheck source=/dev/null
+    . "$hm_bashrc"
+    break
+  fi
 done
 
 # --- End Home Manager integration --------------------------------------------
@@ -67,15 +67,13 @@ done
 # export EDITOR=nvim
 # alias ll='ls -alF'
 
-
 # Rebuild
 #
 # `rebuild` is provided as an executable dispatcher (installed via
 # `scripts/setup-links` or as a flake app). It handles online/offline/dev
 # dispatching internally, so we avoid shell-function hacks here.
 
-
 # Direnv - should be one of last
 if command -v direnv >/dev/null 2>&1; then
-	eval "$(direnv hook bash)"
+  eval "$(direnv hook bash)"
 fi
