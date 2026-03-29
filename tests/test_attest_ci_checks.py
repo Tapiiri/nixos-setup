@@ -17,7 +17,7 @@ from scripts_py.ci.attest_ci_checks import (
     verify_local_attestations,
 )
 from scripts_py.lib.cached_check import (
-    KNOWN_CHECKS,
+    CI_CHECKS,
     compute_input_hash,
 )
 from scripts_py.lib.cached_check import (
@@ -78,9 +78,9 @@ def _store_fresh_test_attestations(root: Path) -> None:
 
 
 def _store_fresh_check_attestations(root: Path) -> None:
-    """Write passing attestation for every KNOWN_CHECKS entry."""
+    """Write passing attestation for every CI_CHECKS entry."""
     state = root / ".devenv" / "state"
-    for check in KNOWN_CHECKS:
+    for check in CI_CHECKS:
         h = compute_input_hash(root, globs=check.globs, files=check.files)
         store_check_attestation(state, check.name, h, ok=True)
 

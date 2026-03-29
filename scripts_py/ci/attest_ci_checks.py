@@ -168,8 +168,10 @@ def verify_local_attestations(
 
     1. A passing nix flake check attestation exists whose composite hash
        matches the current ``.nix`` files + ``flake.lock``.
-    2. Every registered generic check (ruff, pyright, yamllint, etc.) has a
+    2. Every registered CI check (ruff, pyright, yamllint, etc.) has a
        passing attestation whose input hash matches the current files.
+       Formatter-only checks (alejandra fmt, shfmt, taplo fmt, jq fmt)
+       are excluded because they live under ``fmt:all``, not ``check:all``.
     3. Every test file discovered in the import graph has a passing
        attestation whose composite hash matches its current content +
        dependency hashes.
@@ -186,7 +188,7 @@ def verify_local_attestations(
     # Lazy imports to keep module loading lightweight.
     import math
 
-    from scripts_py.lib.cached_check import KNOWN_CHECKS, compute_input_hash
+    from scripts_py.lib.cached_check import CI_CHECKS, compute_input_hash
     from scripts_py.lib.cached_check import lookup as cc_lookup
     from scripts_py.lib.depmap import build_import_graph
     from scripts_py.lib.nix_check_attestation import compute_nix_hash, lookup_nix_attestation
@@ -210,9 +212,11 @@ def verify_local_attestations(
         )
         return False
 
-    # 2. Verify all registered generic checks (ruff, pyright, yamllint, etc.)
+    # 2. Verify all registered CI checks (ruff, pyright, yamllint, etc.)
+    #    Formatter-only checks (ci_check=False) are excluded — they are
+    #    under fmt:all, not check:all.
     missing_checks: list[str] = []
-    for check in KNOWN_CHECKS:
+    for check in CI_CHECKS:
         h = compute_input_hash(repo_root, globs=check.globs, files=check.files)
         result = cc_lookup(state_dir, check.name, h, max_age_s=math.inf)
         if result is not True:
@@ -247,10 +251,10 @@ def verify_local_attestations(
         log_warn(f"[verify-local] {len(unattested)} test(s) not attested: {names}", err=_err)
         return False
 
-    total = 1 + len(KNOWN_CHECKS) + len(attested)
+    total = 1 + len(CI_CHECKS) + len(attested)
     log_info(
         f"[verify-local] All checks verified "
-        f"(nix + {len(KNOWN_CHECKS)} checks + {len(attested)} test file(s) = {total} total).",
+        f"(nix + {len(CI_CHECKS)} checks + {len(attested)} test file(s) = {total} total).",
         out=_out,
     )
     return True

@@ -13,6 +13,7 @@ from typing import Sequence
 from scripts_py.cli.cached_check import run_cached_check
 from scripts_py.lib.cached_check import (
     CHECKS_BY_NAME,
+    CI_CHECKS,
     KNOWN_CHECKS,
     compute_input_hash,
     gc_stale,
@@ -187,6 +188,21 @@ class TestCheckRegistry(unittest.TestCase):
         for c in KNOWN_CHECKS:
             self.assertIn(c.name, CHECKS_BY_NAME)
             self.assertEqual(CHECKS_BY_NAME[c.name], c)
+
+    def test_ci_checks_subset_of_known(self) -> None:
+        self.assertTrue(len(CI_CHECKS) > 0)
+        self.assertTrue(len(CI_CHECKS) < len(KNOWN_CHECKS))
+        ci_names = {c.name for c in CI_CHECKS}
+        all_names = {c.name for c in KNOWN_CHECKS}
+        self.assertTrue(ci_names.issubset(all_names))
+        # All CI checks have ci_check=True.
+        for c in CI_CHECKS:
+            self.assertTrue(c.ci_check)
+        # Formatter checks are excluded.
+        fmt_names = all_names - ci_names
+        self.assertTrue(len(fmt_names) > 0)
+        for name in fmt_names:
+            self.assertFalse(CHECKS_BY_NAME[name].ci_check)
 
 
 # ---------------------------------------------------------------------------

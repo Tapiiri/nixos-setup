@@ -190,11 +190,18 @@ def gc_stale(state_dir: Path, name: str, *, max_age_s: float = DEFAULT_MAX_AGE_S
 
 @dataclass(frozen=True)
 class CheckDef:
-    """Declares the input-file scope for a named check."""
+    """Declares the input-file scope for a named check.
+
+    *ci_check* marks entries that correspond to a ``check:all`` leaf task.
+    Formatter-only entries (``fmt:*``) set ``ci_check=False`` — they
+    participate in pre-commit caching but are **not** required by
+    ``verify_local_attestations``.
+    """
 
     name: str
     globs: tuple[str, ...] = ()
     files: tuple[str, ...] = ()
+    ci_check: bool = True
 
 
 # Every check that participates in the generic caching system.
@@ -213,6 +220,7 @@ KNOWN_CHECKS: tuple[CheckDef, ...] = (
     CheckDef(
         name="alejandra",
         globs=("**/*.nix",),
+        ci_check=False,  # fmt:nix:alejandra — not in check:all
     ),
     CheckDef(
         name="yamllint",
@@ -232,6 +240,7 @@ KNOWN_CHECKS: tuple[CheckDef, ...] = (
         name="shfmt",
         globs=("**/*.sh",),
         files=("dotfiles/home/bashrc",),
+        ci_check=False,  # fmt:shell:shfmt — not in check:all
     ),
     CheckDef(
         name="taplo-check",
@@ -240,10 +249,12 @@ KNOWN_CHECKS: tuple[CheckDef, ...] = (
     CheckDef(
         name="taplo-fmt",
         globs=("**/*.toml",),
+        ci_check=False,  # fmt:toml:taplo — not in check:all
     ),
     CheckDef(
         name="jq-fmt",
         globs=("**/*.json",),
+        ci_check=False,  # fmt:json:jq — not in check:all
     ),
     CheckDef(
         name="markdownlint",
@@ -263,6 +274,9 @@ KNOWN_CHECKS: tuple[CheckDef, ...] = (
 )
 
 CHECKS_BY_NAME: dict[str, CheckDef] = {c.name: c for c in KNOWN_CHECKS}
+
+# Subset required by verify_local_attestations (matches check:all leaves).
+CI_CHECKS: tuple[CheckDef, ...] = tuple(c for c in KNOWN_CHECKS if c.ci_check)
 
 
 def lookup_named(
