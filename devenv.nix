@@ -2,7 +2,7 @@
   # Keep devenv usable even when the user is not a trusted Nix user.
   # (Otherwise devenv tries to auto-manage Cachix config and can fail.)
   cachix.pull = ["tapiiri-nixos-setup-devenv"];
-  cachix.push = "tapiiri-nixos-setup-devenv";
+  # Push is CI-only — see .github/workflows/ci.yml (devenv.local.nix step).
 
   dotenv.disableHint = true;
 

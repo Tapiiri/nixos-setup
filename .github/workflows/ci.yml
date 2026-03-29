@@ -63,6 +63,9 @@ jobs:
       - name: Install devenv.sh
         run: nix profile install nixpkgs#devenv
 
+      - name: Enable Cachix push for CI
+        run: echo '{ cachix.push = "tapiiri-nixos-setup-devenv"; }' > devenv.local.nix
+
       - name: Run checks (devenv tasks)
         run: devenv tasks run -m all check:all
 
