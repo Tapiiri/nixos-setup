@@ -1,20 +1,15 @@
-"""Pytest plugin: write file-level test attestations after each session.
+"""Pytest plugin: write a generic cached-check attestation after each session.
 
 When VS Code's Test Explorer (or any pytest invocation) runs tests, this
-plugin records per-file pass/fail attestations in the devenv state directory.
-The pre-commit hook (``scripts/cached-pytest``) can then skip re-running
-tests that already have a fresh passing attestation.
-
-The ``pucelle.run-on-save`` VS Code extension triggers ``testing.runAll`` on
-every ``.py`` save, which feeds through Test Explorer and ends up here.
-This gives you inline pass/fail gutter decorations *and* instant pre-commit
-resolution — no separate background watcher needed.
+plugin records a "pytest" attestation in the devenv state directory using
+the same generic ``cached_check`` system as all other checks.  The
+pre-commit hook (``scripts/cached-check --name pytest ...``) can then skip
+re-running tests that already have a fresh passing attestation.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
-from typing import cast
 
 import pytest
 
@@ -29,30 +24,26 @@ def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo[None]) ->
     if call.when != "call":
         return
 
-    # item.path is pathlib.Path (pytest >= 7); item.fspath is the legacy py.path.
     test_file = Path(getattr(item, "path", item.fspath)).resolve()
     results: dict[Path, bool] = item.config._attestation_file_results  # type: ignore[attr-defined]
-    _results = cast(dict[Path, bool], results)
 
     if call.excinfo is not None:
-        # Any failure in a file marks the whole file as failed.
-        _results[test_file] = False
-    elif _results.get(test_file) is not False:
-        # Only mark as passed if not already failed by another test in the file.
-        _results[test_file] = True
+        results[test_file] = False
+    elif results.get(test_file) is not False:  # pyright: ignore[reportUnknownMemberType]
+        results[test_file] = True
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
-    """Write attestations for every collected test file after the session ends."""
+    """Write a "pytest" attestation after the session ends if all tests passed."""
     results: dict[Path, bool] = getattr(session.config, "_attestation_file_results", {})
     if not results:
         return
 
-    # Lazy-import to keep the plugin lightweight and avoid import errors when
-    # running outside the repo (e.g. in CI containers without scripts_py).
+    # Only attest a passing result when every collected test file passed.
+    all_passed = all(results.values())
+
     try:
-        from scripts_py.lib.depmap import build_import_graph, transitive_deps
-        from scripts_py.lib.test_attestation import compute_composite_hash, store_attestation
+        from scripts_py.lib.cached_check import compute_input_hash, store
         from scripts_py.repo.context import repo_root_from_script_path
     except ImportError:
         return
@@ -63,9 +54,11 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
         return
 
     state_dir = repo_root / ".devenv" / "state"
-    graph = build_import_graph(repo_root)
 
-    for test_file, ok in results.items():
-        deps = transitive_deps(graph, test_file)
-        composite_hash = compute_composite_hash(test_file, deps, repo_root)
-        store_attestation(state_dir, test_file, composite_hash, ok=ok)
+    # Use the same globs/files as the "pytest" CheckDef in KNOWN_CHECKS.
+    input_hash = compute_input_hash(
+        repo_root,
+        globs=("scripts_py/**/*.py", "tests/**/*.py"),
+        files=("pyproject.toml", "devenv.nix"),
+    )
+    store(state_dir, "pytest", input_hash, ok=all_passed)

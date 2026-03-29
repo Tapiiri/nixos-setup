@@ -57,28 +57,21 @@ A `post-commit` hook (set up by devenv / pre-commit) automates attestation:
 
 ## Pre-commit caching layer
 
-Two scripts add fine-grained caching on top of the attestation system:
+All cached checks are managed by the generic `cached-check` system:
 
-### `cached-nix-check`
+### `cached-check`
 
-Runs `nix flake check --no-build` with attestation caching:
+Runs any check with attestation caching:
 
-- Hashes all `.nix` files + `flake.lock` to compute a cache key
+- Each check is defined in `KNOWN_CHECKS` with a name, glob patterns, and explicit files
+- Hashes the matching files to compute a cache key
 - If the key matches a previous successful run → skip
 - Otherwise → run the check and cache the result
 
-### `cached-pytest`
+Examples:
 
-Runs pytest with **file-level** attestation caching:
-
-- Uses the AST-based dependency map (`scripts_py/lib/depmap.py`) to determine
-  which test files are affected by changes
-- Only re-runs tests whose dependencies have changed
-- Caches pass/fail per test file, keyed by a composite hash of the file and its
-  transitive imports
-
-This means editing a utility module only re-runs the tests that actually import
-it, not the entire test suite.
+- `cached-check --name nix-flake-check --glob '**/*.nix' --file flake.lock -- nix flake check --no-build`
+- `cached-check --name pytest --glob 'scripts_py/**/*.py' --glob 'tests/**/*.py' --file pyproject.toml --file devenv.nix -- python -m pytest -q tests`
 
 ## GitHub Actions integration
 
@@ -100,9 +93,7 @@ The gate is conservative: any doubt results in running CI.
 │   ci_attestation_gate.py — GitHub Actions gate logic    │
 ├─────────────────────────────────────────────────────────┤
 │ scripts_py/lib/                                         │
-│   nix_check_attestation.py — hash .nix files for cache  │
-│   test_attestation.py      — per-file test result cache │
-│   depmap.py                — AST import graph for tests │
+│   cached_check.py          — generic attestation cache  │
 └─────────────────────────────────────────────────────────┘
 ```
 

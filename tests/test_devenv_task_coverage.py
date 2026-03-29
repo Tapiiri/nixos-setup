@@ -27,11 +27,9 @@ _DEVENV_NIX = _REPO / "devenv.nix"
 # domain as a task.
 # Map: hook-id  →  task name it covers.
 HOOK_TASK_OVERRIDES: dict[str, str] = {
-    # Uses scripts/cached-nix-check for nix-check attestation caching.
-    "nix-flake-check": "check:nix:flake",
-    # Uses scripts/cached-pytest for file-level test attestation caching.
-    "python-pytest": "tests:python:pytest",
     # --- All hooks below use scripts/cached-check for input-hash caching ---
+    "nix-flake-check": "check:nix:flake",
+    "python-pytest": "tests:python:pytest",
     "yamllint": "lint:yaml:yamllint",
     "schemastore-schemas": "lint:schemastore:validate",
     "actionlint": "lint:gha:actionlint",

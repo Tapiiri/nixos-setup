@@ -46,10 +46,7 @@
     nix-flake-check = {
       enable = true;
       name = "nix flake check (cached)";
-      # Uses file-level attestation caching: when all .nix files + flake.lock
-      # match a previous passing attestation, the hook exits instantly.
-      # Falls back to running ``nix flake check --no-build`` otherwise.
-      entry = "scripts/cached-nix-check";
+      entry = "scripts/cached-check --name nix-flake-check --glob '**/*.nix' --file flake.lock -- nix flake check --no-build";
       language = "system";
       files = "(\\.nix$|^flake\\.nix$|^flake\\.lock$)";
       pass_filenames = false;
@@ -170,12 +167,7 @@
     python-pytest = {
       enable = true;
       name = "pytest (cached)";
-      # Uses file-level attestation caching: when all affected tests already
-      # have a passing attestation (from the background watcher or a previous
-      # commit attempt) the hook exits instantly.  Falls back to running pytest
-      # on uncached test files.  PYTEST_ADDOPTS (--lf) still applies when
-      # pytest actually runs.
-      entry = "env PYTEST_ADDOPTS='--lf --lfnf=all' scripts/cached-pytest";
+      entry = "scripts/cached-check --name pytest --glob 'scripts_py/**/*.py' --glob 'tests/**/*.py' --file pyproject.toml --file devenv.nix -- python -m pytest -q tests";
       language = "system";
       files = "(.*\\.py$|^devenv\\.nix$|^pyproject\\.toml$|^scripts/)";
       pass_filenames = false;
@@ -218,7 +210,7 @@
   # Start with: devenv up  (or: devenv processes up)
   processes = {
     watch-pytest = {
-      exec = "scripts/cached-pytest --watch";
+      exec = "scripts/cached-check --name pytest --glob 'scripts_py/**/*.py' --glob 'tests/**/*.py' --file pyproject.toml --file devenv.nix -- python -m pytest -q tests";
       watch = {
         paths = [./scripts_py ./tests ./scripts];
         extensions = ["py" "nix" "toml"];
@@ -227,7 +219,7 @@
     };
 
     watch-nix = {
-      exec = "scripts/cached-nix-check";
+      exec = "scripts/cached-check --name nix-flake-check --glob '**/*.nix' --file flake.lock -- nix flake check --no-build";
       watch = {
         paths = [./.];
         extensions = ["nix" "lock"];
@@ -331,7 +323,7 @@
     # --- Nix ---
     "check:nix:flake" = {
       description = "nix flake check --no-build (with attestation)";
-      exec = "scripts/cached-nix-check --force";
+      exec = "scripts/cached-check --name nix-flake-check --glob '**/*.nix' --file flake.lock --force -- nix flake check --no-build";
     };
 
     "fmt:nix:alejandra" = {
@@ -426,8 +418,8 @@
     };
 
     "tests:python:cached-pytest" = {
-      description = "Run Python tests with file-level attestation caching";
-      exec = "scripts/cached-pytest";
+      description = "Run Python tests with attestation caching";
+      exec = "scripts/cached-check --name pytest --glob 'scripts_py/**/*.py' --glob 'tests/**/*.py' --file pyproject.toml --file devenv.nix -- python -m pytest -q tests";
     };
 
     # --- Documentation ---

@@ -8,10 +8,8 @@ this module:
 3. If cache hit (pass) → returns immediately.
 4. If miss → runs the command, stores the result, returns the exit code.
 
-This is the shared engine behind all cached pre-commit hooks (ruff, pyright,
-yamllint, shellcheck, etc.).  The more specialised ``nix_check_attestation``
-and ``test_attestation`` modules handle nix flake check and pytest
-respectively, since they have domain-specific hashing logic.
+This is the shared engine behind all cached pre-commit hooks (nix flake
+check, pytest, ruff, pyright, yamllint, shellcheck, etc.).
 """
 
 from __future__ import annotations
@@ -205,8 +203,17 @@ class CheckDef:
 
 
 # Every check that participates in the generic caching system.
-# pytest and nix-flake-check have their own specialised modules.
 KNOWN_CHECKS: tuple[CheckDef, ...] = (
+    CheckDef(
+        name="nix-flake-check",
+        globs=("**/*.nix",),
+        files=("flake.lock",),
+    ),
+    CheckDef(
+        name="pytest",
+        globs=("scripts_py/**/*.py", "tests/**/*.py"),
+        files=("pyproject.toml", "devenv.nix"),
+    ),
     CheckDef(
         name="ruff",
         globs=("scripts_py/**/*.py", "tests/**/*.py"),

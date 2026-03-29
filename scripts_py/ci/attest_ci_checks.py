@@ -164,17 +164,11 @@ def verify_local_attestations(
 ) -> bool:
     """Check that local attestation caches prove all check:all checks passed.
 
-    Returns ``True`` only when:
-
-    1. A passing nix flake check attestation exists whose composite hash
-       matches the current ``.nix`` files + ``flake.lock``.
-    2. Every registered CI check (ruff, pyright, yamllint, etc.) has a
-       passing attestation whose input hash matches the current files.
-       Formatter-only checks (alejandra fmt, shfmt, taplo fmt, jq fmt)
-       are excluded because they live under ``fmt:all``, not ``check:all``.
-    3. Every test file discovered in the import graph has a passing
-       attestation whose composite hash matches its current content +
-       dependency hashes.
+    Returns ``True`` only when every registered CI check (nix-flake-check,
+    pytest, ruff, pyright, yamllint, etc.) has a passing attestation whose
+    input hash matches the current files.  Formatter-only checks (alejandra,
+    shfmt, taplo fmt, jq fmt) are excluded because they live under
+    ``fmt:all``, not ``check:all``.
 
     No age limit is enforced — the content hash already proves the
     attestation is still valid.  If files changed since the attestation
@@ -185,36 +179,16 @@ def verify_local_attestations(
     (``git commit --no-verify``), these caches will be missing and this
     function returns ``False``, causing CI to run normally.
     """
-    # Lazy imports to keep module loading lightweight.
     import math
 
     from scripts_py.lib.cached_check import CI_CHECKS, compute_input_hash
     from scripts_py.lib.cached_check import lookup as cc_lookup
-    from scripts_py.lib.depmap import build_import_graph
-    from scripts_py.lib.nix_check_attestation import compute_nix_hash, lookup_nix_attestation
-    from scripts_py.lib.test_attestation import check_all_attested
 
     _out: TextIO = out if out is not None else sys.stdout
     _err: TextIO = err if err is not None else sys.stderr
 
     state_dir = repo_root / ".devenv" / "state"
 
-    # 1. Verify nix flake check attestation (hash match only, no age limit).
-    nix_hash = compute_nix_hash(repo_root)
-    nix_result = lookup_nix_attestation(state_dir, nix_hash, max_age_s=math.inf)
-    if nix_result is not True:
-        log_warn(
-            f"[verify-local] Nix check attestation missing or failed "
-            f"(hash={nix_hash[:16]}…).  This commonly happens after a merge "
-            f"that updated .nix files or flake.lock — ensure pre-merge-commit "
-            f"hooks are installed (see git-hooks.default_stages in devenv.nix).",
-            err=_err,
-        )
-        return False
-
-    # 2. Verify all registered CI checks (ruff, pyright, yamllint, etc.)
-    #    Formatter-only checks (ci_check=False) are excluded — they are
-    #    under fmt:all, not check:all.
     missing_checks: list[str] = []
     for check in CI_CHECKS:
         h = compute_input_hash(repo_root, globs=check.globs, files=check.files)
@@ -229,32 +203,8 @@ def verify_local_attestations(
         )
         return False
 
-    # 3. Verify test attestations for ALL test files (hash match only).
-    graph = build_import_graph(repo_root)
-    all_test_files = {
-        f for f in graph if "tests" in f.parts and f.name.startswith("test_") and f.suffix == ".py"
-    }
-
-    if not all_test_files:
-        log_warn("[verify-local] No test files found in import graph.", err=_err)
-        return False
-
-    attested, unattested = check_all_attested(
-        state_dir,
-        all_test_files,
-        graph,
-        repo_root,
-        max_age_s=math.inf,
-    )
-    if unattested:
-        names = sorted(str(f.relative_to(repo_root)) for f in unattested)
-        log_warn(f"[verify-local] {len(unattested)} test(s) not attested: {names}", err=_err)
-        return False
-
-    total = 1 + len(CI_CHECKS) + len(attested)
     log_info(
-        f"[verify-local] All checks verified "
-        f"(nix + {len(CI_CHECKS)} checks + {len(attested)} test file(s) = {total} total).",
+        f"[verify-local] All {len(CI_CHECKS)} checks verified.",
         out=_out,
     )
     return True

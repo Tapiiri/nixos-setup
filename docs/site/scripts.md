@@ -42,8 +42,6 @@ scripts_py/
 │   ├── import_dotfiles.py
 │   ├── add_secret.py
 │   ├── audit_tooling.py
-│   ├── cached_nix_check.py
-│   ├── cached_pytest.py
 │   ├── ensure_password_manager_login.py
 │   ├── ensure_cachix_cache.py
 │   ├── sync_github_labels.py
@@ -57,10 +55,7 @@ scripts_py/
 │   └── ci_attestation_gate.py
 ├── lib/                 # Shared libraries (no repo-layout assumptions)
 │   ├── utils.py
-│   ├── depmap.py
 │   ├── schemastore.py
-│   ├── nix_check_attestation.py
-│   ├── test_attestation.py
 │   ├── tooling_audit.py
 │   ├── tooling_discovery.py
 │   └── password_manager.py
@@ -92,8 +87,7 @@ scripts_py/
 | `attest-ci-checks` | Write CI attestation as git note | [CI & Attestation](guides/ci-attestation.md) |
 | `check-ci-attestation` | Verify commit has attestation | [CI & Attestation](guides/ci-attestation.md) |
 | `ci-attestation-gate` | GitHub Actions skip decision | [CI & Attestation](guides/ci-attestation.md) |
-| `cached-nix-check` | `nix flake check` with attestation caching | [CI & Attestation](guides/ci-attestation.md) |
-| `cached-pytest` | pytest with file-level caching | [CI & Attestation](guides/ci-attestation.md) |
+| `cached-check` | Generic check with attestation caching | [CI & Attestation](guides/ci-attestation.md) |
 | `audit-tooling` | Report tooling coverage per file type | — |
 
 ### Secrets & authentication
