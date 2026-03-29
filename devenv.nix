@@ -18,7 +18,6 @@
     shfmt
     taplo
     jq
-    entr
     pyright
 
     # Python tooling pinned together (works even without devenv python module).
@@ -211,17 +210,117 @@
     };
   };
 
-  # Background test watcher: re-runs affected tests on file change and caches
-  # attestations so the pre-commit hook can skip redundant runs.
-  # VS Code users: this is optional — tests/conftest.py writes attestations
-  # automatically whenever Test Explorer runs tests (enable auto-run for best
-  # results).  This watcher is useful for terminal-only workflows.
+  # Background check watchers: run all cached checks when their inputs change,
+  # pre-warming attestation caches so the pre-commit hook can skip redundant runs.
+  # VS Code users: tests/conftest.py writes test attestations via Test Explorer;
+  # these watchers additionally cover lint and nix checks.
+  # Formatters are excluded to avoid unintended background file modifications.
   # Start with: devenv up  (or: devenv processes up)
-  processes.test-watcher.exec = ''
-    while true; do
-      find scripts_py tests -name '*.py' | entr -d -p scripts/cached-pytest --watch
-    done
-  '';
+  processes = {
+    watch-pytest = {
+      exec = "scripts/cached-pytest --watch";
+      watch = {
+        paths = [./scripts_py ./tests ./scripts];
+        extensions = ["py" "nix" "toml"];
+      };
+      restart.on = "never";
+    };
+
+    watch-nix = {
+      exec = "scripts/cached-nix-check";
+      watch = {
+        paths = [./.];
+        extensions = ["nix" "lock"];
+        ignore = [".git" "result"];
+      };
+      restart.on = "never";
+    };
+
+    watch-ruff = {
+      exec = "scripts/cached-check --name ruff --glob 'scripts_py/**/*.py' --glob 'tests/**/*.py' --file pyproject.toml -- ruff check scripts_py tests";
+      watch = {
+        paths = [./scripts_py ./tests];
+        extensions = ["py" "toml"];
+      };
+      restart.on = "never";
+    };
+
+    watch-pyright = {
+      exec = "scripts/cached-check --name pyright --glob 'scripts_py/**/*.py' --glob 'tests/**/*.py' --file pyproject.toml -- pyright scripts_py tests";
+      watch = {
+        paths = [./scripts_py ./tests];
+        extensions = ["py" "toml"];
+      };
+      restart.on = "never";
+    };
+
+    watch-yamllint = {
+      exec = "scripts/cached-check --name yamllint --glob '**/*.yml' --glob '**/*.yaml' --file .yamllint -- yamllint .";
+      watch = {
+        paths = [./.];
+        extensions = ["yml" "yaml"];
+        ignore = [".git" "result" "site"];
+      };
+      restart.on = "never";
+    };
+
+    watch-schemastore = {
+      exec = "scripts/cached-check --name schemastore --glob '**/*.yml' --glob '**/*.yaml' --glob '**/*.json' --file schemas/schemastore-index.json -- scripts/validate-schemastore-schemas --all";
+      watch = {
+        paths = [./.];
+        extensions = ["yml" "yaml" "json"];
+        ignore = [".git" "result" "site"];
+      };
+      restart.on = "never";
+    };
+
+    watch-actionlint = {
+      exec = "scripts/cached-check --name actionlint --glob '.github/workflows/**/*.yml' --glob '.github/workflows/**/*.yaml' -- actionlint";
+      watch = {
+        paths = [./.github/workflows];
+        extensions = ["yml" "yaml"];
+      };
+      restart.on = "never";
+    };
+
+    watch-shellcheck = {
+      exec = "scripts/cached-check --name shellcheck --glob '**/*.sh' --file dotfiles/home/bashrc -- shellcheck $(git ls-files '*.sh' 'dotfiles/home/bashrc' 'home/**/*.sh.tpl')";
+      watch = {
+        paths = [./dotfiles ./home ./scripts];
+        extensions = ["sh" "tpl"];
+      };
+      restart.on = "never";
+    };
+
+    watch-taplo = {
+      exec = "scripts/cached-check --name taplo-check --glob '**/*.toml' -- taplo check $(git ls-files '*.toml')";
+      watch = {
+        paths = [./.];
+        extensions = ["toml"];
+        ignore = [".git" "result"];
+      };
+      restart.on = "never";
+    };
+
+    watch-markdownlint = {
+      exec = "scripts/cached-check --name markdownlint --glob '**/*.md' --file .markdownlint-cli2.yaml -- markdownlint-cli2 .";
+      watch = {
+        paths = [./.];
+        extensions = ["md" "yaml"];
+        ignore = [".git" "result" "site"];
+      };
+      restart.on = "never";
+    };
+
+    watch-mkdocs = {
+      exec = "scripts/cached-check --name mkdocs --glob 'docs/site/**' --file mkdocs.yml -- mkdocs build --strict";
+      watch = {
+        paths = [./docs/site];
+        extensions = ["md"];
+      };
+      restart.on = "never";
+    };
+  };
 
   # Canonical automation entrypoints.
   #
