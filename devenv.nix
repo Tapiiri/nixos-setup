@@ -194,9 +194,22 @@
       # automatically runs check:all to re-seed caches and retries
       # verification.  This is slower (~1 min) but ensures attestation
       # is not permanently broken by one skipped hook run.
-      entry = "scripts/attest-ci-checks --task check:all --push --verify-local";
+      entry = "scripts/attest-ci-checks --task check:all --verify-local";
       language = "system";
       stages = ["post-commit"];
+      always_run = true;
+      pass_filenames = false;
+    };
+
+    ci-attest-pre-push = {
+      enable = true;
+      name = "Push CI attestation notes to remote";
+      # Pushes the local git-notes attestation ref to origin so that
+      # ci-attestation-gate can read it.  Best-effort: failure is logged
+      # but never blocks the push.
+      entry = "scripts/attest-ci-checks --push-only";
+      language = "system";
+      stages = ["pre-push"];
       always_run = true;
       pass_filenames = false;
     };

@@ -49,6 +49,7 @@ HOOK_TASK_OVERRIDES: dict[str, str] = {
 # Hook IDs to exclude from coverage analysis entirely (not checks/lints).
 _EXCLUDED_HOOKS: set[str] = {
     "ci-attest-post-commit",  # post-commit attestation, not a check
+    "ci-attest-pre-push",  # pre-push network push of notes ref, not a check
 }
 
 

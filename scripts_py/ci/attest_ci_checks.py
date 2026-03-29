@@ -53,6 +53,7 @@ class Options:
     commit: str
     run_task: bool
     verify_local: bool
+    push_only: bool
 
 
 DEFAULT_NOTES_REF = "refs/notes/nixos-setup-ci"
@@ -112,6 +113,15 @@ def parse_args(argv: Sequence[str]) -> Options:
             "ensure pre-commit hooks actually ran."
         ),
     )
+    p.add_argument(
+        "--push-only",
+        action="store_true",
+        help=(
+            "Only push the notes ref to the remote; skip verification, task execution, "
+            "and note-writing.  Used by the pre-push hook so the network call happens "
+            "at push time rather than at commit time."
+        ),
+    )
 
     ns = p.parse_args(list(argv))
     return Options(
@@ -123,6 +133,7 @@ def parse_args(argv: Sequence[str]) -> Options:
         commit=str(ns.commit),
         run_task=not bool(ns.no_run),
         verify_local=bool(ns.verify_local),
+        push_only=bool(ns.push_only),
     )
 
 
@@ -226,6 +237,15 @@ def attest_ci_checks(*, opts: Options, runner: Runner, out: TextIO, err: TextIO)
     """Run the attestation flow.  Returns ``True`` if a note was written."""
     # Ensure we are in the repo (helps when scripts are invoked via symlinks).
     repo_root = repo_root_from_script_path(Path(__file__))
+
+    if opts.push_only:
+        # Pre-push mode: just push the notes ref, no verification or note-writing.
+        log_info(f"Pushing notes ref to {opts.remote}...", out=out)
+        try:
+            _push_git_notes_ref(remote=opts.remote, ref=opts.notes_ref, runner=runner)
+        except subprocess.CalledProcessError as e:
+            log_warn(f"Failed to push git notes (continuing): {e}", err=err)
+        return True
 
     commit_sha = _git_rev_parse(opts.commit, runner=runner)
 

@@ -55,9 +55,7 @@ def _store_all_attestations(root: Path) -> None:
     _store_fresh_check_attestations(root)
 
 
-def _store_fresh_check_attestations(
-    root: Path, *, exclude: set[str] | None = None
-) -> None:
+def _store_fresh_check_attestations(root: Path, *, exclude: set[str] | None = None) -> None:
     """Write passing attestation for every CI_CHECKS entry."""
     state = root / ".devenv" / "state"
     skip = exclude or set()
@@ -233,6 +231,7 @@ class TestAttestCiChecksVerifyLocal(unittest.TestCase):
             commit="HEAD",
             run_task=False,
             verify_local=True,
+            push_only=False,
         )
         # Monkey-patch repo_root resolution for the test.
         import scripts_py.ci.attest_ci_checks as mod
@@ -268,6 +267,7 @@ class TestAttestCiChecksVerifyLocal(unittest.TestCase):
             commit="HEAD",
             run_task=False,
             verify_local=True,
+            push_only=False,
         )
         import scripts_py.ci.attest_ci_checks as mod
 
@@ -299,6 +299,7 @@ class TestAttestCiChecksVerifyLocal(unittest.TestCase):
             commit="HEAD",
             run_task=False,
             verify_local=False,
+            push_only=False,
         )
         import scripts_py.ci.attest_ci_checks as mod
 
@@ -347,6 +348,7 @@ class TestAttestCiChecksVerifyLocal(unittest.TestCase):
             commit="HEAD",
             run_task=True,
             verify_local=True,
+            push_only=False,
         )
 
         mod.repo_root_from_script_path = _fake_root  # type: ignore[assignment]
@@ -385,6 +387,7 @@ class TestAttestCiChecksVerifyLocal(unittest.TestCase):
             commit="HEAD",
             run_task=True,
             verify_local=True,
+            push_only=False,
         )
 
         mod.repo_root_from_script_path = _fake_root  # type: ignore[assignment]
@@ -400,6 +403,69 @@ class TestAttestCiChecksVerifyLocal(unittest.TestCase):
         # No note should have been written.
         note_cmds = [c for c in runner.calls if c[:2] == ["git", "notes"]]
         self.assertEqual(note_cmds, [])
+
+
+class TestPushOnly(unittest.TestCase):
+    """Tests for --push-only mode."""
+
+    def _opts(self, **kwargs: object) -> Options:
+        base: dict[str, object] = dict(
+            task="check:all",
+            notes_ref="refs/notes/test",
+            remote="origin",
+            push=False,
+            strict_push=False,
+            commit="HEAD",
+            run_task=False,
+            verify_local=False,
+            push_only=True,
+        )
+        base.update(kwargs)
+        return Options(**base)  # type: ignore[arg-type]
+
+    def test_push_only_calls_push(self) -> None:
+        runner = FakeRunner()
+        opts = self._opts()
+        out, err = io.StringIO(), io.StringIO()
+        result = attest_ci_checks(opts=opts, runner=runner, out=out, err=err)
+        self.assertTrue(result)
+        push_calls = [c for c in runner.calls if c[:2] == ["git", "push"]]
+        self.assertEqual(len(push_calls), 1)
+        self.assertIn("refs/notes/test", push_calls[0])
+
+    def test_push_only_best_effort_on_failure(self) -> None:
+        """Push failure should not raise — logs warning and returns True."""
+        import subprocess as _sp
+
+        class FailRunner(FakeRunner):
+            def run_check(self, argv: Sequence[str]) -> None:
+                if list(argv)[:2] == ["git", "push"]:
+                    raise _sp.CalledProcessError(1, list(argv))
+                super().run_check(argv)
+
+        runner = FailRunner()
+        opts = self._opts()
+        out, err = io.StringIO(), io.StringIO()
+        result = attest_ci_checks(opts=opts, runner=runner, out=out, err=err)
+        self.assertTrue(result)
+        self.assertIn("Failed", err.getvalue())
+
+    def test_push_only_skips_task_and_note(self) -> None:
+        """--push-only must not call devenv or write a git note."""
+        runner = FakeRunner()
+        opts = self._opts()
+        out, err = io.StringIO(), io.StringIO()
+        attest_ci_checks(opts=opts, runner=runner, out=out, err=err)
+        devenv_calls = [c for c in runner.calls if c and c[0] == "devenv"]
+        self.assertEqual(devenv_calls, [])
+        note_cmds = [c for c in runner.calls if c[:2] == ["git", "notes"]]
+        self.assertEqual(note_cmds, [])
+
+    def test_parse_args_push_only(self) -> None:
+        opts = parse_args(["--push-only"])
+        self.assertTrue(opts.push_only)
+        self.assertFalse(opts.push)
+        self.assertFalse(opts.verify_local)
 
 
 if __name__ == "__main__":
