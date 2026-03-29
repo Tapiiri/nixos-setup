@@ -38,7 +38,7 @@ jobs:
                   python-version: "3.13"
 
             - name: Install mkdocs
-              run: pip install mkdocs mkdocs-material
+              run: pip install --require-hashes -r docs/requirements.txt
 
             - name: Build docs
               run: mkdocs build --strict
