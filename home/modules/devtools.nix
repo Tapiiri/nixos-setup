@@ -28,8 +28,6 @@ in {
     home.packages = with pkgs; [
       cachix
       devenv
-      direnv
-      nix-direnv
       secretspec
       nodejs_latest
       ffmpeg-full

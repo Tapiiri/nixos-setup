@@ -69,7 +69,6 @@ _VSCODE_EXT_FILE_TYPE: dict[str, str] = {
     "redhat.vscode-yaml": "yaml",
     "tamasfe.even-better-toml": "toml",
     "editorconfig.editorconfig": "_editorconfig",
-    "mkhl.direnv": "_direnv",
     "github.copilot": "_ai",
     "github.vscode-pull-request-github": "_github",
 }

@@ -85,7 +85,7 @@ class OnePasswordBackend:
             "This repo enables devenv+secretspec, which uses a password manager CLI to "
             "provide required secrets.\n\n"
             "Fix: run `op signin` (or `eval $(op signin)` in bash).\n"
-            "Then retry (for direnv: `direnv reload`; for pre-commit: re-run the git command)."
+            "Then retry (re-run the git command or restart `devenv shell`)."
             f"{details}"
         )
 

@@ -32,7 +32,6 @@
   TomlExt = pkgs.vscode-extensions.tamasfe.even-better-toml;
   EditorConfigExt = pkgs.vscode-extensions.editorconfig.editorconfig;
   RuffExt = pkgs.vscode-extensions.charliermarsh.ruff;
-  DirenvExt = pkgs.vscode-extensions.mkhl.direnv;
 
   # Auto-run tests on file save (triggers VS Code Test Explorer, which writes
   # attestations via tests/conftest.py).  Not packaged in nixpkgs.
@@ -187,7 +186,6 @@ in {
         GHPullRequestsExt
         CopilotExt
         CodexExt
-        DirenvExt
         PythonExt
         PylanceExt
         ShellCheckExt

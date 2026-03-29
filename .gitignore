@@ -51,28 +51,9 @@ result
 # MkDocs build output (root-level only; don't ignore docs/site/ source)
 /site/
 
-# Local direnv state (if you use it)
-.direnv/
-.envrc
-
-.devenv*
-
 # Devenv
 .devenv*
 devenv.local.nix
-
-# direnv
-.direnv
-
-# pre-commit
-.pre-commit-config.yaml
-
-# Devenv
-.devenv*
-devenv.local.nix
-
-# direnv
-.direnv
 
 # pre-commit
 .pre-commit-config.yaml
