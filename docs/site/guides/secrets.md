@@ -37,20 +37,6 @@ scripts/ensure-password-manager-login echo "Authenticated!"
 This runs the given command only if the password manager is authenticated.
 If not, it prints instructions on how to fix it.
 
-## The preflight flow
-
-Pre-commit hooks that call `devenv tasks ...` run a small preflight first:
-
-```text
-pre-commit hook triggers
-  ↓
-scripts/ensure-password-manager-login
-  ├─ authenticated? → continue to devenv task
-  └─ not authenticated? → print fix instructions, exit 1
-```
-
-This prevents confusing failures deep in the devenv task chain.
-
 ## Adding secrets
 
 The `add-secret` script adds a secret to both secretspec and the password

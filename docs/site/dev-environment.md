@@ -63,13 +63,6 @@ pre-commit run --all-files
     Always run pre-commit inside the devenv shell so the PATH and tool versions
     match CI. Outside devenv, hooks may fail with "command not found" errors.
 
-### Secretspec preflight
-
-Hooks that call `devenv tasks ...` run a small preflight
-(`scripts/ensure-password-manager-login`) first. If the password manager isn't
-authenticated, you'll get a clear message instead of an opaque failure.
-See [Secrets Management](guides/secrets.md) for details.
-
 ## Python setup
 
 Two "modes" are supported:
