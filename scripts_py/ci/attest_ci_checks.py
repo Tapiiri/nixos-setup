@@ -280,15 +280,26 @@ def attest_ci_checks(*, opts: Options, runner: Runner, out: TextIO, err: TextIO)
     commit_sha = _git_rev_parse(opts.commit, runner=runner)
 
     if opts.verify_local:
-        if not verify_local_attestations(repo_root, out=out, err=err):
+        verified = verify_local_attestations(repo_root, out=out, err=err)
+        if not verified and opts.run_task:
+            # Auto-recovery: caches are stale (e.g. after a merge that changed
+            # flake.lock, or a previous --no-verify commit).  Run check:all to
+            # re-seed caches, then re-verify.
+            log_info(
+                "[attest-ci-checks] Local attestations stale — running "
+                f"'{opts.task}' to re-seed caches before attesting.",
+                out=out,
+            )
+            runner.run_check(["devenv", "tasks", "run", "-m", "all", opts.task])
+            verified = verify_local_attestations(repo_root, out=out, err=err)
+        if not verified:
             log_info(
                 "[attest-ci-checks] Local attestations not verified "
                 "— skipping CI attestation.  CI will run checks for this commit.",
                 out=out,
             )
             return False
-
-    if opts.run_task:
+    elif opts.run_task:
         log_info(f"Running devenv task: {opts.task}", out=out)
         runner.run_check(["devenv", "tasks", "run", "-m", "all", opts.task])
 

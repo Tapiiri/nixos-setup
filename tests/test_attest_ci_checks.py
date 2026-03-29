@@ -349,6 +349,92 @@ class TestAttestCiChecksVerifyLocal(unittest.TestCase):
         note_cmds = [c for c in runner.calls if c[:2] == ["git", "notes"]]
         self.assertEqual(len(note_cmds), 1)
 
+    def test_auto_recovery_runs_task_and_reseeds_caches(self) -> None:
+        """With --verify-local and run_task=True, stale caches trigger check:all then re-verify."""
+        import scripts_py.ci.attest_ci_checks as mod
+
+        original = mod.repo_root_from_script_path
+        root = self.root
+
+        def _fake_root(_p: Any, **kw: Any) -> Path:
+            return root
+
+        # Track how many times run_check is called and seed caches on the
+        # "devenv tasks run" call to simulate the task re-seeding caches.
+        class SeedingRunner(FakeRunner):
+            def run_check(self, argv: Sequence[str]) -> None:
+                super().run_check(argv)
+                if argv[:3] == ["devenv", "tasks", "run"]:
+                    # Simulate check:all seeding all caches.
+                    _store_fresh_nix_attestation(root)
+                    _store_fresh_check_attestations(root)
+                    _store_fresh_test_attestations(root)
+
+        runner = SeedingRunner()
+        out, err = io.StringIO(), io.StringIO()
+        opts = Options(
+            task="check:all",
+            notes_ref="refs/notes/test",
+            remote="origin",
+            push=False,
+            strict_push=False,
+            commit="HEAD",
+            run_task=True,
+            verify_local=True,
+        )
+
+        mod.repo_root_from_script_path = _fake_root  # type: ignore[assignment]
+        try:
+            wrote = attest_ci_checks(opts=opts, runner=runner, out=out, err=err)
+        finally:
+            mod.repo_root_from_script_path = original
+
+        # Should have written a note after auto-recovery.
+        self.assertTrue(wrote)
+        # Should have called devenv tasks run to re-seed.
+        task_cmds = [c for c in runner.calls if "devenv" in c and "tasks" in c]
+        self.assertEqual(len(task_cmds), 1)
+        note_cmds = [c for c in runner.calls if c[:2] == ["git", "notes"]]
+        self.assertEqual(len(note_cmds), 1)
+        self.assertIn("stale", out.getvalue().lower())
+
+    def test_auto_recovery_still_fails_if_task_doesnt_fix_caches(self) -> None:
+        """If check:all runs but caches remain stale, no note is written."""
+        import scripts_py.ci.attest_ci_checks as mod
+
+        original = mod.repo_root_from_script_path
+
+        def _fake_root(_p: Any, **kw: Any) -> Path:
+            return self.root
+
+        # run_check does nothing — caches stay stale.
+        runner = FakeRunner()
+        out, err = io.StringIO(), io.StringIO()
+        opts = Options(
+            task="check:all",
+            notes_ref="refs/notes/test",
+            remote="origin",
+            push=False,
+            strict_push=False,
+            commit="HEAD",
+            run_task=True,
+            verify_local=True,
+        )
+
+        mod.repo_root_from_script_path = _fake_root  # type: ignore[assignment]
+        try:
+            wrote = attest_ci_checks(opts=opts, runner=runner, out=out, err=err)
+        finally:
+            mod.repo_root_from_script_path = original
+
+        self.assertFalse(wrote)
+        # Should have attempted devenv tasks run.
+        task_cmds = [c for c in runner.calls if "devenv" in c and "tasks" in c]
+        self.assertEqual(len(task_cmds), 1)
+        # No note should have been written.
+        note_cmds = [c for c in runner.calls if c[:2] == ["git", "notes"]]
+        self.assertEqual(note_cmds, [])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -195,10 +195,15 @@
       enable = true;
       name = "Post-commit CI attestation";
       # Verifies that local attestation caches (nix check + test results)
-      # are fresh before writing a git-notes CI attestation.  If pre-commit
-      # was skipped (--no-verify), caches will be stale/missing and the note
-      # is NOT written, so CI runs normally.
-      entry = "scripts/ensure-password-manager-login -- scripts/attest-ci-checks --task check:all --push --no-run --verify-local";
+      # are fresh before writing a git-notes CI attestation.  If all caches
+      # are fresh (pre-commit ran), the note is written instantly.
+      #
+      # Auto-recovery: when caches are stale (e.g. after merging a PR that
+      # updated flake.lock, or after a --no-verify commit), the hook
+      # automatically runs check:all to re-seed caches and retries
+      # verification.  This is slower (~1 min) but ensures attestation
+      # is not permanently broken by one skipped hook run.
+      entry = "scripts/ensure-password-manager-login -- scripts/attest-ci-checks --task check:all --push --verify-local";
       language = "system";
       stages = ["post-commit"];
       always_run = true;
