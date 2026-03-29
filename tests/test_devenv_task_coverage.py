@@ -23,19 +23,29 @@ _REPO = Path(__file__).resolve().parent.parent
 _DEVENV_NIX = _REPO / "devenv.nix"
 
 # Hooks that intentionally bypass ``devenv tasks run`` for a good reason
-# (e.g. per-file filtering) but still cover the same domain as a task.
+# (e.g. cached-check wrappers, per-file filtering) but still cover the same
+# domain as a task.
 # Map: hook-id  →  task name it covers.
 HOOK_TASK_OVERRIDES: dict[str, str] = {
-    # Uses scripts/validate-schemastore-schemas directly (pass_filenames = true)
-    # for incremental per-file validation.  The devenv task runs --all instead.
-    # See the comment on the hook definition in devenv.nix.
-    "schemastore-schemas": "lint:schemastore:validate",
-    # Uses scripts/cached-pytest directly for file-level attestation caching.
-    # Falls through to python -m pytest when attestations are stale/missing.
-    "python-pytest": "tests:python:pytest",
     # Uses scripts/cached-nix-check for nix-check attestation caching.
-    # Falls through to nix flake check --no-build when attestations are stale.
     "nix-flake-check": "check:nix:flake",
+    # Uses scripts/cached-pytest for file-level test attestation caching.
+    "python-pytest": "tests:python:pytest",
+    # --- All hooks below use scripts/cached-check for input-hash caching ---
+    "yamllint": "lint:yaml:yamllint",
+    "schemastore-schemas": "lint:schemastore:validate",
+    "actionlint": "lint:gha:actionlint",
+    "shellcheck": "lint:shell:shellcheck",
+    "taplo-check": "lint:toml:taplo",
+    "markdownlint": "lint:md:markdownlint",
+    "ruff-check": "lint:python:ruff",
+    "pyright-check": "lint:python:pyright",
+    "mkdocs-build": "docs:mkdocs:build",
+    # --- Formatter hooks (also use cached-check) ---
+    "alejandra-fmt": "fmt:nix:alejandra",
+    "shfmt": "fmt:shell:shfmt",
+    "taplo-fmt": "fmt:toml:taplo",
+    "jq-fmt": "fmt:json:jq",
 }
 
 # Hook IDs to exclude from coverage analysis entirely (not checks/lints).

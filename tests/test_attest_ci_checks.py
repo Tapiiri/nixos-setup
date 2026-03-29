@@ -16,6 +16,13 @@ from scripts_py.ci.attest_ci_checks import (
     parse_args,
     verify_local_attestations,
 )
+from scripts_py.lib.cached_check import (
+    KNOWN_CHECKS,
+    compute_input_hash,
+)
+from scripts_py.lib.cached_check import (
+    store as store_check_attestation,
+)
 from scripts_py.lib.nix_check_attestation import (
     compute_nix_hash,
     store_nix_attestation,
@@ -70,6 +77,14 @@ def _store_fresh_test_attestations(root: Path) -> None:
             store_test_attestation(state, f, ch, ok=True)
 
 
+def _store_fresh_check_attestations(root: Path) -> None:
+    """Write passing attestation for every KNOWN_CHECKS entry."""
+    state = root / ".devenv" / "state"
+    for check in KNOWN_CHECKS:
+        h = compute_input_hash(root, globs=check.globs, files=check.files)
+        store_check_attestation(state, check.name, h, ok=True)
+
+
 # ------------------------------------------------------------------
 # Tests: verify_local_attestations
 # ------------------------------------------------------------------
@@ -86,6 +101,7 @@ class TestVerifyLocalAttestations(unittest.TestCase):
 
     def test_returns_true_when_all_fresh(self) -> None:
         _store_fresh_nix_attestation(self.root)
+        _store_fresh_check_attestations(self.root)
         _store_fresh_test_attestations(self.root)
         out, err = io.StringIO(), io.StringIO()
         self.assertTrue(verify_local_attestations(self.root, out=out, err=err))
@@ -99,8 +115,9 @@ class TestVerifyLocalAttestations(unittest.TestCase):
         self.assertIn("nix", err.getvalue().lower())
 
     def test_returns_false_when_tests_missing(self) -> None:
-        # Only store nix attestation, not tests.
+        # Only store nix + generic check attestations, not test attestations.
         _store_fresh_nix_attestation(self.root)
+        _store_fresh_check_attestations(self.root)
         err = io.StringIO()
         self.assertFalse(verify_local_attestations(self.root, err=err))
         self.assertIn("not attested", err.getvalue().lower())
@@ -108,6 +125,7 @@ class TestVerifyLocalAttestations(unittest.TestCase):
     def test_accepts_old_nix_attestation_with_matching_hash(self) -> None:
         """Old attestations are valid as long as the content hash matches."""
         _store_fresh_nix_attestation(self.root)
+        _store_fresh_check_attestations(self.root)
         _store_fresh_test_attestations(self.root)
         # Backdate nix attestation to 2 hours ago.
         import json
@@ -125,6 +143,7 @@ class TestVerifyLocalAttestations(unittest.TestCase):
     def test_accepts_old_test_attestation_with_matching_hash(self) -> None:
         """Old test attestations are valid as long as the content hash matches."""
         _store_fresh_nix_attestation(self.root)
+        _store_fresh_check_attestations(self.root)
         _store_fresh_test_attestations(self.root)
         import json
 
@@ -141,6 +160,7 @@ class TestVerifyLocalAttestations(unittest.TestCase):
     def test_returns_false_when_nix_file_changed(self) -> None:
         """If a nix file changed after the attestation, hash won't match."""
         _store_fresh_nix_attestation(self.root)
+        _store_fresh_check_attestations(self.root)
         _store_fresh_test_attestations(self.root)
         # Modify a nix file after attestation.
         (self.root / "flake.nix").write_text("{ outputs = {}; }")
@@ -150,6 +170,7 @@ class TestVerifyLocalAttestations(unittest.TestCase):
     def test_returns_false_when_test_file_changed(self) -> None:
         """If a test file changed, its attestation hash won't match."""
         _store_fresh_nix_attestation(self.root)
+        _store_fresh_check_attestations(self.root)
         _store_fresh_test_attestations(self.root)
         (self.root / "tests" / "test_alpha.py").write_text("# changed\n")
         err = io.StringIO()
@@ -158,9 +179,11 @@ class TestVerifyLocalAttestations(unittest.TestCase):
     def test_returns_false_when_no_test_files(self) -> None:
         """Repo with no test_*.py files should fail verification."""
         _store_fresh_nix_attestation(self.root)
-        # Remove all test files.
+        # Remove all test files first, then store check attestations
+        # (ruff/pyright globs include tests/**/*.py, so hash changes).
         for f in (self.root / "tests").glob("test_*.py"):
             f.unlink()
+        _store_fresh_check_attestations(self.root)
         err = io.StringIO()
         self.assertFalse(verify_local_attestations(self.root, err=err))
         self.assertIn("no test files", err.getvalue().lower())
@@ -170,6 +193,7 @@ class TestVerifyLocalAttestations(unittest.TestCase):
         state = self.root / ".devenv" / "state"
         nix_hash = compute_nix_hash(self.root)
         store_nix_attestation(state, nix_hash, ok=False)
+        _store_fresh_check_attestations(self.root)
         _store_fresh_test_attestations(self.root)
         err = io.StringIO()
         self.assertFalse(verify_local_attestations(self.root, err=err))
@@ -262,6 +286,7 @@ class TestAttestCiChecksVerifyLocal(unittest.TestCase):
     def test_writes_note_when_verify_local_passes(self) -> None:
         """With --verify-local and fresh caches, note should be written."""
         _store_fresh_nix_attestation(self.root)
+        _store_fresh_check_attestations(self.root)
         _store_fresh_test_attestations(self.root)
 
         runner = FakeRunner()

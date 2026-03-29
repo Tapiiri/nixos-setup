@@ -58,8 +58,8 @@
 
     alejandra-fmt = {
       enable = true;
-      name = "alejandra (nix fmt)";
-      entry = "scripts/ensure-password-manager-login -- devenv tasks run fmt:nix:alejandra";
+      name = "alejandra (nix fmt, cached)";
+      entry = "scripts/ensure-password-manager-login -- scripts/cached-check --name alejandra --glob '**/*.nix' -- alejandra .";
       language = "system";
       files = "(^flake\\.nix$|^(hosts|home|dev)/.*\\.nix$|.*\\.nix)";
       pass_filenames = false;
@@ -67,8 +67,8 @@
 
     yamllint = {
       enable = true;
-      name = "yamllint";
-      entry = "scripts/ensure-password-manager-login -- devenv tasks run lint:yaml:yamllint";
+      name = "yamllint (cached)";
+      entry = "scripts/ensure-password-manager-login -- scripts/cached-check --name yamllint --glob '**/*.yml' --glob '**/*.yaml' --file .yamllint -- yamllint .";
       language = "system";
       files = ".*\\.ya?ml$";
       pass_filenames = false;
@@ -76,22 +76,21 @@
 
     schemastore-schemas = {
       enable = true;
-      name = "schemastore schema validation";
-      # Calls the script directly (not via devenv task) so pre-commit can pass
-      # only changed filenames for fast incremental validation.  The devenv task
+      name = "schemastore schema validation (cached)";
+      # Uses cached-check for input-hash caching.  The devenv task
       # lint:schemastore:validate runs --all instead.  Parity with check:all is
       # verified by tests/test_devenv_task_coverage.py (HOOK_TASK_OVERRIDES).
-      entry = "scripts/ensure-password-manager-login -- scripts/validate-schemastore-schemas";
+      entry = "scripts/ensure-password-manager-login -- scripts/cached-check --name schemastore --glob '**/*.yml' --glob '**/*.yaml' --glob '**/*.json' --file schemas/schemastore-index.json -- scripts/validate-schemastore-schemas --all";
       language = "system";
       # Include extensionless YAML configs we have in-repo (e.g. .yamllint).
       files = "(^\\.yamllint$|.*\\.ya?ml$|.*\\.json$)";
-      pass_filenames = true;
+      pass_filenames = false;
     };
 
     actionlint = {
       enable = true;
-      name = "actionlint";
-      entry = "scripts/ensure-password-manager-login -- devenv tasks run lint:gha:actionlint";
+      name = "actionlint (cached)";
+      entry = "scripts/ensure-password-manager-login -- scripts/cached-check --name actionlint --glob '.github/workflows/**/*.yml' --glob '.github/workflows/**/*.yaml' -- actionlint";
       language = "system";
       files = "^\\.github/workflows/.*\\.ya?ml$";
       pass_filenames = false;
@@ -99,8 +98,8 @@
 
     shellcheck = {
       enable = true;
-      name = "shellcheck";
-      entry = "scripts/ensure-password-manager-login -- devenv tasks run lint:shell:shellcheck";
+      name = "shellcheck (cached)";
+      entry = "scripts/ensure-password-manager-login -- scripts/cached-check --name shellcheck --glob '**/*.sh' --file dotfiles/home/bashrc -- shellcheck $(git ls-files '*.sh' 'dotfiles/home/bashrc' 'home/**/*.sh.tpl')";
       language = "system";
       files = "(.*\\.sh$|^dotfiles/home/bashrc$|^home/.*\\.sh\\.tpl$)";
       pass_filenames = false;
@@ -108,8 +107,8 @@
 
     shfmt = {
       enable = true;
-      name = "shfmt";
-      entry = "scripts/ensure-password-manager-login -- devenv tasks run fmt:shell:shfmt";
+      name = "shfmt (cached)";
+      entry = "scripts/ensure-password-manager-login -- scripts/cached-check --name shfmt --glob '**/*.sh' --file dotfiles/home/bashrc -- shfmt -w -i 2 -ci $(git ls-files '*.sh' 'dotfiles/home/bashrc')";
       language = "system";
       files = "(.*\\.sh$|^dotfiles/home/bashrc$)";
       pass_filenames = false;
@@ -117,8 +116,8 @@
 
     taplo-check = {
       enable = true;
-      name = "taplo check (toml lint)";
-      entry = "scripts/ensure-password-manager-login -- devenv tasks run lint:toml:taplo";
+      name = "taplo check (toml lint, cached)";
+      entry = "scripts/ensure-password-manager-login -- scripts/cached-check --name taplo-check --glob '**/*.toml' -- taplo check $(git ls-files '*.toml')";
       language = "system";
       files = ".*\\.toml$";
       pass_filenames = false;
@@ -126,8 +125,8 @@
 
     taplo-fmt = {
       enable = true;
-      name = "taplo fmt (toml format)";
-      entry = "scripts/ensure-password-manager-login -- devenv tasks run fmt:toml:taplo";
+      name = "taplo fmt (toml format, cached)";
+      entry = "scripts/ensure-password-manager-login -- scripts/cached-check --name taplo-fmt --glob '**/*.toml' -- taplo fmt $(git ls-files '*.toml')";
       language = "system";
       files = ".*\\.toml$";
       pass_filenames = false;
@@ -135,8 +134,8 @@
 
     jq-fmt = {
       enable = true;
-      name = "jq (json format)";
-      entry = "scripts/ensure-password-manager-login -- devenv tasks run fmt:json:jq";
+      name = "jq (json format, cached)";
+      entry = "scripts/ensure-password-manager-login -- scripts/cached-check --name jq-fmt --glob '**/*.json' -- devenv tasks run fmt:json:jq";
       language = "system";
       files = ".*\\.json$";
       pass_filenames = false;
@@ -144,8 +143,8 @@
 
     markdownlint = {
       enable = true;
-      name = "markdownlint";
-      entry = "scripts/ensure-password-manager-login -- devenv tasks run lint:md:markdownlint";
+      name = "markdownlint (cached)";
+      entry = "scripts/ensure-password-manager-login -- scripts/cached-check --name markdownlint --glob '**/*.md' --file .markdownlint-cli2.yaml -- markdownlint-cli2 .";
       language = "system";
       files = ".*\\.md$";
       pass_filenames = false;
@@ -153,8 +152,8 @@
 
     ruff-check = {
       enable = true;
-      name = "ruff check";
-      entry = "scripts/ensure-password-manager-login -- devenv tasks run lint:python:ruff";
+      name = "ruff check (cached)";
+      entry = "scripts/ensure-password-manager-login -- scripts/cached-check --name ruff --glob 'scripts_py/**/*.py' --glob 'tests/**/*.py' --file pyproject.toml -- ruff check scripts_py tests";
       language = "system";
       files = ".*\\.py$";
       pass_filenames = false;
@@ -162,8 +161,8 @@
 
     pyright-check = {
       enable = true;
-      name = "pyright";
-      entry = "scripts/ensure-password-manager-login -- devenv tasks run lint:python:pyright";
+      name = "pyright (cached)";
+      entry = "scripts/ensure-password-manager-login -- scripts/cached-check --name pyright --glob 'scripts_py/**/*.py' --glob 'tests/**/*.py' --file pyproject.toml -- pyright scripts_py tests";
       language = "system";
       files = ".*\\.py$";
       pass_filenames = false;
@@ -185,8 +184,8 @@
 
     mkdocs-build = {
       enable = true;
-      name = "mkdocs build";
-      entry = "scripts/ensure-password-manager-login -- devenv tasks run docs:mkdocs:build";
+      name = "mkdocs build (cached)";
+      entry = "scripts/ensure-password-manager-login -- scripts/cached-check --name mkdocs --glob 'docs/site/**' --file mkdocs.yml -- mkdocs build --strict";
       language = "system";
       files = "(^mkdocs\\.yml$|^docs/site/)";
       pass_filenames = false;
@@ -232,14 +231,14 @@
     };
 
     "fmt:nix:alejandra" = {
-      description = "Format Nix files with alejandra";
-      exec = "alejandra .";
+      description = "Format Nix files with alejandra (with attestation)";
+      exec = "scripts/cached-check --name alejandra --glob '**/*.nix' --force -- alejandra .";
     };
 
     # --- YAML / GitHub Actions ---
     "lint:yaml:yamllint" = {
-      description = "Lint YAML files with yamllint";
-      exec = "yamllint .";
+      description = "Lint YAML files with yamllint (with attestation)";
+      exec = "scripts/cached-check --name yamllint --glob '**/*.yml' --glob '**/*.yaml' --file .yamllint --force -- yamllint .";
     };
 
     # --- SchemaStore (offline, vendored schemas) ---
@@ -249,35 +248,35 @@
     };
 
     "lint:schemastore:validate" = {
-      description = "Validate all indexed files against their SchemaStore schemas";
-      exec = "scripts/validate-schemastore-schemas --all";
+      description = "Validate all indexed files against their SchemaStore schemas (with attestation)";
+      exec = "scripts/cached-check --name schemastore --glob '**/*.yml' --glob '**/*.yaml' --glob '**/*.json' --file schemas/schemastore-index.json --force -- scripts/validate-schemastore-schemas --all";
     };
 
     "lint:gha:actionlint" = {
-      description = "Lint GitHub Actions workflows with actionlint";
-      exec = "actionlint";
+      description = "Lint GitHub Actions workflows with actionlint (with attestation)";
+      exec = "scripts/cached-check --name actionlint --glob '.github/workflows/**/*.yml' --glob '.github/workflows/**/*.yaml' --force -- actionlint";
     };
 
     # --- Shell / templates ---
     "lint:shell:shellcheck" = {
-      description = "Lint shell scripts with shellcheck";
-      exec = "shellcheck $(git ls-files '*.sh' 'dotfiles/home/bashrc' 'home/**/*.sh.tpl')";
+      description = "Lint shell scripts with shellcheck (with attestation)";
+      exec = "scripts/cached-check --name shellcheck --glob '**/*.sh' --file dotfiles/home/bashrc --force -- shellcheck $(git ls-files '*.sh' 'dotfiles/home/bashrc' 'home/**/*.sh.tpl')";
     };
 
     "fmt:shell:shfmt" = {
-      description = "Format shell scripts with shfmt";
-      exec = "shfmt -w -i 2 -ci $(git ls-files '*.sh' 'dotfiles/home/bashrc')";
+      description = "Format shell scripts with shfmt (with attestation)";
+      exec = "scripts/cached-check --name shfmt --glob '**/*.sh' --file dotfiles/home/bashrc --force -- shfmt -w -i 2 -ci $(git ls-files '*.sh' 'dotfiles/home/bashrc')";
     };
 
     # --- TOML ---
     "lint:toml:taplo" = {
-      description = "Lint TOML files with taplo";
-      exec = "taplo check $(git ls-files '*.toml')";
+      description = "Lint TOML files with taplo (with attestation)";
+      exec = "scripts/cached-check --name taplo-check --glob '**/*.toml' --force -- taplo check $(git ls-files '*.toml')";
     };
 
     "fmt:toml:taplo" = {
-      description = "Format TOML files with taplo";
-      exec = "taplo fmt $(git ls-files '*.toml')";
+      description = "Format TOML files with taplo (with attestation)";
+      exec = "scripts/cached-check --name taplo-fmt --glob '**/*.toml' --force -- taplo fmt $(git ls-files '*.toml')";
     };
 
     # --- JSON ---
@@ -288,18 +287,17 @@
     };
 
     "fmt:json:jq" = {
-      description = "Format JSON files with jq";
+      description = "Format JSON files with jq (with attestation)";
       exec = ''
-        for f in $(git ls-files '*.json' | grep -v '^\.vscode/'); do
-          jq . "$f" > "$f.tmp" && mv "$f.tmp" "$f"
-        done
+        scripts/cached-check --name jq-fmt --glob '**/*.json' --force -- \
+          bash -c 'for f in $(git ls-files "*.json" | grep -v "^\.vscode/"); do jq . "$f" > "$f.tmp" && mv "$f.tmp" "$f"; done'
       '';
     };
 
     # --- Markdown ---
     "lint:md:markdownlint" = {
-      description = "Lint Markdown with markdownlint-cli2";
-      exec = "markdownlint-cli2 .";
+      description = "Lint Markdown with markdownlint-cli2 (with attestation)";
+      exec = "scripts/cached-check --name markdownlint --glob '**/*.md' --file .markdownlint-cli2.yaml --force -- markdownlint-cli2 .";
     };
 
     "fmt:md:markdownlint" = {
@@ -309,13 +307,13 @@
 
     # --- Python ---
     "lint:python:ruff" = {
-      description = "Lint Python with ruff";
-      exec = "ruff check scripts_py tests";
+      description = "Lint Python with ruff (with attestation)";
+      exec = "scripts/cached-check --name ruff --glob 'scripts_py/**/*.py' --glob 'tests/**/*.py' --file pyproject.toml --force -- ruff check scripts_py tests";
     };
 
     "lint:python:pyright" = {
-      description = "Type-check Python with pyright (strict)";
-      exec = "pyright scripts_py tests";
+      description = "Type-check Python with pyright (with attestation)";
+      exec = "scripts/cached-check --name pyright --glob 'scripts_py/**/*.py' --glob 'tests/**/*.py' --file pyproject.toml --force -- pyright scripts_py tests";
     };
 
     "tests:python:pytest" = {
@@ -330,8 +328,8 @@
 
     # --- Documentation ---
     "docs:mkdocs:build" = {
-      description = "Build MkDocs site (strict mode)";
-      exec = "mkdocs build --strict";
+      description = "Build MkDocs site (with attestation)";
+      exec = "scripts/cached-check --name mkdocs --glob 'docs/site/**' --file mkdocs.yml --force -- mkdocs build --strict";
     };
 
     "docs:mkdocs:serve" = {
