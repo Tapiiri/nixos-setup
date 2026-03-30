@@ -9,6 +9,8 @@
 }: {
   my.tailscale.enable = true;
 
+  services.ollama.enable = true;
+
   my.esp32-dev = {
     enable = true;
     users = ["tapiiri"];
