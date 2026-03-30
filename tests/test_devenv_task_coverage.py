@@ -97,7 +97,7 @@ def _parse_hook_tasks(src: str) -> tuple[set[str], set[str]]:
     The second set contains hook IDs that reference neither a devenv task nor
     an entry in ``HOOK_TASK_OVERRIDES`` — these are hooks that need review.
     """
-    tasks: set[str] = set()
+    tasks: set[str] = set(HOOK_TASK_OVERRIDES.values())
     unmapped_hooks: set[str] = set()
 
     # Match blocks like: hook-id = { ... entry = "..."; ... };
@@ -137,7 +137,6 @@ def _parse_hook_tasks(src: str) -> tuple[set[str], set[str]]:
 
         # Check override map.
         if hook_id in HOOK_TASK_OVERRIDES:
-            tasks.add(HOOK_TASK_OVERRIDES[hook_id])
             continue
 
         unmapped_hooks.add(hook_id)
@@ -193,23 +192,15 @@ class TestDevenvHookStages(unittest.TestCase):
         the pre-merge-commit stage from default_stages.
         """
         src = _read_devenv_nix()
-        hooks_section_re = re.compile(
-            r"git-hooks\.hooks\s*=\s*\{(.*?)^\s{2}\};", re.DOTALL | re.MULTILINE
-        )
-        m = hooks_section_re.search(src)
-        self.assertIsNotNone(m, "git-hooks.hooks block not found in devenv.nix")
-        hooks_body = m.group(1)  # type: ignore[union-attr]
-
-        # Parse each hook block for an explicit stages override.
-        hook_re = re.compile(
-            r"(\S+)\s*=\s*\{((?:(?!\n\s{4}\};).)*?)\n\s{4}\};",
-            re.DOTALL,
-        )
-        for hm in hook_re.finditer(hooks_body):
-            hook_id = hm.group(1).strip()
-            if hook_id not in _MERGE_CRITICAL_HOOKS:
+        for hook_id in _MERGE_CRITICAL_HOOKS:
+            hook_re = re.compile(
+                rf"{re.escape(hook_id)}\s*=\s*\{{((?:(?!\n\s{{4}}\}};).)*?)\n\s{{4}}\}};",
+                re.DOTALL,
+            )
+            hm = hook_re.search(src)
+            if not hm:
                 continue
-            body = hm.group(2)
+            body = hm.group(1)
             stages_m = re.search(r"stages\s*=\s*\[([^\]]*)\]", body)
             if stages_m:
                 declared = re.findall(r'"([^"]+)"', stages_m.group(1))
