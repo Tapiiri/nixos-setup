@@ -7,7 +7,10 @@
   inputs,
   ...
 }: {
-  my.tailscale.enable = true;
+  my.tailscale = {
+    enable = true;
+    operators = ["tapiiri" "ilmari"];
+  };
 
   services.ollama.enable = true;
 
