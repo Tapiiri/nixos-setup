@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }: let
   inherit (lib) mkEnableOption mkIf mkOption types;
@@ -43,6 +44,20 @@ in {
     systemd.tmpfiles.rules = [
       "d /var/lib/secrets 0700 root root - -"
     ];
+
+    system.activationScripts.dokployPassword = lib.stringAfter ["etc"] ''
+      password_file=${lib.escapeShellArg cfg.passwordFile}
+
+      if [ ! -f "$password_file" ]; then
+        dir="$(${pkgs.coreutils}/bin/dirname "$password_file")"
+        ${pkgs.coreutils}/bin/install -d -m 700 "$dir"
+
+        tmp="$(${pkgs.coreutils}/bin/mktemp)"
+        trap '${pkgs.coreutils}/bin/rm -f "$tmp"' EXIT
+        ${pkgs.coreutils}/bin/head -c 32 /dev/urandom | ${pkgs.coreutils}/bin/base64 > "$tmp"
+        ${pkgs.coreutils}/bin/install -m 600 "$tmp" "$password_file"
+      fi
+    '';
 
     users.users = lib.genAttrs cfg.users (_user: {
       extraGroups = ["docker"];
