@@ -4,13 +4,19 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import tempfile
 import time
 import unittest
 from pathlib import Path
-from typing import Sequence
+from typing import Mapping, Sequence
+from unittest.mock import patch
 
-from scripts_py.cli.cached_check import run_cached_check
+from scripts_py.cli.cached_check import (
+    build_command_env,
+    build_subprocess_command,
+    run_cached_check,
+)
 from scripts_py.lib.cached_check import (
     CHECKS_BY_NAME,
     CI_CHECKS,
@@ -29,10 +35,16 @@ class FakeRunner:
 
     def __init__(self, rc: int = 0) -> None:
         self.rc = rc
-        self.calls: list[tuple[Sequence[str], str]] = []
+        self.calls: list[tuple[Sequence[str], str, Mapping[str, str] | None]] = []
 
-    def run_passthrough(self, argv: Sequence[str], *, cwd: str) -> int:
-        self.calls.append((tuple(argv), cwd))
+    def run_passthrough(
+        self,
+        argv: Sequence[str],
+        *,
+        cwd: str,
+        env: Mapping[str, str] | None = None,
+    ) -> int:
+        self.calls.append((tuple(argv), cwd, env))
         return self.rc
 
 
@@ -214,13 +226,22 @@ class TestRunCachedCheck(unittest.TestCase):
     def setUp(self) -> None:
         self.td = tempfile.TemporaryDirectory()
         self.root = Path(self.td.name)
+        self.profile_bin = self.root / ".devenv" / "profile" / "bin"
+        self.profile_bin.mkdir(parents=True)
         (self.root / "src").mkdir()
         (self.root / "src" / "a.py").write_text("# code")
         (self.root / "pyproject.toml").write_text("[tool.ruff]")
         (self.root / "scripts_py").mkdir()
         (self.root / "scripts_py" / "__init__.py").write_text("")
+        self.path_patch = patch.dict(
+            os.environ,
+            {"PATH": f"{self.profile_bin}{os.pathsep}/usr/bin:/bin"},
+            clear=False,
+        )
+        self.path_patch.start()
 
     def tearDown(self) -> None:
+        self.path_patch.stop()
         self.td.cleanup()
 
     def test_runs_command_when_no_cache(self) -> None:
@@ -238,6 +259,10 @@ class TestRunCachedCheck(unittest.TestCase):
         self.assertEqual(rc, 0)
         self.assertEqual(len(runner.calls), 1)
         self.assertEqual(runner.calls[0][0], ("ruff", "check", "src"))
+        env = runner.calls[0][2]
+        self.assertIsNotNone(env)
+        assert env is not None
+        self.assertTrue(env["PATH"].startswith(str(self.profile_bin)))
 
     def test_skips_when_cached_pass(self) -> None:
         # Pre-populate the cache.
@@ -361,6 +386,74 @@ class TestRunCachedCheck(unittest.TestCase):
         )
         self.assertEqual(rc, 0)
         self.assertEqual(len(runner.calls), 1)
+
+
+class TestBuildCommandEnv(unittest.TestCase):
+    def test_prepends_devenv_profile_bin_to_path(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            profile_bin = root / ".devenv" / "profile" / "bin"
+            profile_bin.mkdir(parents=True)
+
+            env = build_command_env(repo_root=root, base_env={"PATH": "/usr/bin:/bin"})
+
+            self.assertEqual(env["PATH"], f"{profile_bin}{os.pathsep}/usr/bin{os.pathsep}/bin")
+
+    def test_leaves_path_unchanged_when_profile_bin_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+
+            env = build_command_env(repo_root=root, base_env={"PATH": "/usr/bin:/bin"})
+
+            self.assertEqual(env["PATH"], "/usr/bin:/bin")
+
+
+class TestBuildSubprocessCommand(unittest.TestCase):
+    def test_returns_plain_command_inside_repo_devenv(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            profile_bin = root / ".devenv" / "profile" / "bin"
+            profile_bin.mkdir(parents=True)
+
+            cmd = build_subprocess_command(
+                command=["ruff", "check", "src"],
+                repo_root=root,
+                base_env={"PATH": f"{profile_bin}{os.pathsep}/usr/bin:/bin"},
+            )
+
+            self.assertEqual(cmd, ["ruff", "check", "src"])
+
+    def test_wraps_command_with_nix_run_outside_devenv(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            profile_bin = root / ".devenv" / "profile" / "bin"
+            profile_bin.mkdir(parents=True)
+            nix_path = root / "bin"
+            nix_path.mkdir()
+            nix_exe = nix_path / "nix"
+            nix_exe.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+            nix_exe.chmod(0o755)
+
+            cmd = build_subprocess_command(
+                command=["ruff", "check", "src"],
+                repo_root=root,
+                base_env={"PATH": str(nix_path)},
+            )
+
+            self.assertEqual(
+                cmd,
+                [
+                    str(nix_exe),
+                    "run",
+                    "nixpkgs#devenv",
+                    "--",
+                    "shell",
+                    "--",
+                    "ruff",
+                    "check",
+                    "src",
+                ],
+            )
 
 
 if __name__ == "__main__":

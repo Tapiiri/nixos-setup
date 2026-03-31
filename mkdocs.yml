@@ -60,6 +60,7 @@ nav:
       - Scripts Overview: scripts.md
   - Guides:
       - Rebuild & System Updates: guides/rebuild.md
+      - Ubuntu WSL Setup: guides/wsl.md
       - Secrets Management: guides/secrets.md
       - CI & Attestation: guides/ci-attestation.md
   - Development:

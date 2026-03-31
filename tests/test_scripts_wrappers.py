@@ -15,6 +15,10 @@ class TestScriptsWrappers(unittest.TestCase):
         """
         wrappers = [
             (
+                Path(__file__).resolve().parent.parent / "scripts" / "hm-switch",
+                ["--help"],
+            ),
+            (
                 Path(__file__).resolve().parent.parent / "scripts" / "sync-github-labels",
                 ["--dry-run"],
             ),

@@ -4,7 +4,7 @@
   pkgs,
   ...
 }: let
-  inherit (lib) mkEnableOption mkIf;
+  inherit (lib) mkEnableOption mkIf mkOption types;
   # Pin Python explicitly so scripts/tests use a known interpreter.
   py = pkgs.python313;
   pyPkgs = py.pkgs;
@@ -13,12 +13,19 @@ in {
     ./gh.nix
   ];
 
-  options.my.devtools.enable = mkEnableOption "Developer tools (gh, vscode, language runtimes)";
+  options.my.devtools = {
+    enable = mkEnableOption "Developer tools (gh, vscode, language runtimes)";
+    vscode.enable = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Whether devtools should also enable and configure VS Code.";
+    };
+  };
 
   config = mkIf config.my.devtools.enable {
     my.gh.enable = true;
-    my.vscode.enable = true;
-    programs.vscode.enable = true;
+    my.vscode.enable = config.my.devtools.vscode.enable;
+    programs.vscode.enable = config.my.devtools.vscode.enable;
 
     # Development tooling.
     #

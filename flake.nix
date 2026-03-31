@@ -16,6 +16,23 @@
     ...
   } @ inputs: let
     lib = nixpkgs.lib;
+    mkPkgs = system:
+      import nixpkgs {
+        inherit system;
+        config.allowUnfree = true;
+      };
+    mkHomeConfiguration = {
+      system,
+      module,
+    }:
+      inputs.home-manager.lib.homeManagerConfiguration {
+        pkgs = mkPkgs system;
+        extraSpecialArgs = {
+          inherit inputs;
+          flakeRoot = self;
+        };
+        modules = [module];
+      };
     systems = [
       "x86_64-linux"
       "aarch64-linux"
@@ -35,8 +52,24 @@
       ];
     };
 
+    homeConfigurations = {
+      tapiiri = mkHomeConfiguration {
+        system = "x86_64-linux";
+        module = ./hosts/standalone/tapiiri/home.nix;
+      };
+      "tapiiri-wsl" = mkHomeConfiguration {
+        system = "x86_64-linux";
+        module = ./hosts/standalone/tapiiri-wsl/home.nix;
+      };
+      ilmari = mkHomeConfiguration {
+        system = "x86_64-linux";
+        module = ./hosts/standalone/ilmari/home.nix;
+      };
+    };
+
     packages = forAllSystems (system: let
-      pkgs = import nixpkgs {inherit system;};
+      pkgs = mkPkgs system;
+      hmPkg = inputs.home-manager.packages.${system}.home-manager;
 
       sourceInfo = self.sourceInfo or {};
       upstreamDefault =
@@ -74,6 +107,18 @@
           wrapperArgs = wrapperExtraArgs;
           extraSrc = ["flake.nix"];
           mainProgram = "rebuild";
+        };
+        "hm-switch" = {
+          pname = "nixos-setup-hm-switch";
+          description = "nixos-setup standalone Home Manager switch helper";
+          scripts = ["hm-switch"];
+          runtimeDeps = [
+            pkgs.git
+            hmPkg
+          ];
+          wrapperArgs = "";
+          extraSrc = ["flake.nix"];
+          mainProgram = "hm-switch";
         };
         "switch-user" = {
           pname = "nixos-setup-switch-user";
@@ -132,6 +177,10 @@
       rebuild = {
         type = "app";
         program = "${self.packages.${system}.rebuild}/bin/rebuild";
+      };
+      "hm-switch" = {
+        type = "app";
+        program = "${self.packages.${system}.hm-switch}/bin/hm-switch";
       };
       "rebuild-inner" = {
         type = "app";

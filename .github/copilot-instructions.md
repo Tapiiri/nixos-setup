@@ -64,13 +64,15 @@
 
 ### Flake outputs / profiles debugging tip
 
-- This flake intentionally exposes `nixosConfigurations.<host>` but may **not** expose
-  `homeConfigurations.*` as a top-level flake output.
+- This flake exposes `nixosConfigurations.<host>` for NixOS system builds and
+  `homeConfigurations.<name>` for standalone Home Manager profiles.
 - When you need to discover what outputs exist (or when a build target is unclear), run:
   - `nix flake show --all-systems`
 - When you specifically need to *force evaluation* of Home Manager modules (for example
   to surface a VS Code Marketplace extension hash mismatch), a reliable target is:
   - `.#nixosConfigurations.<host>.config.system.build.toplevel`
+- For standalone Home Manager evaluation on non-NixOS systems, a reliable target is:
+  - `.#homeConfigurations.<name>.activationPackage`
 
 This avoids guesswork around “profiles” / output names and matches how we actually build
 the system configuration.

@@ -23,6 +23,7 @@ dev tooling, and automated CI attestation.
 | Repo layout & design decisions | [Architecture](architecture.md) |
 | Script inventory & design | [Scripts](scripts.md) |
 | Rebuild & mirror workflow | [Rebuild guide](guides/rebuild.md) |
+| Ubuntu WSL Home Manager setup | [WSL guide](guides/wsl.md) |
 | Secrets & password managers | [Secrets guide](guides/secrets.md) |
 | Local CI attestation | [CI & Attestation guide](guides/ci-attestation.md) |
 | Dev shell, tasks, CI | [Dev Environment](dev-environment.md) |

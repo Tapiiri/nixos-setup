@@ -4,6 +4,10 @@ The `rebuild` command is the primary entrypoint for applying NixOS configuration
 changes. It wraps `nixos-rebuild switch` with a **mirror-based workflow** that
 keeps root/user privilege separation clean.
 
+If you are using this repo on a non-NixOS Linux system such as Ubuntu on WSL,
+use `hm-switch` instead. `rebuild` is intentionally NixOS-only because it
+assumes `/etc/nixos`, root-owned system state, and `nixos-rebuild`.
+
 ## How it works
 
 `rebuild` is actually **two programs**:
@@ -73,6 +77,39 @@ and `modules/rebuild.nix` for the NixOS module that manages this.
 | `--ref REF` | Git ref to fast-forward `/etc/nixos` to (default: `origin/main`) |
 | `--offline-ok` | Keep going if fetching updates fails |
 | `--bootstrap-permissions` | Create/fix mirror parent dir permissions using sudo |
+
+## Standalone Home Manager on Ubuntu/WSL
+
+For non-NixOS setups, this flake also exposes standalone Home Manager profiles.
+The matching helper is `hm-switch`, which runs `home-manager switch` against a
+profile in this repo instead of invoking `nixos-rebuild`.
+
+Current standalone profiles:
+
+| Profile | Intended use |
+|---------|--------------|
+| `tapiiri` | Personal standalone Linux / WSL home environment |
+| `tapiiri-wsl` | Minimal WSL profile with only Claude Code |
+| `ilmari` | Work standalone Linux / WSL home environment |
+
+Examples:
+
+```bash
+# Run directly from the checkout
+nix run .#hm-switch -- tapiiri
+
+# Or use a remote flake without cloning first
+nix run github:Tapiiri/nixos-setup#hm-switch -- tapiiri
+
+# After installing the package/profile, omit the profile if
+# NIXOS_SETUP_HM_PROFILE is set in your shell session
+hm-switch
+```
+
+`hm-switch` defaults to the `NIXOS_SETUP_HM_PROFILE` environment variable, then
+falls back to the current Unix username.
+
+For a step-by-step Ubuntu setup flow, see [Ubuntu WSL Setup](wsl.md).
 
 ## Defaults precedence
 

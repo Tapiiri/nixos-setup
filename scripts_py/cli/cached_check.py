@@ -14,11 +14,13 @@ passing attestation exists, otherwise runs the command and stores the result.
 from __future__ import annotations
 
 import argparse
+import os
+import shutil
 import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Protocol, Sequence, TextIO
+from typing import Mapping, Protocol, Sequence, TextIO
 
 from scripts_py.lib.cached_check import (
     compute_input_hash,
@@ -41,7 +43,13 @@ _STATE_REL = Path(".devenv") / "state"
 class CmdRunner(Protocol):
     """Thin subprocess interface for dependency injection in tests."""
 
-    def run_passthrough(self, argv: Sequence[str], *, cwd: str) -> int:
+    def run_passthrough(
+        self,
+        argv: Sequence[str],
+        *,
+        cwd: str,
+        env: Mapping[str, str] | None = None,
+    ) -> int:
         """Run a command with inherited stdio, return exit code."""
         ...  # pragma: no cover
 
@@ -49,8 +57,78 @@ class CmdRunner(Protocol):
 class SubprocessRunner:
     """Production implementation."""
 
-    def run_passthrough(self, argv: Sequence[str], *, cwd: str) -> int:
-        return subprocess.run(list(argv), cwd=cwd).returncode
+    def run_passthrough(
+        self,
+        argv: Sequence[str],
+        *,
+        cwd: str,
+        env: Mapping[str, str] | None = None,
+    ) -> int:
+        child_env = None if env is None else dict(env)
+        return subprocess.run(list(argv), cwd=cwd, env=child_env).returncode
+
+
+def build_command_env(
+    *,
+    repo_root: Path,
+    base_env: Mapping[str, str] | None = None,
+) -> dict[str, str]:
+    """Build a subprocess environment with repo-pinned devenv tools first on PATH."""
+
+    env = dict(os.environ if base_env is None else base_env)
+    profile_bin = repo_root / ".devenv" / "profile" / "bin"
+    if not profile_bin.is_dir():
+        return env
+
+    current_path = env.get("PATH", "")
+    entries = [entry for entry in current_path.split(os.pathsep) if entry]
+    profile_bin_str = str(profile_bin)
+
+    if profile_bin_str not in entries:
+        env["PATH"] = os.pathsep.join([profile_bin_str, *entries]) if entries else profile_bin_str
+
+    return env
+
+
+def _is_in_repo_devenv_environment(*, repo_root: Path, env: Mapping[str, str]) -> bool:
+    profile_bin = str(repo_root / ".devenv" / "profile" / "bin")
+    path_value = env.get("PATH", "")
+    entries = [entry for entry in path_value.split(os.pathsep) if entry]
+    return profile_bin in entries
+
+
+def _find_nix_executable(*, env: Mapping[str, str]) -> str | None:
+    path_value = env.get("PATH")
+    nix_on_path = shutil.which("nix", path=path_value)
+    if nix_on_path is not None:
+        return nix_on_path
+
+    candidates = [
+        Path.home() / ".nix-profile" / "bin" / "nix",
+        Path("/nix/var/nix/profiles/default/bin/nix"),
+        Path("/run/current-system/sw/bin/nix"),
+    ]
+    for candidate in candidates:
+        if candidate.is_file() and os.access(candidate, os.X_OK):
+            return str(candidate)
+    return None
+
+
+def build_subprocess_command(
+    *,
+    command: Sequence[str],
+    repo_root: Path,
+    base_env: Mapping[str, str] | None = None,
+) -> list[str]:
+    env = dict(os.environ if base_env is None else base_env)
+    if _is_in_repo_devenv_environment(repo_root=repo_root, env=env):
+        return list(command)
+
+    nix_exe = _find_nix_executable(env=env)
+    if nix_exe is None:
+        return list(command)
+
+    return [nix_exe, "run", "nixpkgs#devenv", "--", "shell", "--", *command]
 
 
 # ------------------------------------------------------------------
@@ -76,6 +154,13 @@ def run_cached_check(
 
     state_dir = repo_root / _STATE_REL
     input_hash = compute_input_hash(repo_root, globs=globs, files=files)
+    base_env = dict(os.environ)
+    command_env = build_command_env(repo_root=repo_root, base_env=base_env)
+    exec_command = build_subprocess_command(
+        command=command,
+        repo_root=repo_root,
+        base_env=base_env,
+    )
 
     if not force:
         cached = lookup(state_dir, name, input_hash)
@@ -87,7 +172,7 @@ def run_cached_check(
 
     log_info(f"[cached-check:{name}] Running: {' '.join(command)}", out=_out)
     t0 = time.time()
-    rc = runner.run_passthrough(command, cwd=str(repo_root))
+    rc = runner.run_passthrough(exec_command, cwd=str(repo_root), env=command_env)
     elapsed = time.time() - t0
 
     store(state_dir, name, input_hash, ok=(rc == 0), elapsed=elapsed)

@@ -18,6 +18,10 @@
 
   # Maps flake package name → HM option path + description.
   scriptPackages = {
+    "hm-switch" = {
+      optionPath = ["my" "hmSwitch" "enable"];
+      description = "Standalone Home Manager switch command (hm-switch)";
+    };
     "switch-user" = {
       optionPath = ["my" "userSwitch" "enable"];
       description = "User switch command (switch-user)";
