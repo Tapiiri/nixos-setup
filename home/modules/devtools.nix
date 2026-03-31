@@ -37,6 +37,7 @@ in {
       devenv
       secretspec
       nodejs_latest
+      supabase-cli
       claude-code
       ffmpeg-full
       # Nix tooling used by VS Code (nix-ide expects these to exist).
