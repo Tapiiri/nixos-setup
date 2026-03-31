@@ -9,7 +9,7 @@
 }: {
   my.tailscale = {
     enable = true;
-    operators = ["tapiiri" "ilmari"];
+    operator = "ilmari";
   };
 
   services.ollama.enable = true;

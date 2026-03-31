@@ -3,28 +3,26 @@
   lib,
   ...
 }: let
-  inherit (lib) mkAfter mkEnableOption mkIf mkOption types;
+  inherit (lib) mkEnableOption mkIf mkOption types;
+  cfg = config.my.tailscale;
 in {
   options.my.tailscale = {
     enable = mkEnableOption "Tailscale (system daemon)";
 
-    operators = mkOption {
-      type = types.listOf types.str;
-      default = [];
-      example = ["tapiiri" "ilmari"];
-      description = "Users allowed to operate the local tailscaled daemon without sudo.";
+    operator = mkOption {
+      type = types.nullOr types.str;
+      default = null;
+      example = "ilmari";
+      description = "Unix user allowed to operate tailscaled without sudo (only one supported by Tailscale).";
     };
   };
 
-  config = mkIf config.my.tailscale.enable {
+  config = mkIf cfg.enable {
     # Run the system daemon (tailscaled). This is required for `tailscale up`
     # to work in the normal mode.
     services.tailscale.enable = true;
-    services.tailscale.extraUpFlags = mkAfter (
-      map (operator: "--operator=${operator}") config.my.tailscale.operators
-    );
-    services.tailscale.extraSetFlags = mkAfter (
-      map (operator: "--operator=${operator}") config.my.tailscale.operators
-    );
+    services.tailscale.extraSetFlags = lib.optionals (cfg.operator != null) [
+      "--operator=${cfg.operator}"
+    ];
   };
 }
