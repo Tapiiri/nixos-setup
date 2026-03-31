@@ -82,8 +82,7 @@ in {
         serviceConfig = {
           Type = "oneshot";
           RemainAfterExit = true;
-          Restart = "on-failure";
-          RestartSec = "30s";
+          TimeoutStartSec = "90s";
         };
 
         script = ''
