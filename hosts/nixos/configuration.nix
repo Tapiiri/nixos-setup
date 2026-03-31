@@ -12,6 +12,11 @@
     operator = "ilmari";
   };
 
+  my.dokploy = {
+    enable = true;
+    users = ["tapiiri" "ilmari"];
+  };
+
   services.ollama.enable = true;
 
   my.esp32-dev = {
