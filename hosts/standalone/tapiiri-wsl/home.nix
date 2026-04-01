@@ -12,6 +12,7 @@
 
   home.packages = [
     pkgs.claude-code
+    pkgs.cloudflared
   ];
 
   home.sessionVariables = {
