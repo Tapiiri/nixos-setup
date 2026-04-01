@@ -22,6 +22,26 @@ Inside your Ubuntu WSL instance, make sure you have:
 
 If Nix is not installed yet, install it first using your preferred Linux Nix installer.
 
+If `nix run` complains that `nix-command` or `flakes` is disabled, either:
+
+1. use the one-shot form with global Nix flags before the subcommand, or
+2. enable the features permanently in your Nix config.
+
+One-shot form:
+
+```bash
+nix --extra-experimental-features 'nix-command flakes' run github:Tapiiri/nixos-setup#hm-switch -- tapiiri-wsl
+```
+
+Persistent config for single-user installs:
+
+```bash
+mkdir -p ~/.config/nix
+printf 'experimental-features = nix-command flakes\n' >> ~/.config/nix/nix.conf
+```
+
+After that, plain `nix run` works as shown below.
+
 ## Option 1: Install from a local checkout
 
 Clone the repository in WSL:
@@ -35,6 +55,12 @@ Activate the WSL profile:
 
 ```bash
 nix run .#hm-switch -- tapiiri-wsl
+```
+
+If your Nix install does not yet have flakes enabled, use:
+
+```bash
+nix --extra-experimental-features 'nix-command flakes' run .#hm-switch -- tapiiri-wsl
 ```
 
 This performs the first `home-manager switch` without requiring a preinstalled
@@ -57,6 +83,12 @@ If you do not want to clone the repo first, you can activate it straight from Gi
 nix run github:Tapiiri/nixos-setup#hm-switch -- tapiiri-wsl
 ```
 
+If your Nix install does not yet have flakes enabled, use:
+
+```bash
+nix --extra-experimental-features 'nix-command flakes' run github:Tapiiri/nixos-setup#hm-switch -- tapiiri-wsl
+```
+
 This is useful for first-time bootstrap on a fresh WSL instance.
 
 ## Updating later
@@ -75,9 +107,16 @@ If you prefer to update straight from GitHub each time:
 nix run github:Tapiiri/nixos-setup#hm-switch -- tapiiri-wsl
 ```
 
+Or, without persistent Nix config:
+
+```bash
+nix --extra-experimental-features 'nix-command flakes' run github:Tapiiri/nixos-setup#hm-switch -- tapiiri-wsl
+```
+
 ## Notes
 
 - `rebuild` is for NixOS only. On Ubuntu WSL, use `hm-switch`.
+- `--extra-experimental-features` is a global `nix` option, so it must appear before `run`.
 - Flakes only see files tracked by Git. If you add new Home Manager modules or
   profile files locally, stage or commit them before expecting `nix run` or
   `nix build` to see them.

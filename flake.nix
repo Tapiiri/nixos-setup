@@ -124,7 +124,11 @@
             hmPkg
           ];
           wrapperArgs = "";
-          extraSrc = ["flake.nix"];
+          extraSrc = [
+            "flake.nix"
+            "hosts"
+            "home"
+          ];
           mainProgram = "hm-switch";
         };
         "switch-user" = {
