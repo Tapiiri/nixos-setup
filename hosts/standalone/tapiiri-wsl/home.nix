@@ -6,6 +6,7 @@
 }: {
   imports = [
     (flakeRoot + "/home/modules/core.nix")
+    (flakeRoot + "/home/modules/nix-caches.nix")
     (flakeRoot + "/home/modules/scripts.nix")
   ];
 

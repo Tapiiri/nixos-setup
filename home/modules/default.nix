@@ -6,6 +6,7 @@
   # won't be included in the flake source snapshot in /nix/store and imports
   # will fail during `nix flake check` / rebuild.
   imports = [
+    (flakeRoot + "/home/modules/nix-caches.nix")
     (flakeRoot + "/home/modules/git.nix")
     (flakeRoot + "/home/modules/gh.nix")
     (flakeRoot + "/home/modules/devtools.nix")

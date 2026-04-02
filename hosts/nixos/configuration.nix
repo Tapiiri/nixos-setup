@@ -5,6 +5,7 @@
   config,
   pkgs,
   inputs,
+  cachixCaches,
   ...
 }: {
   my.tailscale = {
@@ -120,11 +121,11 @@
 
   nix.settings.trusted-users = ["root" "tapiiri"];
   nix.settings.substituters = [
-    "https://tapiiri-nixos-setup.cachix.org"
+    cachixCaches.nixos.url
     "https://cache.nixos.org"
   ];
   nix.settings.trusted-public-keys = [
-    "tapiiri-nixos-setup.cachix.org-1:wBjh1nFp9lCRgdt6eOMPEv14KIE51cjYW0VczdgKYEU="
+    cachixCaches.nixos.publicKey
     "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
   ];
 
@@ -198,7 +199,7 @@
     # not require HM backups on subsequent rebuilds.)
     backupFileExtension = "backup";
     extraSpecialArgs = {
-      inherit inputs;
+      inherit inputs cachixCaches;
       flakeRoot = inputs.self;
     };
     users = {

@@ -3,6 +3,8 @@
   lib,
   ...
 }: let
+  cachixCaches = import ./cachix-caches.nix;
+
   renderCachedCheckArgs = flag: values:
     lib.concatMapStrings (value: " ${flag} ${lib.escapeShellArg value}") values;
 

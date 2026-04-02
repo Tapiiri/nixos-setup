@@ -25,6 +25,9 @@
     # ── Repo identity (fork-friendly: change this one line) ────────
     githubOwnerRepo = "Tapiiri/nixos-setup";
 
+    # ── Cachix binary caches (single source of truth) ────────────
+    cachixCaches = import ./cachix-caches.nix;
+
     mkPkgs = system:
       import nixpkgs {
         inherit system;
@@ -37,7 +40,7 @@
       inputs.home-manager.lib.homeManagerConfiguration {
         pkgs = mkPkgs system;
         extraSpecialArgs = {
-          inherit inputs;
+          inherit inputs cachixCaches;
           flakeRoot = self;
         };
         modules = [module];
@@ -51,7 +54,7 @@
     # use "nixos", or your hostname as the name of the configuration
     # it's a better practice than "default" shown in the video
     nixosConfigurations.nixos = nixpkgs.lib.nixosSystem {
-      specialArgs = {inherit inputs;};
+      specialArgs = {inherit inputs cachixCaches;};
       modules = [
         inputs.nix-dokploy.nixosModules.default
         ./modules/dokploy.nix
