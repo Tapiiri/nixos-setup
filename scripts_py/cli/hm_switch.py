@@ -64,18 +64,7 @@ def default_profile(*, env: dict[str, str] | None = None) -> str | None:
         env = dict(os.environ)
 
     configured = (env.get(ENV_PROFILE) or "").strip()
-    if configured:
-        return configured
-
-    user = (env.get("USER") or "").strip()
-    if user:
-        return user
-
-    try:
-        home_name = Path.home().name.strip()
-    except RuntimeError:
-        return None
-    return home_name or None
+    return configured or None
 
 
 def compute_config(
@@ -90,7 +79,8 @@ def compute_config(
     profile = (args.profile or default_profile(env=env) or "").strip()
     if not profile:
         raise ValueError(
-            "Home Manager profile is required. Pass PROFILE or set NIXOS_SETUP_HM_PROFILE."
+            "Home Manager profile is required. Pass PROFILE as an argument "
+            "or set NIXOS_SETUP_HM_PROFILE (reload your shell after first activation)."
         )
 
     if args.flake is not None:

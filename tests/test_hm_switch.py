@@ -45,8 +45,8 @@ class TestHomeManagerSwitch(unittest.TestCase):
             "tapiiri-wsl",
         )
 
-    def test_default_profile_falls_back_to_user(self):
-        self.assertEqual(default_profile(env={"USER": "tapiiri"}), "tapiiri")
+    def test_default_profile_returns_none_without_env(self):
+        self.assertIsNone(default_profile(env={"USER": "tapiiri"}))
 
     def test_compute_config_defaults_to_repo_root_flake(self):
         with tempfile.TemporaryDirectory() as td:
@@ -62,7 +62,11 @@ class TestHomeManagerSwitch(unittest.TestCase):
             script_path.write_text("#", encoding="utf-8")
 
             args, _rest = parse_args([])
-            cfg = compute_config(args=args, script_path=script_path, env={"USER": "tapiiri"})
+            cfg = compute_config(
+                args=args,
+                script_path=script_path,
+                env={ENV_PROFILE: "tapiiri"},
+            )
 
             self.assertEqual(cfg.profile, "tapiiri")
             self.assertEqual(cfg.flake_ref, str(repo_root))
@@ -82,9 +86,8 @@ class TestHomeManagerSwitch(unittest.TestCase):
             script_path.write_text("#", encoding="utf-8")
 
             args, _rest = parse_args([])
-            with patch("scripts_py.cli.hm_switch.Path.home", return_value=Path("/")):
-                with self.assertRaises(ValueError):
-                    compute_config(args=args, script_path=script_path, env={})
+            with self.assertRaises(ValueError):
+                compute_config(args=args, script_path=script_path, env={})
 
     def test_compute_config_errors_when_flake_missing(self):
         with tempfile.TemporaryDirectory() as td:
