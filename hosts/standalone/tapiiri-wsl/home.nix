@@ -1,5 +1,6 @@
 {
   pkgs,
+  lib,
   flakeRoot,
   ...
 }: {
@@ -19,18 +20,19 @@
     NIXOS_SETUP_HM_PROFILE = "tapiiri-wsl";
   };
 
-  # Ensure home.sessionVariables are loaded in every shell.
-  programs.bash = {
-    enable = true;
-    profileExtra = ''
-      if [ -f "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" ]; then
-        . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"
+  # Idempotently patch existing shell rc files to source HM session vars,
+  # without clobbering Ubuntu's default .bashrc / .profile.
+  home.activation.sourceHmSessionVars = lib.hm.dag.entryAfter ["writeBoundary"] ''
+    _marker="# Source Home Manager session variables"
+    _snippet="$_marker
+    if [ -f \"\$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh\" ]; then
+      . \"\$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh\"
+    fi"
+
+    for _f in "$HOME/.bashrc" "$HOME/.profile"; do
+      if [ -f "$_f" ] && ! grep -qF "$_marker" "$_f"; then
+        printf '\n%s\n' "$_snippet" >> "$_f"
       fi
-    '';
-    bashrcExtra = ''
-      if [ -f "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" ]; then
-        . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"
-      fi
-    '';
-  };
+    done
+  '';
 }
