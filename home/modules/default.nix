@@ -9,6 +9,7 @@
     (flakeRoot + "/home/modules/git.nix")
     (flakeRoot + "/home/modules/gh.nix")
     (flakeRoot + "/home/modules/devtools.nix")
+    (flakeRoot + "/home/features/dokploy")
     (flakeRoot + "/home/modules/onepassword.nix")
     (flakeRoot + "/home/features/vscode")
     (flakeRoot + "/home/modules/browsers.nix")
