@@ -15,6 +15,7 @@ from scripts_py.cli.hm_switch import (
     build_home_manager_switch_command,
     compute_config,
     default_profile,
+    is_remote_flake_ref,
     main,
     parse_args,
 )
@@ -234,8 +235,16 @@ class TestHomeManagerSwitch(unittest.TestCase):
                 "switch",
                 "--flake",
                 "github:Tapiiri/nixos-setup#tapiiri-wsl",
+                "--refresh",
             ],
         )
+
+    def test_is_remote_flake_ref(self):
+        self.assertTrue(is_remote_flake_ref("github:Tapiiri/nixos-setup"))
+        self.assertTrue(is_remote_flake_ref("git+https://example.com/repo"))
+        self.assertFalse(is_remote_flake_ref("/home/user/repo"))
+        self.assertFalse(is_remote_flake_ref("./relative/path"))
+        self.assertFalse(is_remote_flake_ref("."))
 
     def test_main_execs_expected_command(self):
         with tempfile.TemporaryDirectory() as td:

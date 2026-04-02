@@ -109,6 +109,11 @@ def compute_config(
     )
 
 
+def is_remote_flake_ref(ref: str) -> bool:
+    """Return True for non-local flake references (github:, git+https:, etc.)."""
+    return ":" in ref and not ref.startswith("/")
+
+
 def build_home_manager_switch_command(
     cfg: HomeManagerSwitchConfig,
     extra_args: Sequence[str],
@@ -126,6 +131,8 @@ def build_home_manager_switch_command(
             "--flake",
             f"{cfg.flake_ref}#{cfg.profile}",
         ]
+        if is_remote_flake_ref(cfg.flake_ref):
+            cmd.append("--refresh")
     else:
         nix_bin = shutil.which("nix", path=env.get("PATH"))
         if nix_bin is None:
@@ -137,6 +144,8 @@ def build_home_manager_switch_command(
         cmd = [nix_bin]
         for feature in NIX_EXPERIMENTAL_FEATURES:
             cmd.extend(["--extra-experimental-features", feature])
+        if is_remote_flake_ref(cfg.flake_ref):
+            cmd.append("--refresh")
         cmd.extend(
             [
                 "run",
