@@ -21,6 +21,10 @@
     ...
   } @ inputs: let
     lib = nixpkgs.lib;
+
+    # ── Repo identity (fork-friendly: change this one line) ────────
+    githubOwnerRepo = "Tapiiri/nixos-setup";
+
     mkPkgs = system:
       import nixpkgs {
         inherit system;
@@ -78,18 +82,9 @@
       pkgs = mkPkgs system;
       hmPkg = inputs.home-manager.packages.${system}.home-manager;
 
-      sourceInfo = self.sourceInfo or {};
-      upstreamDefault =
-        if (sourceInfo ? owner) && (sourceInfo ? repo)
-        then "git@github.com:${sourceInfo.owner}/${sourceInfo.repo}.git"
-        else null;
-      flakeUri =
-        if (sourceInfo ? owner) && (sourceInfo ? repo)
-        then "github:${sourceInfo.owner}/${sourceInfo.repo}"
-        else null;
-      wrapperExtraArgs =
-        lib.optionalString (upstreamDefault != null)
-        " --set-default NIXOS_SETUP_REBUILD_UPSTREAM_URL ${lib.escapeShellArg upstreamDefault}";
+      upstreamDefault = "git@github.com:${githubOwnerRepo}.git";
+      flakeUri = "github:${githubOwnerRepo}";
+      wrapperExtraArgs = " --set-default NIXOS_SETUP_REBUILD_UPSTREAM_URL ${lib.escapeShellArg upstreamDefault}";
 
       nixosRebuildPkg =
         if builtins.hasAttr "nixos-rebuild" pkgs
@@ -127,9 +122,7 @@
             pkgs.git
             hmPkg
           ];
-          wrapperArgs =
-            lib.optionalString (flakeUri != null)
-            " --set-default NIXOS_SETUP_FLAKE_URI ${lib.escapeShellArg flakeUri}";
+          wrapperArgs = " --set-default NIXOS_SETUP_FLAKE_URI ${lib.escapeShellArg flakeUri}";
           extraSrc = [];
           mainProgram = "hm-switch";
         };
