@@ -58,6 +58,8 @@
       hash = "sha256-J7vAK2t6fSjm5i6y3+88aO84ipFwekQkJMD7W3EIWrc=";
     };
   };
+  ClaudeCodeExt = pkgs.vscode-extensions.anthropic.claude-code;
+
   # Not packaged in nixpkgs (no `pkgs.vscode-extensions.openai.*`), so fetch it
   # from the VS Code Marketplace and build a Nix derivation instead.
   CodexExt = pkgs.vscode-utils.buildVscodeMarketplaceExtension {
@@ -185,6 +187,7 @@ in {
         GHActionsExt
         GHPullRequestsExt
         CopilotExt
+        ClaudeCodeExt
         CodexExt
         PythonExt
         PylanceExt
