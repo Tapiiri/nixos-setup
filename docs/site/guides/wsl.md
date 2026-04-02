@@ -20,33 +20,64 @@ Inside your Ubuntu WSL instance, make sure you have:
 
 - a working Nix installation with flakes enabled
 - `git`
-- access to this repository, either by cloning it or by using the GitHub flake directly
 
-If Nix is not installed yet, install it first using your preferred Linux Nix installer.
+No local clone of this repository is required. The bootstrap command fetches
+everything from GitHub.
 
-If `nix run` complains that `nix-command` or `flakes` is disabled, either:
+If Nix is not installed yet, install it first using your preferred Linux Nix
+installer.
 
-1. use the one-shot form with global Nix flags before the subcommand, or
-2. enable the features permanently in your Nix config.
+### Enabling flakes
 
-One-shot form:
-
-```bash
-nix --extra-experimental-features 'nix-command flakes' run github:Tapiiri/nixos-setup#hm-switch -- tapiiri-wsl
-```
-
-Persistent config for single-user installs:
+If `nix run` complains that `nix-command` or `flakes` is disabled, enable them
+permanently before proceeding:
 
 ```bash
 mkdir -p ~/.config/nix
 printf 'experimental-features = nix-command flakes\n' >> ~/.config/nix/nix.conf
 ```
 
-After that, plain `nix run` works as shown below.
+Alternatively, prefix every `nix` invocation with the global flag (must appear
+**before** the subcommand):
+
+```bash
+nix --extra-experimental-features 'nix-command flakes' run ...
+```
+
+## Bootstrap
+
+Run a single command to activate the `tapiiri-wsl` profile:
+
+```bash
+nix run github:Tapiiri/nixos-setup#hm-switch -- tapiiri-wsl
+```
+
+This fetches the flake from GitHub, evaluates the Home Manager profile, and
+activates it. No local checkout is needed.
+
+After the first activation, reload your shell (or open a new terminal). The
+profile installs `hm-switch` onto your PATH and sets the environment variable
+`NIXOS_SETUP_HM_PROFILE=tapiiri-wsl`, so subsequent updates are just:
+
+```bash
+hm-switch
+```
+
+The installed `hm-switch` always evaluates the flake from GitHub, so you
+automatically get the latest committed configuration.
+
+## Updating
+
+```bash
+hm-switch
+```
+
+That's it. The command fetches the latest flake from GitHub and runs
+`home-manager switch`. No `git pull` or local repo required.
 
 ## Dokploy deploy-node access over Tailscale
 
-If this WSL instance should act as a Dokploy deploy node, the repo now ships a
+If this WSL instance should act as a Dokploy deploy node, the repo ships a
 helper that configures a normal OpenSSH server for the Home Manager user.
 
 After activating `tapiiri-wsl`, run:
@@ -58,96 +89,43 @@ sudo setup-wsl-ssh --allow-root-login
 What it does:
 
 - installs `openssh-server` with `apt-get` if it is missing
-- writes an SSH drop-in that disables password login and, with `--allow-root-login`, permits key-only root login for Dokploy
+- writes an SSH drop-in that disables password login and, with
+  `--allow-root-login`, permits key-only root login for Dokploy
 - enables and restarts the `ssh` service
 - if `ufw` is installed and active, opens TCP port 22 only on `tailscale0`
 
 What it does not do:
 
-- it does not install the Tailscale system daemon for Ubuntu; keep using your existing Tailscale install
+- it does not install the Tailscale system daemon for Ubuntu; keep using your
+  existing Tailscale install
 - it does not add Dokploy's SSH key for you
 
-Before Dokploy can connect, add Dokploy's public key to `~/.ssh/authorized_keys`
-for the target user. If you use `--allow-root-login`, also add the same key to
-`/root/.ssh/authorized_keys` and point Dokploy at `root@<tailscale-ip>:22`.
+Before Dokploy can connect, add Dokploy's public key to
+`~/.ssh/authorized_keys` for the target user. If you use `--allow-root-login`,
+also add the same key to `/root/.ssh/authorized_keys` and point Dokploy at
+`root@<tailscale-ip>:22`.
 
-## Option 1: Install from a local checkout
+## Advanced: local checkout
 
-Clone the repository in WSL:
+For development or testing local changes, you can clone the repo and point
+`hm-switch` at it:
 
 ```bash
 git clone git@github.com:Tapiiri/nixos-setup.git
 cd nixos-setup
-```
-
-Activate the WSL profile:
-
-```bash
 nix run .#hm-switch -- tapiiri-wsl
 ```
 
-If your Nix install does not yet have flakes enabled, use:
+Or, if `hm-switch` is already installed:
 
 ```bash
-nix --extra-experimental-features 'nix-command flakes' run .#hm-switch -- tapiiri-wsl
-```
-
-This performs the first `home-manager switch` without requiring a preinstalled
-`home-manager` command.
-
-After the first activation, reload your shell and you can use:
-
-```bash
-hm-switch
-```
-
-The profile sets `NIXOS_SETUP_HM_PROFILE=tapiiri-wsl`, so the profile name does
-not need to be repeated on later updates.
-
-## Option 2: Install directly from GitHub
-
-If you do not want to clone the repo first, you can activate it straight from GitHub:
-
-```bash
-nix run github:Tapiiri/nixos-setup#hm-switch -- tapiiri-wsl
-```
-
-If your Nix install does not yet have flakes enabled, use:
-
-```bash
-nix --extra-experimental-features 'nix-command flakes' run github:Tapiiri/nixos-setup#hm-switch -- tapiiri-wsl
-```
-
-This is useful for first-time bootstrap on a fresh WSL instance.
-
-## Updating later
-
-If you installed from a local checkout:
-
-```bash
-cd ~/nixos-setup
-git pull --ff-only
-hm-switch
-```
-
-If you prefer to update straight from GitHub each time:
-
-```bash
-nix run github:Tapiiri/nixos-setup#hm-switch -- tapiiri-wsl
-```
-
-Or, without persistent Nix config:
-
-```bash
-nix --extra-experimental-features 'nix-command flakes' run github:Tapiiri/nixos-setup#hm-switch -- tapiiri-wsl
+hm-switch --flake ~/nixos-setup tapiiri-wsl
 ```
 
 ## Notes
 
 - `rebuild` is for NixOS only. On Ubuntu WSL, use `hm-switch`.
-- `--extra-experimental-features` is a global `nix` option, so it must appear before `run`.
-- Flakes only see files tracked by Git. If you add new Home Manager modules or
-  profile files locally, stage or commit them before expecting `nix run` or
-  `nix build` to see them.
-- This profile is intentionally minimal for now; add more packages and modules only
-  when the WSL workflow is clear.
+- `--extra-experimental-features` is a global `nix` option, so it must appear
+  before `run`.
+- This profile is intentionally minimal for now; add more packages and modules
+  only when the WSL workflow is clear.

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import shutil
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -11,13 +12,14 @@ from scripts_py.lib.utils import OsExecRunner, Runner
 from scripts_py.repo.context import repo_root_from_script_path
 
 ENV_PROFILE = "NIXOS_SETUP_HM_PROFILE"
+ENV_FLAKE_URI = "NIXOS_SETUP_FLAKE_URI"
+NIX_EXPERIMENTAL_FEATURES = ["nix-command", "flakes"]
 
 
 @dataclass(frozen=True)
 class HomeManagerSwitchConfig:
     profile: str
-    flake_dir: Path
-    repo_root: Path
+    flake_ref: str
     backup_extension: str | None
 
 
@@ -82,7 +84,6 @@ def compute_config(
     script_path: Path,
     env: dict[str, str] | None = None,
 ) -> HomeManagerSwitchConfig:
-    repo_root = repo_root_from_script_path(script_path)
     if env is None:
         env = dict(os.environ)
 
@@ -92,14 +93,28 @@ def compute_config(
             "Home Manager profile is required. Pass PROFILE or set NIXOS_SETUP_HM_PROFILE."
         )
 
-    flake_dir = args.flake if args.flake is not None else repo_root
-    if not (flake_dir / "flake.nix").is_file():
-        raise FileNotFoundError(f"Could not find flake.nix in {flake_dir}")
+    if args.flake is not None:
+        flake_ref = str(args.flake)
+        flake_path = Path(flake_ref)
+        if flake_path.is_dir() and not (flake_path / "flake.nix").is_file():
+            raise FileNotFoundError(f"Could not find flake.nix in {flake_path}")
+    elif (env.get(ENV_FLAKE_URI) or "").strip():
+        flake_ref = env[ENV_FLAKE_URI].strip()
+    else:
+        try:
+            repo_root = repo_root_from_script_path(script_path)
+        except FileNotFoundError:
+            raise FileNotFoundError(
+                "Could not determine flake source. "
+                "Set NIXOS_SETUP_FLAKE_URI or run from a repository checkout."
+            ) from None
+        if not (repo_root / "flake.nix").is_file():
+            raise FileNotFoundError(f"Could not find flake.nix in {repo_root}")
+        flake_ref = str(repo_root)
 
     return HomeManagerSwitchConfig(
         profile=profile,
-        flake_dir=flake_dir,
-        repo_root=repo_root,
+        flake_ref=flake_ref,
         backup_extension=(args.backup_extension or "").strip() or None,
     )
 
@@ -107,13 +122,42 @@ def compute_config(
 def build_home_manager_switch_command(
     cfg: HomeManagerSwitchConfig,
     extra_args: Sequence[str],
+    *,
+    env: dict[str, str] | None = None,
 ) -> list[str]:
-    cmd = [
-        "home-manager",
-        "switch",
-        "--flake",
-        f"{cfg.flake_dir}#{cfg.profile}",
-    ]
+    if env is None:
+        env = dict(os.environ)
+
+    hm_bin = shutil.which("home-manager", path=env.get("PATH"))
+    if hm_bin is not None:
+        cmd = [
+            hm_bin,
+            "switch",
+            "--flake",
+            f"{cfg.flake_ref}#{cfg.profile}",
+        ]
+    else:
+        nix_bin = shutil.which("nix", path=env.get("PATH"))
+        if nix_bin is None:
+            raise FileNotFoundError(
+                "Could not find either home-manager or nix on PATH. "
+                "Install Nix or run inside an environment that provides it."
+            )
+
+        cmd = [nix_bin]
+        for feature in NIX_EXPERIMENTAL_FEATURES:
+            cmd.extend(["--extra-experimental-features", feature])
+        cmd.extend(
+            [
+                "run",
+                "github:nix-community/home-manager",
+                "--",
+                "switch",
+                "--flake",
+                f"{cfg.flake_ref}#{cfg.profile}",
+            ]
+        )
+
     if cfg.backup_extension is not None:
         cmd.extend(["-b", cfg.backup_extension])
     cmd.extend(extra_args)
@@ -138,5 +182,5 @@ def main(
 
     args, rest = parse_args(argv)
     cfg = compute_config(args=args, script_path=script_path, env=env)
-    runner.exec(build_home_manager_switch_command(cfg, rest))
+    runner.exec(build_home_manager_switch_command(cfg, rest, env=env))
     return 0

@@ -83,6 +83,10 @@
         if (sourceInfo ? owner) && (sourceInfo ? repo)
         then "git@github.com:${sourceInfo.owner}/${sourceInfo.repo}.git"
         else null;
+      flakeUri =
+        if (sourceInfo ? owner) && (sourceInfo ? repo)
+        then "github:${sourceInfo.owner}/${sourceInfo.repo}"
+        else null;
       wrapperExtraArgs =
         lib.optionalString (upstreamDefault != null)
         " --set-default NIXOS_SETUP_REBUILD_UPSTREAM_URL ${lib.escapeShellArg upstreamDefault}";
@@ -123,12 +127,10 @@
             pkgs.git
             hmPkg
           ];
-          wrapperArgs = "";
-          extraSrc = [
-            "flake.nix"
-            "hosts"
-            "home"
-          ];
+          wrapperArgs =
+            lib.optionalString (flakeUri != null)
+            " --set-default NIXOS_SETUP_FLAKE_URI ${lib.escapeShellArg flakeUri}";
+          extraSrc = [];
           mainProgram = "hm-switch";
         };
         "setup-wsl-ssh" = {
