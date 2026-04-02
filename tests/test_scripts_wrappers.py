@@ -19,6 +19,10 @@ class TestScriptsWrappers(unittest.TestCase):
                 ["--help"],
             ),
             (
+                Path(__file__).resolve().parent.parent / "scripts" / "setup-wsl-ssh",
+                ["--help"],
+            ),
+            (
                 Path(__file__).resolve().parent.parent / "scripts" / "sync-github-labels",
                 ["--dry-run"],
             ),

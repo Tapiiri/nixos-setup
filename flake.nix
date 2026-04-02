@@ -131,6 +131,15 @@
           ];
           mainProgram = "hm-switch";
         };
+        "setup-wsl-ssh" = {
+          pname = "nixos-setup-setup-wsl-ssh";
+          description = "Ubuntu WSL OpenSSH setup helper for Tailscale deploy access";
+          scripts = ["setup-wsl-ssh"];
+          runtimeDeps = [];
+          wrapperArgs = "";
+          extraSrc = [];
+          mainProgram = "setup-wsl-ssh";
+        };
         "switch-user" = {
           pname = "nixos-setup-switch-user";
           description = "nixos-setup user switch helper (GDM session switcher)";
@@ -151,23 +160,28 @@
           nativeBuildInputs = [pkgs.makeWrapper];
 
           installPhase = let
+            installBase = "$out/share/nixos-setup/${spec.mainProgram}";
             copySrc =
               lib.concatMapStringsSep "\n" (
-                f: ''cp -R "${f}" "$out/share/nixos-setup/"''
+                f: ''cp -R "${f}" "${installBase}/"''
               )
               spec.extraSrc;
+            copyScripts =
+              lib.concatMapStringsSep "\n" (s: ''cp "scripts/${s}" "${installBase}/scripts/${s}"'')
+              spec.scripts;
             installScripts =
               lib.concatMapStringsSep "\n" (s: ''
-                chmod +x "$out/share/nixos-setup/scripts/${s}"
+                chmod +x "${installBase}/scripts/${s}"
                 makeWrapper "${pkgs.python3}/bin/python3" "$out/bin/${s}" \
-                  --add-flags "$out/share/nixos-setup/scripts/${s}" \
+                  --add-flags "${installBase}/scripts/${s}" \
                   --prefix PATH : "${lib.makeBinPath spec.runtimeDeps}"${spec.wrapperArgs}
               '')
               spec.scripts;
           in ''
             runHook preInstall
-            mkdir -p "$out/share/nixos-setup"
-            cp -R scripts scripts_py "$out/share/nixos-setup/"
+            mkdir -p "${installBase}/scripts"
+            cp -R scripts_py "${installBase}/"
+            ${copyScripts}
             ${copySrc}
             mkdir -p "$out/bin"
             ${installScripts}

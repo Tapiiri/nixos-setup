@@ -9,6 +9,8 @@ Today the `tapiiri-wsl` profile is intentionally narrow. It installs:
 
 - `claude-code`
 - `hm-switch`
+- `tailscale`
+- `setup-wsl-ssh`
 
 It does **not** attempt to behave like the full NixOS profile.
 
@@ -41,6 +43,33 @@ printf 'experimental-features = nix-command flakes\n' >> ~/.config/nix/nix.conf
 ```
 
 After that, plain `nix run` works as shown below.
+
+## Dokploy deploy-node access over Tailscale
+
+If this WSL instance should act as a Dokploy deploy node, the repo now ships a
+helper that configures a normal OpenSSH server for the Home Manager user.
+
+After activating `tapiiri-wsl`, run:
+
+```bash
+sudo setup-wsl-ssh --allow-root-login
+```
+
+What it does:
+
+- installs `openssh-server` with `apt-get` if it is missing
+- writes an SSH drop-in that disables password login and, with `--allow-root-login`, permits key-only root login for Dokploy
+- enables and restarts the `ssh` service
+- if `ufw` is installed and active, opens TCP port 22 only on `tailscale0`
+
+What it does not do:
+
+- it does not install the Tailscale system daemon for Ubuntu; keep using your existing Tailscale install
+- it does not add Dokploy's SSH key for you
+
+Before Dokploy can connect, add Dokploy's public key to `~/.ssh/authorized_keys`
+for the target user. If you use `--allow-root-login`, also add the same key to
+`/root/.ssh/authorized_keys` and point Dokploy at `root@<tailscale-ip>:22`.
 
 ## Option 1: Install from a local checkout
 

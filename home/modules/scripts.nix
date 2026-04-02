@@ -22,6 +22,10 @@
       optionPath = ["my" "hmSwitch" "enable"];
       description = "Standalone Home Manager switch command (hm-switch)";
     };
+    "setup-wsl-ssh" = {
+      optionPath = ["my" "setupWslSsh" "enable"];
+      description = "Ubuntu WSL OpenSSH setup helper (setup-wsl-ssh)";
+    };
     "switch-user" = {
       optionPath = ["my" "userSwitch" "enable"];
       description = "User switch command (switch-user)";
