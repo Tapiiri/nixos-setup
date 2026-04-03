@@ -50,7 +50,7 @@
       name: spec:
         mkIf (getAttrFromPath spec.optionPath config) {
           home.packages = [
-            flakeRoot.packages.${pkgs.system}.${name}
+            flakeRoot.packages.${pkgs.stdenv.hostPlatform.system}.${name}
           ];
         }
     )
