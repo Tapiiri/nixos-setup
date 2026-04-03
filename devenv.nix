@@ -1,6 +1,7 @@
 {
   pkgs,
   lib,
+  config,
   ...
 }: let
   cachixCaches = import ./cachix-caches.nix;
@@ -13,31 +14,50 @@
     + renderCachedCheckArgs "--glob" check.globs
     + renderCachedCheckArgs "--file" (check.extraFiles or []);
 
-  mkHookExec = check: "${mkCachedCheckBase check} -- ${check.hookCmd or check.cmd}";
+  mkExec = check: "${mkCachedCheckBase check} -- ${check.cmd}";
 
-  mkTaskExec = check: "${mkCachedCheckBase check} --force -- ${check.taskCmd or check.cmd}";
+  mkHookEntry = check: "${mkCachedCheckBase check} -- ${check.hookCmd or check.cmd}";
 
   mkHook = check:
     lib.nameValuePair check.hook.key {
       enable = true;
       name = check.hook.name;
-      entry = mkHookExec check;
+      entry = mkHookEntry check;
       language = "system";
       files = check.hook.files;
       pass_filenames = false;
     };
 
+  # Default ignore patterns for all watchers.
+  defaultWatchIgnore = [".git" "result" "__pycache__" ".pytest_cache"];
+
+  # Build a watchexec command that wraps the cached-check in a long-running
+  # file watcher.  devenv's native `watch` doesn't work for one-shot commands
+  # (the supervisor kills the file watcher when the process exits), so we use
+  # watchexec directly instead.
+  mkWatchExec = check: let
+    w = check.process.watch;
+    ignores = lib.unique (defaultWatchIgnore ++ (w.ignore or []));
+    pathArgs = lib.concatMapStrings (p: " --watch ${lib.escapeShellArg p}") w.paths;
+    extArg =
+      if w.extensions or [] != []
+      then " -e ${lib.concatStringsSep "," w.extensions}"
+      else "";
+    ignoreArgs = lib.concatMapStrings (i: " --ignore ${lib.escapeShellArg i}") ignores;
+  in "watchexec --shell=none --no-vcs-ignore${pathArgs}${extArg}${ignoreArgs} -- ${mkExec check}";
+
   mkProcess = check:
     lib.nameValuePair check.process.key {
-      exec = mkHookExec check;
-      watch = check.process.watch;
-      restart.on = "never";
+      exec = mkWatchExec check;
+      process-compose = {
+        namespace = check.process.namespace;
+      };
     };
 
   mkTask = check:
     lib.nameValuePair check.task.key {
       description = check.task.description;
-      exec = mkTaskExec check;
+      exec = mkExec check;
     };
 
   cachedChecks = [
@@ -53,8 +73,9 @@
       };
       process = {
         key = "watch-nix";
+        namespace = "nix";
         watch = {
-          paths = [./.];
+          paths = [config.git.root];
           extensions = ["nix" "lock"];
           ignore = [".git" "result"];
         };
@@ -91,8 +112,9 @@
       };
       process = {
         key = "watch-yamllint";
+        namespace = "lint";
         watch = {
-          paths = [./.];
+          paths = [config.git.root];
           extensions = ["yml" "yaml"];
           ignore = [".git" "result" "site"];
         };
@@ -114,8 +136,9 @@
       };
       process = {
         key = "watch-schemastore";
+        namespace = "lint";
         watch = {
-          paths = [./.];
+          paths = [config.git.root];
           extensions = ["yml" "yaml" "json"];
           ignore = [".git" "result" "site"];
         };
@@ -136,8 +159,9 @@
       };
       process = {
         key = "watch-actionlint";
+        namespace = "lint";
         watch = {
-          paths = [./.github/workflows];
+          paths = ["${config.git.root}/.github/workflows"];
           extensions = ["yml" "yaml"];
         };
       };
@@ -158,8 +182,9 @@
       };
       process = {
         key = "watch-shellcheck";
+        namespace = "lint";
         watch = {
-          paths = [./dotfiles ./home ./scripts];
+          paths = ["${config.git.root}/dotfiles" "${config.git.root}/home" "${config.git.root}/scripts"];
           extensions = ["sh" "tpl"];
         };
       };
@@ -195,8 +220,9 @@
       };
       process = {
         key = "watch-taplo";
+        namespace = "lint";
         watch = {
-          paths = [./.];
+          paths = [config.git.root];
           extensions = ["toml"];
           ignore = [".git" "result"];
         };
@@ -224,8 +250,8 @@
     {
       cacheName = "jq-fmt";
       globs = ["**/*.json"];
+      cmd = "bash -c 'for f in $(git ls-files \"*.json\" | grep -v \"^\\.vscode/\"); do jq . \"$f\" > \"$f.tmp\" && mv \"$f.tmp\" \"$f\"; done'";
       hookCmd = "devenv tasks run fmt:json:jq";
-      taskCmd = "bash -c 'for f in $(git ls-files \"*.json\" | grep -v \"^\\.vscode/\"); do jq . \"$f\" > \"$f.tmp\" && mv \"$f.tmp\" \"$f\"; done'";
       hook = {
         key = "jq-fmt";
         name = "jq (json format, cached)";
@@ -249,8 +275,9 @@
       };
       process = {
         key = "watch-markdownlint";
+        namespace = "lint";
         watch = {
-          paths = [./.];
+          paths = [config.git.root];
           extensions = ["md" "yaml"];
           ignore = [".git" "result" "site"];
         };
@@ -272,8 +299,9 @@
       };
       process = {
         key = "watch-ruff";
+        namespace = "python";
         watch = {
-          paths = [./scripts_py ./tests];
+          paths = ["${config.git.root}/scripts_py" "${config.git.root}/tests"];
           extensions = ["py" "toml"];
         };
       };
@@ -294,8 +322,9 @@
       };
       process = {
         key = "watch-pyright";
+        namespace = "python";
         watch = {
-          paths = [./scripts_py ./tests];
+          paths = ["${config.git.root}/scripts_py" "${config.git.root}/tests"];
           extensions = ["py" "toml"];
         };
       };
@@ -316,8 +345,9 @@
       };
       process = {
         key = "watch-pytest";
+        namespace = "python";
         watch = {
-          paths = [./scripts_py ./tests ./scripts];
+          paths = ["${config.git.root}/scripts_py" "${config.git.root}/tests" "${config.git.root}/scripts"];
           extensions = ["py" "nix" "toml"];
         };
       };
@@ -338,8 +368,9 @@
       };
       process = {
         key = "watch-mkdocs";
+        namespace = "docs";
         watch = {
-          paths = [./docs/site];
+          paths = ["${config.git.root}/docs/site"];
           extensions = ["md"];
         };
       };
@@ -360,7 +391,7 @@
 in {
   # Keep devenv usable even when the user is not a trusted Nix user.
   # (Otherwise devenv tries to auto-manage Cachix config and can fail.)
-  cachix.pull = ["tapiiri-nixos-setup-devenv"];
+  cachix.pull = [cachixCaches.devenv.name];
   # Push is CI-only — see .github/workflows/ci.yml (devenv.local.nix step).
 
   dotenv.disableHint = true;
@@ -370,6 +401,7 @@ in {
     pre-commit
     alejandra
     yamllint
+    watchexec
     check-jsonschema
     actionlint
     markdownlint-cli2
