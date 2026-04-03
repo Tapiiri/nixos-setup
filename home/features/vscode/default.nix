@@ -60,19 +60,6 @@
   };
   ClaudeCodeExt = pkgs.vscode-extensions.anthropic.claude-code;
 
-  # Not packaged in nixpkgs (no `pkgs.vscode-extensions.openai.*`), so fetch it
-  # from the VS Code Marketplace and build a Nix derivation instead.
-  CodexExt = pkgs.vscode-utils.buildVscodeMarketplaceExtension {
-    mktplcRef = {
-      publisher = "openai";
-      name = "chatgpt";
-      # Pin this after first build: set a dummy hash, build once, then copy the
-      # reported sha256 here.
-      version = "0.5.56";
-      hash = "sha256-FAy2Cf2XnOnctBBATloXz8y4cLNHBoXAVnlw42CQzN8=";
-    };
-  };
-
   # Settings used by nix-ide / VS Code Nix tooling.
   # These are "structural" settings that point to binaries and configure tooling.
   # They should be managed declaratively by home-manager.
@@ -118,6 +105,38 @@
         runIn = "vscode";
       }
     ];
+
+    # --- Performance: file watcher exclusions ---
+    # VS Code runs its own file watcher on top of our watchexec processes.
+    # Exclude build artifacts and caches to reduce inotify pressure and CPU.
+    "files.watcherExclude" = {
+      "**/.git/objects/**" = true;
+      "**/.git/subtree-cache/**" = true;
+      "**/result/**" = true;
+      "**/.devenv/**" = true;
+      "**/__pycache__/**" = true;
+      "**/.pytest_cache/**" = true;
+      "**/site/**" = true;
+      "**/node_modules/**" = true;
+    };
+
+    # Exclude the same dirs from search indexing.
+    "search.exclude" = {
+      "**/result" = true;
+      "**/.devenv" = true;
+      "**/__pycache__" = true;
+      "**/.pytest_cache" = true;
+      "**/site" = true;
+    };
+
+    # --- Performance: extension host affinity ---
+    # Isolate heavy extensions into separate extension host processes so that
+    # one misbehaving extension cannot hang or crash the others.
+    "extensions.experimental.affinity" = {
+      "anthropic.claude-code" = 1;
+      "github.copilot" = 2;
+      "ms-python.vscode-pylance" = 3;
+    };
 
     # Use alejandra for Nix formatting.
     "[nix]" = {
@@ -188,7 +207,6 @@ in {
         GHPullRequestsExt
         CopilotExt
         ClaudeCodeExt
-        CodexExt
         PythonExt
         PylanceExt
         ShellCheckExt
