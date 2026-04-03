@@ -60,6 +60,16 @@
   };
   ClaudeCodeExt = pkgs.vscode-extensions.anthropic.claude-code;
 
+  # Status bar resource monitor (CPU, memory, disk, network).  Not in nixpkgs.
+  ResourceMonitorExt = pkgs.vscode-utils.buildVscodeMarketplaceExtension {
+    mktplcRef = {
+      publisher = "mutantdino";
+      name = "resourcemonitor";
+      version = "1.0.7";
+      hash = "sha256-zxh1sre+eakKSV0dCXUwtE/NNFKy6MhhP6AzHNBQuA0=";
+    };
+  };
+
   # Settings used by nix-ide / VS Code Nix tooling.
   # These are "structural" settings that point to binaries and configure tooling.
   # They should be managed declaratively by home-manager.
@@ -128,6 +138,19 @@
       "**/.pytest_cache" = true;
       "**/site" = true;
     };
+
+    # --- Observability: logging ---
+    # Log extension host activity at warning level so slow/crashing
+    # extensions leave breadcrumbs in Help > Toggle Developer Tools > Console.
+    # Use "info" or "trace" temporarily for deeper debugging.
+    "developer.logLevel" = "warn";
+
+    # Resource Monitor extension: show CPU and memory in the status bar.
+    "resmon.show.cpuusage" = true;
+    "resmon.show.mem" = true;
+    "resmon.show.disk" = false;
+    "resmon.show.cputemp" = false;
+    "resmon.show.battery" = false;
 
     # --- Performance: extension host affinity ---
     # Isolate heavy extensions into separate extension host processes so that
@@ -217,6 +240,7 @@ in {
         RuffExt
         ActionsExt
         RunOnSaveExt
+        ResourceMonitorExt
       ];
 
       # IMPORTANT: Do NOT set userSettings here.
