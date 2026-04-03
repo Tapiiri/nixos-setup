@@ -39,6 +39,7 @@ in {
       secretspec
       nodejs_latest
       claude-code
+      bottom # system monitor (btm) — per-process CPU/RAM/disk/network
       ffmpeg-full
       # Nix tooling used by VS Code (nix-ide expects these to exist).
       nil

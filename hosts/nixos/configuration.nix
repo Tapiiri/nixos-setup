@@ -217,6 +217,19 @@
     polkitPolicyOwners = ["tapiiri" "ilmari"];
   };
 
+  # --- OOM prevention ---
+  # earlyoom monitors memory pressure and sends SIGTERM to the largest
+  # process before the kernel OOM killer freezes the desktop. Logs to
+  # the journal so you can trace what was killed and when.
+  services.earlyoom = {
+    enable = true;
+    # Act when free RAM drops below 5% or free swap below 10%.
+    freeMemThreshold = 5;
+    freeSwapThreshold = 10;
+    # Send desktop notification when a process is killed.
+    enableNotifications = true;
+  };
+
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
 
