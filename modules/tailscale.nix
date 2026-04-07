@@ -76,6 +76,7 @@ in {
         description = "Expose a local service through Tailscale Funnel";
         after = ["network-online.target" "tailscaled.service"];
         wants = ["network-online.target" "tailscaled.service"];
+        before = ["dokploy-traefik.service"];
         wantedBy = ["multi-user.target"];
         partOf = ["tailscaled.service"];
 
@@ -91,6 +92,8 @@ in {
           attempt=0
           while [ "$attempt" -lt 30 ]; do
             if ${pkgs.tailscale}/bin/tailscale status --json >/dev/null 2>&1; then
+              # Reset any stale funnel configuration before setting up the new one
+              ${pkgs.tailscale}/bin/tailscale funnel reset || true
               exec ${pkgs.tailscale}/bin/tailscale ${lib.escapeShellArgs funnelArgs}
             fi
 
@@ -98,6 +101,7 @@ in {
             attempt=$((attempt + 1))
           done
 
+          ${pkgs.tailscale}/bin/tailscale funnel reset || true
           exec ${pkgs.tailscale}/bin/tailscale ${lib.escapeShellArgs funnelArgs}
         '';
       };
