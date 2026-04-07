@@ -20,5 +20,6 @@
     (flakeRoot + "/home/modules/thunderbird.nix")
     (flakeRoot + "/home/modules/scripts.nix")
     (flakeRoot + "/home/modules/zellij.nix")
+    (flakeRoot + "/home/modules/affinity.nix")
   ];
 }

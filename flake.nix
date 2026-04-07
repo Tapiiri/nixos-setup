@@ -13,6 +13,8 @@
       url = "github:el-kurto/nix-dokploy";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    affinity-nix.url = "github:mrshmllow/affinity-nix";
   };
 
   outputs = {
