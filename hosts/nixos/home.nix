@@ -10,6 +10,7 @@
     tailscale.enable = true;
     thunderbird.enable = true;
     userSwitch.enable = true;
+    zellij.enable = true;
   };
 
   # Home Manager module hub.

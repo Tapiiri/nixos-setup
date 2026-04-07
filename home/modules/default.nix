@@ -19,5 +19,6 @@
     (flakeRoot + "/home/modules/shell-bash.nix")
     (flakeRoot + "/home/modules/thunderbird.nix")
     (flakeRoot + "/home/modules/scripts.nix")
+    (flakeRoot + "/home/modules/zellij.nix")
   ];
 }
