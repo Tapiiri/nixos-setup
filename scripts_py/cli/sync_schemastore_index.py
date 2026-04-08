@@ -72,10 +72,11 @@ def _download_schema(schema_url: str, *, dest: Path, refresh: bool) -> None:
     with urlopen(req, timeout=30) as resp:
         raw = resp.read()
 
-    # Validate that it's JSON before writing.
-    json.loads(raw.decode("utf-8"))
-
-    dest.write_bytes(raw)
+    # Parse and re-serialise in jq-canonical format (indent=2, preserve key
+    # order, no ASCII escaping, trailing newline) so the jq-fmt pre-commit
+    # hook does not reformat the file on commit and fail.
+    data = json.loads(raw.decode("utf-8"))
+    dest.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
 def sync_index(
