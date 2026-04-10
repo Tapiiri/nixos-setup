@@ -15,6 +15,8 @@
     };
 
     affinity-nix.url = "github:mrshmllow/affinity-nix";
+
+    nixos-hardware.url = "github:NixOS/nixos-hardware/master";
   };
 
   outputs = {
@@ -52,20 +54,24 @@
       "aarch64-linux"
     ];
     forAllSystems = f: lib.genAttrs systems (system: f system);
+
+    mkNixosSystem = hostModule:
+      nixpkgs.lib.nixosSystem {
+        specialArgs = {inherit inputs cachixCaches;};
+        modules = [
+          inputs.nix-dokploy.nixosModules.default
+          ./modules/dokploy.nix
+          ./modules/tailscale.nix
+          ./modules/rebuild.nix
+          ./modules/esp32-dev.nix
+          inputs.home-manager.nixosModules.default
+          hostModule
+        ];
+      };
   in {
-    # use "nixos", or your hostname as the name of the configuration
-    # it's a better practice than "default" shown in the video
-    nixosConfigurations.nixos = nixpkgs.lib.nixosSystem {
-      specialArgs = {inherit inputs cachixCaches;};
-      modules = [
-        inputs.nix-dokploy.nixosModules.default
-        ./modules/dokploy.nix
-        ./modules/tailscale.nix
-        ./modules/rebuild.nix
-        ./modules/esp32-dev.nix
-        ./hosts/nixos/configuration.nix
-        inputs.home-manager.nixosModules.default
-      ];
+    nixosConfigurations = {
+      nixos = mkNixosSystem ./hosts/nixos/configuration.nix;
+      fw16 = mkNixosSystem ./hosts/fw16/configuration.nix;
     };
 
     homeConfigurations = {
