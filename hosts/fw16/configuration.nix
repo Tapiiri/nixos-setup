@@ -1,7 +1,9 @@
 {inputs, ...}: {
   imports = [
     inputs.nixos-hardware.nixosModules.framework-16-7040-amd
+    inputs.disko.nixosModules.disko
     ../common/system.nix
+    ./disk-config.nix
     ./hardware-configuration.nix
   ];
 
