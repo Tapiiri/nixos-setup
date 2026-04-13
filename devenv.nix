@@ -86,6 +86,22 @@
       };
     }
     {
+      cacheName = "nix-homes-eval";
+      globs = ["**/*.nix"];
+      extraFiles = ["flake.lock"];
+      cmd = "bash -c 'nix eval .#homeConfigurations.tapiiri.activationPackage --no-write-lock-file && nix eval \".#homeConfigurations.tapiiri-wsl.activationPackage\" --no-write-lock-file && nix eval .#homeConfigurations.ilmari.activationPackage --no-write-lock-file'";
+      hook = {
+        key = "nix-homes-eval";
+        name = "nix eval homeConfigurations (cached)";
+        files = "(\\.nix$|^flake\\.lock$)";
+      };
+      process = null;
+      task = {
+        key = "check:nix:homes";
+        description = "Evaluate all home configurations (catches insecure packages and eval errors)";
+      };
+    }
+    {
       cacheName = "alejandra";
       globs = ["**/*.nix"];
       cmd = "alejandra .";
@@ -558,7 +574,7 @@ in {
 
       "check:all" = {
         description = "Full repository check (CI equivalent)";
-        after = ["check:nix:flake" "lint:all" "tests:all" "docs:all"];
+        after = ["check:nix:flake" "check:nix:homes" "lint:all" "tests:all" "docs:all"];
         exec = "true";
       };
     };

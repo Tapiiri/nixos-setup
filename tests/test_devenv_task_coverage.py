@@ -29,6 +29,7 @@ _DEVENV_NIX = _REPO / "devenv.nix"
 HOOK_TASK_OVERRIDES: dict[str, str] = {
     # --- All hooks below use scripts/cached-check for input-hash caching ---
     "nix-flake-check": "check:nix:flake",
+    "nix-homes-eval": "check:nix:homes",
     "python-pytest": "tests:python:pytest",
     "yamllint": "lint:yaml:yamllint",
     "schemastore-schemas": "lint:schemastore:validate",
