@@ -15,6 +15,8 @@
   home.packages = [
     pkgs.claude-code
     pkgs.cloudflared
+    pkgs.zellij
+    pkgs.openclaw
   ];
 
   home.sessionVariables = {
