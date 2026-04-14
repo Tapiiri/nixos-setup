@@ -19,6 +19,7 @@
   home.packages = [
     pkgs.claude-code
     pkgs.cloudflared
+    pkgs.devenv
     pkgs.zellij
     pkgs.openclaw
   ];
