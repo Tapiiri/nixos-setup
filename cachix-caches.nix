@@ -19,4 +19,12 @@
     url = "https://tapiiri-nixos-setup-devenv.cachix.org";
     publicKey = "tapiiri-nixos-setup-devenv.cachix.org-1:1OFdW8dY+TOwBfCXvSnAOFcwLpvvqNzjfp07K655rDk=";
   };
+  # Official devenv binary cache — provides pre-built packages from
+  # devenv-nixpkgs/rolling (used as nixpkgs input in devenv.yaml).
+  # Without this, packages like pre-commit fall back to building from source.
+  devenvOfficial = {
+    name = "devenv";
+    url = "https://devenv.cachix.org";
+    publicKey = "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=";
+  };
 }
