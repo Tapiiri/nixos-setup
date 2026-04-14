@@ -26,6 +26,10 @@
       optionPath = ["my" "setupWslSsh" "enable"];
       description = "Ubuntu WSL OpenSSH setup helper (setup-wsl-ssh)";
     };
+    "setup-wsl-nix" = {
+      optionPath = ["my" "setupWslNix" "enable"];
+      description = "Ubuntu WSL Nix daemon setup helper (setup-wsl-nix)";
+    };
     "switch-user" = {
       optionPath = ["my" "userSwitch" "enable"];
       description = "User switch command (switch-user)";

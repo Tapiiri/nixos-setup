@@ -151,6 +151,15 @@
           extraSrc = [];
           mainProgram = "setup-wsl-ssh";
         };
+        "setup-wsl-nix" = {
+          pname = "nixos-setup-setup-wsl-nix";
+          description = "Ubuntu WSL Nix daemon setup helper (trusted-users)";
+          scripts = ["setup-wsl-nix"];
+          runtimeDeps = [pkgs.systemd];
+          wrapperArgs = "";
+          extraSrc = [];
+          mainProgram = "setup-wsl-nix";
+        };
         "switch-user" = {
           pname = "nixos-setup-switch-user";
           description = "nixos-setup user switch helper (GDM session switcher)";
