@@ -17,6 +17,7 @@ in {
     text = ''
       # Managed by Home Manager — do not edit manually.
       # Source of truth: cachix-caches.nix in the nixos-setup repo.
+      experimental-features = nix-command flakes
       extra-substituters = ${urls}
       extra-trusted-public-keys = ${keys}
     '';
