@@ -2,12 +2,10 @@
   my = {
     git.enable = true;
     devtools.enable = true;
-    dokployCli.enable = true;
     browsers.enable = true;
     shell.bash.enable = true;
     telegram.enable = true;
     onepassword.enable = true;
-    tailscale.enable = true;
     thunderbird.enable = true;
     userSwitch.enable = true;
     zellij.enable = true;

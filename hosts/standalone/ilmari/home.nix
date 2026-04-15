@@ -10,7 +10,6 @@
       enable = true;
       vscode.enable = false;
     };
-    dokployCli.enable = true;
     shell.bash.enable = true;
     hmSwitch.enable = true;
   };

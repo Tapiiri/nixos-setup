@@ -11,16 +11,6 @@
   my.tailscale = {
     enable = true;
     operator = "ilmari";
-    funnel = {
-      enable = true;
-      target = "http://127.0.0.1:3000";
-      httpsPort = 8443;
-    };
-  };
-
-  my.dokploy = {
-    enable = true;
-    users = ["tapiiri" "ilmari"];
   };
 
   services.ollama.enable = true;

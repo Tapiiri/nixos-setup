@@ -7,7 +7,6 @@
   my = {
     git.enable = true;
     devtools.enable = true;
-    dokployCli.enable = true;
     browsers.enable = true;
     shell.bash.enable = true;
     thunderbird.enable = true;
