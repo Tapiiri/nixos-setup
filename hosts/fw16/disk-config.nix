@@ -2,15 +2,23 @@
 #
 # Partition scheme:  GPT → 512 MiB EFI + LUKS-encrypted root (ext4)
 #
-# The device name depends on how the USB 4 enclosure enumerates at boot.
-# Adjust `device` below if `lsblk` shows a different path on the FW16
-# (e.g. /dev/sda when using UAS, /dev/nvme1n1 if an internal drive is present).
-{
+# The device path is `lib.mkDefault` so it can be overridden at install
+# time without editing this file. If `lsblk` on the installer shows
+# something other than /dev/nvme0n1, create a one-line override module
+# (e.g. /tmp/disk-override.nix) and include it when installing:
+#
+#   { ... }: { disko.devices.disk.main.device = "/dev/sda"; }
+#
+# Then: sudo nixos-install --flake <local-clone>#fw16 \
+#           --option extra-substituters ... etc.
+# (Using a local clone of this repo where /tmp/disk-override.nix is
+# imported from hosts/fw16/configuration.nix.)
+{lib, ...}: {
   disko.devices = {
     disk = {
       main = {
         type = "disk";
-        device = "/dev/nvme0n1";
+        device = lib.mkDefault "/dev/nvme0n1";
         content = {
           type = "gpt";
           partitions = {

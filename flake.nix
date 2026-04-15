@@ -77,6 +77,16 @@
     nixosConfigurations = {
       nixos = mkNixosSystem ./hosts/nixos/configuration.nix;
       fw16 = mkNixosSystem ./hosts/fw16/configuration.nix;
+
+      # Custom NixOS installer ISO, pre-baked with this flake and a
+      # fw16-install helper script. Build via packages.x86_64-linux.installer-iso.
+      installer = nixpkgs.lib.nixosSystem {
+        specialArgs = {inherit inputs;};
+        modules = [
+          {nixpkgs.hostPlatform = "x86_64-linux";}
+          ./hosts/installer/configuration.nix
+        ];
+      };
     };
 
     homeConfigurations = {
@@ -215,8 +225,14 @@
         };
 
       scriptPackages = lib.mapAttrs mkScriptPackage scriptSpecs;
+
+      # Installer ISO is x86_64-only.
+      installerIsoAttrs =
+        if system == "x86_64-linux"
+        then {installer-iso = self.nixosConfigurations.installer.config.system.build.isoImage;}
+        else {};
     in
-      scriptPackages // {default = scriptPackages.rebuild;});
+      scriptPackages // installerIsoAttrs // {default = scriptPackages.rebuild;});
 
     apps = forAllSystems (system: {
       rebuild = {
