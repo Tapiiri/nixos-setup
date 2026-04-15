@@ -1,0 +1,29 @@
+#!/usr/bin/env -S python3
+"""Executable entrypoint for `setup-wsl-nix`.
+
+This wrapper bootstraps the repo import path so the implementation can live in
+`scripts_py.cli.setup_wsl_nix` and still run when installed or symlinked.
+"""
+
+from __future__ import annotations
+
+import sys
+
+
+def _bootstrap() -> None:
+    from pathlib import Path
+
+    here = Path(__file__).resolve()
+    sys.path.insert(0, str(here.parent.parent))
+
+    from scripts_py.utils import RepoMarkers, bootstrap_repo_import_path
+
+    bootstrap_repo_import_path(script_file=here, markers=RepoMarkers())
+
+
+_bootstrap()
+
+from scripts_py.cli.setup_wsl_nix import main  # noqa: E402
+
+if __name__ == "__main__":
+    raise SystemExit(main())

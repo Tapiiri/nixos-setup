@@ -11,6 +11,7 @@
   ];
 
   my.hmSwitch.enable = true;
+  my.setupWslNix.enable = true;
 
   nixpkgs.config.permittedInsecurePackages = [
     "openclaw-2026.3.12"
@@ -19,6 +20,7 @@
   home.packages = [
     pkgs.claude-code
     pkgs.cloudflared
+    pkgs.devenv
     pkgs.zellij
     pkgs.openclaw
   ];
