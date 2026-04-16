@@ -157,7 +157,12 @@
 
   nixpkgs.config.allowUnfree = true;
 
-  environment.systemPackages = with pkgs; [];
+  environment.systemPackages = let
+    selfPkgs = inputs.self.packages.${pkgs.system};
+  in [
+    selfPkgs.rebuild
+    selfPkgs.switch-user
+  ];
 
   nix.settings.experimental-features = "nix-command flakes";
 }
