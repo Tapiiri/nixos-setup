@@ -90,8 +90,8 @@ in {
   # have full Framework 16 AMD support out of the box.
   boot.kernelPackages = pkgs.linuxPackages_latest;
 
-  # NetworkManager instead of raw wpa_supplicant so `nmtui` is available.
-  networking.wireless.enable = lib.mkForce false;
+  # NetworkManager with nmtui for wifi setup.
+  # wpa_supplicant must stay enabled — NM uses it as its WiFi backend.
   networking.networkmanager.enable = true;
 
   environment.systemPackages = with pkgs; [
@@ -136,8 +136,14 @@ in {
 
   nix.settings = {
     experimental-features = ["nix-command" "flakes"];
-    substituters = ["https://cache.nixos.org"];
-    trusted-public-keys = ["cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="];
+    substituters = [
+      "https://cache.nixos.org"
+      "https://tapiiri-nixos-setup.cachix.org"
+    ];
+    trusted-public-keys = [
+      "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+      "tapiiri-nixos-setup.cachix.org-1:wBjh1nFp9lCRgdt6eOMPEv14KIE51cjYW0VczdgKYEU="
+    ];
   };
 
   system.stateVersion = "25.05";
