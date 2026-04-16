@@ -27,4 +27,11 @@
     url = "https://devenv.cachix.org";
     publicKey = "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=";
   };
+  # nix-community cache — provides pre-built packages for community flakes
+  # such as lanzaboote (Secure Boot) and home-manager tools.
+  nixCommunity = {
+    name = "nix-community";
+    url = "https://nix-community.cachix.org";
+    publicKey = "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCUSeBc=";
+  };
 }

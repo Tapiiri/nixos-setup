@@ -78,10 +78,12 @@
   nix.settings.trusted-users = ["root" "tapiiri"];
   nix.settings.substituters = [
     cachixCaches.nixos.url
+    cachixCaches.nixCommunity.url
     "https://cache.nixos.org"
   ];
   nix.settings.trusted-public-keys = [
     cachixCaches.nixos.publicKey
+    cachixCaches.nixCommunity.publicKey
     "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
   ];
 
