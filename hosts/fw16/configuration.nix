@@ -1,6 +1,7 @@
 {
   inputs,
   lib,
+  pkgs,
   ...
 }: {
   imports =
@@ -26,6 +27,8 @@
     pkiBundle = "/etc/secureboot";
   };
   boot.loader.efi.canTouchEfiVariables = true;
+
+  environment.systemPackages = [pkgs.sbctl];
 
   networking.hostName = "fw16";
 
