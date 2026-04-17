@@ -30,6 +30,13 @@
 
   environment.systemPackages = [pkgs.sbctl];
 
+  # Disable USB autosuspend for the HYPER USB4 NVMe enclosure (339a:1701).
+  # Linux's aggressive USB power management can suspend the enclosure mid-mount,
+  # causing dirty-unmount EXT4 journal corruption identical to a hot-unplug.
+  services.udev.extraRules = ''
+    ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="339a", ATTR{idProduct}=="1701", ATTR{power/autosuspend_delay_ms}="-1"
+  '';
+
   networking.hostName = "fw16";
 
   # Set to the NixOS version used for the initial install.

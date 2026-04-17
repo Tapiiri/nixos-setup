@@ -1,7 +1,7 @@
 # NixOS installer image, pre-baked with this flake and an interactive
 # fw16-install helper. Build with:
 #
-#   nix build .#installer-iso
+#   nix build .#legacyPackages.x86_64-linux.installer-iso
 #
 # The resulting ISO is at ./result/iso/nixos-*.iso — flash to USB with dd.
 {

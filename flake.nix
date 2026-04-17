@@ -82,16 +82,6 @@
     nixosConfigurations = {
       nixos = mkNixosSystem ./hosts/nixos/configuration.nix;
       fw16 = mkNixosSystem ./hosts/fw16/configuration.nix;
-
-      # Custom NixOS installer ISO, pre-baked with this flake and a
-      # fw16-install helper script. Build via packages.x86_64-linux.installer-iso.
-      installer = nixpkgs.lib.nixosSystem {
-        specialArgs = {inherit inputs;};
-        modules = [
-          {nixpkgs.hostPlatform = "x86_64-linux";}
-          ./hosts/installer/configuration.nix
-        ];
-      };
     };
 
     homeConfigurations = {
@@ -230,14 +220,22 @@
         };
 
       scriptPackages = lib.mapAttrs mkScriptPackage scriptSpecs;
-
-      # Installer ISO is x86_64-only.
-      installerIsoAttrs =
-        if system == "x86_64-linux"
-        then {installer-iso = self.nixosConfigurations.installer.config.system.build.isoImage;}
-        else {};
     in
-      scriptPackages // installerIsoAttrs // {default = scriptPackages.rebuild;});
+      scriptPackages // {default = scriptPackages.rebuild;});
+
+    # installer-iso lives here rather than in `packages` because `nix flake
+    # check` deeply evaluates every packages.* derivation and the full ISO
+    # NixOS config evaluation exceeds available RAM on development machines.
+    # legacyPackages is intentionally skipped by `nix flake check`.
+    # Build with: nix build .#legacyPackages.x86_64-linux.installer-iso
+    legacyPackages.x86_64-linux.installer-iso =
+      (nixpkgs.lib.nixosSystem {
+        specialArgs = {inherit inputs;};
+        modules = [
+          {nixpkgs.hostPlatform = "x86_64-linux";}
+          ./hosts/installer/configuration.nix
+        ];
+      }).config.system.build.isoImage;
 
     apps = forAllSystems (system: {
       rebuild = {
