@@ -1,18 +1,21 @@
 {
   "files": {
+    ".claude/settings.json": "https://www.schemastore.org/claude-code-settings.json",
     ".github/dependabot.yml": "https://www.schemastore.org/dependabot-2.0.json",
     ".github/workflows/ci.yml": "https://www.schemastore.org/github-workflow.json",
+    ".github/workflows/docs.yml": "https://www.schemastore.org/github-workflow.json",
     ".github/workflows/scorecard.yml": "https://www.schemastore.org/github-workflow.json",
     ".github/workflows/update-flake-lock.yml": "https://www.schemastore.org/github-workflow.json",
     ".pre-commit-config.yaml": "https://www.schemastore.org/pre-commit-config.json",
     ".yamllint": "https://www.schemastore.org/yamllint.json",
+    "mkdocs.yml": "https://www.schemastore.org/mkdocs-1.6.json",
     "pyproject.toml": "https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/pyproject.json"
   },
   "schemaStore": {
     "catalogUrl": "https://www.schemastore.org/api/json/catalog.json",
     "catalogVersion": 1,
-    "fetchedAt": "2026-03-17T23:41:43+00:00",
-    "schemaCount": 1119
+    "fetchedAt": "2026-04-19T06:37:19+00:00",
+    "schemaCount": 1137
   },
   "schemas": {
     "https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/pyproject.json": {
@@ -23,6 +26,15 @@
       "localPath": "schemas/schemastore/925d3ca34190dec0915f.json",
       "name": "PyProject",
       "url": "https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/pyproject.json"
+    },
+    "https://www.schemastore.org/claude-code-settings.json": {
+      "description": "Configuration file for Claude Code",
+      "fileMatch": [
+        "**/.claude/settings.json"
+      ],
+      "localPath": "schemas/schemastore/a93b7523f2c6f3e59b11.json",
+      "name": "Claude Code Settings",
+      "url": "https://www.schemastore.org/claude-code-settings.json"
     },
     "https://www.schemastore.org/dependabot-2.0.json": {
       "description": "GitHub Actions' dependabot.yml files",
@@ -47,6 +59,15 @@
       "localPath": "schemas/schemastore/aae416c00725cbcce106.json",
       "name": "GitHub Workflow",
       "url": "https://www.schemastore.org/github-workflow.json"
+    },
+    "https://www.schemastore.org/mkdocs-1.6.json": {
+      "description": "MkDocs configuration file",
+      "fileMatch": [
+        "mkdocs.yml"
+      ],
+      "localPath": "schemas/schemastore/9d85aec6d3713894e9c5.json",
+      "name": "mkdocs.yml",
+      "url": "https://www.schemastore.org/mkdocs-1.6.json"
     },
     "https://www.schemastore.org/pre-commit-config.json": {
       "description": "pre-commit configuration file",
