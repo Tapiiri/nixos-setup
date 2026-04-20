@@ -68,8 +68,9 @@
 
     echo
     echo "==> Creating Secure Boot keys for lanzaboote..."
+    sudo ${pkgs.sbctl}/bin/sbctl create-keys
     sudo mkdir -p /mnt/var/lib/sbctl
-    sudo ${pkgs.sbctl}/bin/sbctl create-keys --database-path /mnt/var/lib/sbctl
+    sudo cp -a /var/lib/sbctl/. /mnt/var/lib/sbctl/
 
     echo
     echo "==> Running nixos-install (this may take a while)..."
