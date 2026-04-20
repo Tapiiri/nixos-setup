@@ -89,8 +89,8 @@
     echo
     echo "==> Running nixos-install (this may take a while)..."
     sudo nixos-install $NIX_LOG_FLAGS --no-root-passwd --flake ".#$HOST" \
-      --option extra-substituters "https://tapiiri-nixos-setup.cachix.org https://nix-community.cachix.org" \
-      --option extra-trusted-public-keys "tapiiri-nixos-setup.cachix.org-1:wBjh1nFp9lCRgdt6eOMPEv14KIE51cjYW0VczdgKYEU= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCUSeBc="
+      --option substituters "https://cache.nixos.org https://tapiiri-nixos-setup.cachix.org https://nix-community.cachix.org" \
+      --option trusted-public-keys "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= tapiiri-nixos-setup.cachix.org-1:wBjh1nFp9lCRgdt6eOMPEv14KIE51cjYW0VczdgKYEU= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCUSeBc="
 
     echo
     echo "=================================================="
