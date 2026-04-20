@@ -130,6 +130,12 @@ in {
     settings.PermitRootLogin = "yes";
   };
 
+  # Passwordless root login via 1Password-managed SSH key (nixos-installer-ssh
+  # in Development vault). The 1Password SSH agent serves the private key.
+  users.users.root.openssh.authorizedKeys.keys = [
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAID4pfyIlqhp1Ayl/gE8HzLYESsPKG+vX/S3FH0IXEGLG"
+  ];
+
   # Tailscale for reaching the installer through corporate/NAT networks.
   # ts-connect fetches the auth key from 1Password automatically.
   services.tailscale.enable = true;
