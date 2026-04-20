@@ -138,7 +138,9 @@ in {
   #   echo 'ops_...' > hosts/installer/op-sa-token
   # Scope the service account to read-only on a single vault item.
   environment.sessionVariables.OP_SERVICE_ACCOUNT_TOKEN =
-    builtins.readFile ./op-sa-token;
+    if builtins.pathExists ./op-sa-token
+    then builtins.readFile ./op-sa-token
+    else "";
 
   # Pre-bake the flake source onto the ISO at a stable path.
   environment.etc."nixos-setup-flake".source = inputs.self;
