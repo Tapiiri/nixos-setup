@@ -174,6 +174,15 @@
           extraSrc = [];
           mainProgram = "switch-user";
         };
+        "ts-connect" = {
+          pname = "nixos-setup-ts-connect";
+          description = "Tailscale connect helper for remote NixOS installs";
+          scripts = ["ts-connect"];
+          runtimeDeps = [pkgs._1password-cli pkgs.tailscale];
+          wrapperArgs = "";
+          extraSrc = [];
+          mainProgram = "ts-connect";
+        };
       };
 
       mkScriptPackage = _name: spec:

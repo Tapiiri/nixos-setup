@@ -13,6 +13,7 @@
   ...
 }: let
   diskoPkg = inputs.disko.packages.${pkgs.stdenv.hostPlatform.system}.disko;
+  tsConnectPkg = inputs.self.packages.${pkgs.stdenv.hostPlatform.system}.ts-connect;
 
   fw16-install = pkgs.writeShellScriptBin "fw16-install" ''
     set -euo pipefail
@@ -112,7 +113,9 @@ in {
     pciutils
     usbutils
     wget
+    _1password-cli
     diskoPkg
+    tsConnectPkg
     fw16-install
   ];
 
@@ -123,9 +126,15 @@ in {
   };
 
   # Tailscale for reaching the installer through corporate/NAT networks.
-  # After boot: tailscale up --authkey=tskey-auth-...
-  # Then SSH in from any machine on the same tailnet.
+  # ts-connect fetches the auth key from 1Password automatically.
   services.tailscale.enable = true;
+
+  # 1Password service account token — lets ts-connect fetch the Tailscale
+  # auth key without typing.  The token file is gitignored; create it with:
+  #   echo 'ops_...' > hosts/installer/op-sa-token
+  # Scope the service account to read-only on a single vault item.
+  environment.sessionVariables.OP_SERVICE_ACCOUNT_TOKEN =
+    builtins.readFile ./op-sa-token;
 
   # Pre-bake the flake source onto the ISO at a stable path.
   environment.etc."nixos-setup-flake".source = inputs.self;
@@ -141,8 +150,10 @@ in {
 
      Quick install:
        1) nmtui                  (connect to wifi)
-       2) Plug in NVMe enclosure
-       3) fw16-install           (interactive installer)
+       2) ts-connect             (Tailscale via 1Password — zero typing)
+          Then SSH in: ssh root@nixos-installer
+       3) Plug in NVMe enclosure
+       4) fw16-install           (interactive installer)
 
     ==================================================
   '';

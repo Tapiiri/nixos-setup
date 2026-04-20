@@ -60,3 +60,6 @@ devenv.local.nix
 
 .env
 .env.secrets
+
+# 1Password service account token for installer ISO (secret, never commit)
+hosts/installer/op-sa-token
