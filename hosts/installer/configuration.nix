@@ -137,9 +137,9 @@ in {
   # auth key without typing.  The token file is gitignored; create it with:
   #   echo 'ops_...' > hosts/installer/op-sa-token
   # Scope the service account to read-only on a single vault item.
-  environment.sessionVariables.OP_SERVICE_ACCOUNT_TOKEN =
+  environment.variables.OP_SERVICE_ACCOUNT_TOKEN =
     if builtins.pathExists ./op-sa-token
-    then builtins.readFile ./op-sa-token
+    then lib.strings.trim (builtins.readFile ./op-sa-token)
     else "";
 
   # Pre-bake the flake source onto the ISO at a stable path.
