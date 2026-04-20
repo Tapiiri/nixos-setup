@@ -61,9 +61,16 @@
       echo "Wrote hosts/fw16/local-device.nix with device = $DEVICE"
     fi
 
+    # When running over non-PTY SSH, Nix's progress bar doesn't render.
+    # Fall back to line-by-line build logs so output isn't stuck.
+    NIX_LOG_FLAGS=""
+    if ! [ -t 1 ]; then
+      NIX_LOG_FLAGS="--print-build-logs"
+    fi
+
     echo
     echo "==> Partitioning and formatting with disko..."
-    sudo ${diskoPkg}/bin/disko \
+    sudo ${diskoPkg}/bin/disko $NIX_LOG_FLAGS \
       --mode destroy,format,mount \
       --flake ".#$HOST"
 
@@ -75,7 +82,7 @@
 
     echo
     echo "==> Running nixos-install (this may take a while)..."
-    sudo nixos-install --no-root-passwd --flake ".#$HOST" \
+    sudo nixos-install $NIX_LOG_FLAGS --no-root-passwd --flake ".#$HOST" \
       --option extra-substituters "https://tapiiri-nixos-setup.cachix.org https://nix-community.cachix.org" \
       --option extra-trusted-public-keys "tapiiri-nixos-setup.cachix.org-1:wBjh1nFp9lCRgdt6eOMPEv14KIE51cjYW0VczdgKYEU= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCUSeBc="
 
