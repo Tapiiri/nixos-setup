@@ -13,7 +13,6 @@
   ...
 }: let
   diskoPkg = inputs.disko.packages.${pkgs.stdenv.hostPlatform.system}.disko;
-  tsConnectPkg = inputs.self.packages.${pkgs.stdenv.hostPlatform.system}.ts-connect;
 
   fw16-install = pkgs.writeShellScriptBin "fw16-install" ''
     set -euo pipefail
@@ -114,7 +113,6 @@ in {
     usbutils
     wget
     diskoPkg
-    tsConnectPkg
     fw16-install
   ];
 
@@ -143,10 +141,8 @@ in {
 
      Quick install:
        1) nmtui                  (connect to wifi)
-       2) ts-connect <authkey>
-          (Tailscale SSH for remote/Claude Code access)
-       3) Plug in NVMe enclosure
-       4) fw16-install           (interactive installer)
+       2) Plug in NVMe enclosure
+       3) fw16-install           (interactive installer)
 
     ==================================================
   '';
