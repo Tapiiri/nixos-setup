@@ -13,6 +13,7 @@
   ...
 }: let
   diskoPkg = inputs.disko.packages.${pkgs.stdenv.hostPlatform.system}.disko;
+  tsConnectPkg = inputs.self.packages.${pkgs.stdenv.hostPlatform.system}.ts-connect;
 
   fw16-install = pkgs.writeShellScriptBin "fw16-install" ''
     set -euo pipefail
@@ -66,8 +67,15 @@
       --flake ".#$HOST"
 
     echo
+    echo "==> Creating Secure Boot keys for lanzaboote..."
+    sudo mkdir -p /mnt/var/lib/sbctl
+    sudo ${pkgs.sbctl}/bin/sbctl create-keys --database-path /mnt/var/lib/sbctl
+
+    echo
     echo "==> Running nixos-install (this may take a while)..."
-    sudo nixos-install --no-root-passwd --flake ".#$HOST"
+    sudo nixos-install --no-root-passwd --flake ".#$HOST" \
+      --option extra-substituters "https://tapiiri-nixos-setup.cachix.org https://nix-community.cachix.org" \
+      --option extra-trusted-public-keys "tapiiri-nixos-setup.cachix.org-1:wBjh1nFp9lCRgdt6eOMPEv14KIE51cjYW0VczdgKYEU= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCUSeBc="
 
     echo
     echo "=================================================="
@@ -101,10 +109,12 @@ in {
     parted
     gptfdisk
     cryptsetup
+    sbctl
     pciutils
     usbutils
     wget
     diskoPkg
+    tsConnectPkg
     fw16-install
   ];
 
@@ -113,6 +123,11 @@ in {
     enable = true;
     settings.PermitRootLogin = "yes";
   };
+
+  # Tailscale for reaching the installer through corporate/NAT networks.
+  # After boot: tailscale up --authkey=tskey-auth-...
+  # Then SSH in from any machine on the same tailnet.
+  services.tailscale.enable = true;
 
   # Pre-bake the flake source onto the ISO at a stable path.
   environment.etc."nixos-setup-flake".source = inputs.self;
@@ -128,8 +143,10 @@ in {
 
      Quick install:
        1) nmtui                  (connect to wifi)
-       2) Plug in NVMe enclosure
-       3) fw16-install           (interactive installer)
+       2) ts-connect <authkey>
+          (Tailscale SSH for remote/Claude Code access)
+       3) Plug in NVMe enclosure
+       4) fw16-install           (interactive installer)
 
     ==================================================
   '';
