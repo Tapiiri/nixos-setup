@@ -91,7 +91,7 @@
 
   my.rebuild = {
     enable = true;
-    upstreamUrl = "git@github.com:Tapiiri/nixos-setup.git";
+    upstreamUrl = "https://github.com/Tapiiri/nixos-setup.git";
     mirrorDir = "/var/lib/nixos-setup/mirror.git";
     ref = "origin/main";
     offlineOk = true;
