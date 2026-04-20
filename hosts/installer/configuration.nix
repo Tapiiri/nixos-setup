@@ -19,6 +19,12 @@
   fw16-install = pkgs.writeShellScriptBin "fw16-install" ''
     set -euo pipefail
 
+    # Auto-wrap in a shared tmux session so both the local TTY and SSH
+    # can follow the same install. Skip if already inside tmux.
+    if [ -z "''${TMUX:-}" ]; then
+      exec tmux new-session -A -s install "$0" "$@"
+    fi
+
     FLAKE_SRC="/etc/nixos-setup-flake"
     HOST="fw16"
     DEFAULT_DEVICE="/dev/nvme0n1"
