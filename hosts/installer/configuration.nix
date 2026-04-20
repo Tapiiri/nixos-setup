@@ -95,6 +95,9 @@ in {
     (modulesPath + "/installer/cd-dvd/channel.nix")
   ];
 
+  nixpkgs.config.allowUnfreePredicate = pkg:
+    builtins.elem (lib.getName pkg) ["1password-cli"];
+
   # Latest kernel — the minimal installer ships an older LTS that may not
   # have full Framework 16 AMD support out of the box.
   boot.kernelPackages = pkgs.linuxPackages_latest;
