@@ -28,6 +28,11 @@
   };
   boot.loader.efi.canTouchEfiVariables = true;
 
+  # Work around USB4/Thunderbolt PCIe tunneling I/O errors with the HYPER
+  # enclosure — prevents the host from resetting the Thunderbolt controller,
+  # which can drop NVMe transactions mid-flight.
+  boot.kernelParams = ["thunderbolt.host_reset=0"];
+
   environment.systemPackages = [pkgs.sbctl];
 
   # Disable USB autosuspend for the HYPER USB4 NVMe enclosure (339a:1701).
