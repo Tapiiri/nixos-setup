@@ -1,7 +1,8 @@
 # NixOS installer image, pre-baked with this flake and an interactive
 # fw16-install helper. Build with:
 #
-#   nix build .#legacyPackages.x86_64-linux.installer-iso
+#   OP_SERVICE_ACCOUNT_TOKEN=$(cat hosts/installer/op-sa-token) \
+#     nix build --impure .#legacyPackages.x86_64-linux.installer-iso
 #
 # The resulting ISO is at ./result/iso/nixos-*.iso — flash to USB with dd.
 {
@@ -134,13 +135,15 @@ in {
   services.tailscale.enable = true;
 
   # 1Password service account token — lets ts-connect fetch the Tailscale
-  # auth key without typing.  The token file is gitignored; create it with:
-  #   echo 'ops_...' > hosts/installer/op-sa-token
+  # auth key without typing.  Gitignored files are invisible to flake
+  # evaluation, so we read from the environment at build time:
+  #
+  #   OP_SERVICE_ACCOUNT_TOKEN=$(cat hosts/installer/op-sa-token) \
+  #     nix build --impure .#legacyPackages.x86_64-linux.installer-iso
+  #
   # Scope the service account to read-only on a single vault item.
   environment.variables.OP_SERVICE_ACCOUNT_TOKEN =
-    if builtins.pathExists ./op-sa-token
-    then lib.strings.trim (builtins.readFile ./op-sa-token)
-    else "";
+    builtins.getEnv "OP_SERVICE_ACCOUNT_TOKEN";
 
   # Pre-bake the flake source onto the ISO at a stable path.
   environment.etc."nixos-setup-flake".source = inputs.self;
