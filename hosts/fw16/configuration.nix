@@ -42,6 +42,9 @@
     ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="339a", ATTR{idProduct}=="1701", ATTR{power/autosuspend_delay_ms}="-1"
   '';
 
+  # Fingerprint reader (Goodix sensor on the Framework 16 input module).
+  services.fprintd.enable = true;
+
   networking.hostName = "fw16";
 
   # Set to the NixOS version used for the initial install.
