@@ -45,6 +45,12 @@
   # Fingerprint reader (Goodix sensor on the Framework 16 input module).
   services.fprintd.enable = true;
 
+  # Expose Ollama to the tailnet so other devices can use it as a remote LLM
+  # backend. Listening on 0.0.0.0 is safe here because the firewall only opens
+  # port 11434 on the tailscale0 interface — it stays closed on Wi-Fi/ethernet.
+  services.ollama.host = "0.0.0.0";
+  networking.firewall.interfaces."tailscale0".allowedTCPPorts = [11434];
+
   networking.hostName = "fw16";
 
   # Set to the NixOS version used for the initial install.
