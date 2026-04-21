@@ -51,6 +51,10 @@
   services.ollama.host = "0.0.0.0";
   networking.firewall.interfaces."tailscale0".allowedTCPPorts = [11434];
 
+  home-manager.users.tapiiri = {
+    my.affinity.enable = true;
+  };
+
   networking.hostName = "fw16";
 
   # Set to the NixOS version used for the initial install.
