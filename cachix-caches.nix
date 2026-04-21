@@ -34,4 +34,11 @@
     url = "https://nix-community.cachix.org";
     publicKey = "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCUSeBc=";
   };
+  # Garnix CI cache — provides pre-built binaries for flakes built by Garnix CI,
+  # including affinity-nix (Affinity v3 via Wine).
+  garnix = {
+    name = "garnix";
+    url = "https://cache.garnix.io";
+    publicKey = "cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g=";
+  };
 }
