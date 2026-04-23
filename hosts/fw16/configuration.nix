@@ -9,6 +9,7 @@
       inputs.nixos-hardware.nixosModules.framework-16-7040-amd
       inputs.disko.nixosModules.disko
       inputs.lanzaboote.nixosModules.lanzaboote
+      inputs.vaisala-pilot.nixosModules.devHost
       ../common/system.nix
       ./disk-config.nix
       ./hardware-configuration.nix
@@ -53,6 +54,12 @@
 
   home-manager.users.tapiiri = {
     my.affinity.enable = true;
+  };
+
+  vaisala.devHost = {
+    enable = true;
+    user = "tapiiri";
+    # codeRoot defaults to /home/tapiiri/Koodit
   };
 
   networking.hostName = "fw16";
