@@ -79,11 +79,13 @@
   nix.settings.substituters = [
     cachixCaches.nixos.url
     cachixCaches.nixCommunity.url
+    cachixCaches.garnix.url
     "https://cache.nixos.org"
   ];
   nix.settings.trusted-public-keys = [
     cachixCaches.nixos.publicKey
     cachixCaches.nixCommunity.publicKey
+    cachixCaches.garnix.publicKey
     "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
   ];
 
