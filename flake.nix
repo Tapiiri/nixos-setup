@@ -77,12 +77,12 @@
           ./modules/rebuild.nix
           ./modules/esp32-dev.nix
           inputs.home-manager.nixosModules.default
-          inputs.vaisala-pilot.nixosModules.devHost
           hostModule
         ];
       };
   in {
     nixosConfigurations = {
+      base = mkNixosSystem ./hosts/base/configuration.nix;
       nixos = mkNixosSystem ./hosts/nixos/configuration.nix;
       fw16 = mkNixosSystem ./hosts/fw16/configuration.nix;
     };

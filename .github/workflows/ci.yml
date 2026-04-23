@@ -103,6 +103,6 @@ jobs:
 
       - name: Build system closure
         run: |
-          nix build .#nixosConfigurations.nixos.config.system.build.toplevel \
+          nix build .#nixosConfigurations.base.config.system.build.toplevel \
             --print-build-logs \
             --accept-flake-config

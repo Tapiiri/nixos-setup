@@ -1,7 +1,8 @@
-{...}: {
+{inputs, ...}: {
   imports = [
     ../common/system.nix
     ./hardware-configuration.nix
+    inputs.vaisala-pilot.nixosModules.devHost
   ];
 
   boot.loader.systemd-boot.enable = true;
