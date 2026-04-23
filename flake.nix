@@ -27,6 +27,8 @@
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    vaisala-pilot.url = "path:/home/tapiiri/Koodit/vaisala-pilot";
   };
 
   outputs = {
@@ -75,6 +77,7 @@
           ./modules/rebuild.nix
           ./modules/esp32-dev.nix
           inputs.home-manager.nixosModules.default
+          inputs.vaisala-pilot.nixosModules.devHost
           hostModule
         ];
       };

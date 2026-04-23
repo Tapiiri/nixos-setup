@@ -9,5 +9,11 @@
 
   networking.hostName = "nixos";
 
+  vaisala.devHost = {
+    enable = true;
+    user = "tapiiri";
+    # codeRoot defaults to /home/tapiiri/Koodit
+  };
+
   system.stateVersion = "25.05";
 }
