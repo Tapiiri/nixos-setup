@@ -133,6 +133,7 @@
   ];
 
   home-manager = {
+    useGlobalPkgs = true;
     backupFileExtension = "backup";
     extraSpecialArgs = {
       inherit inputs cachixCaches;
@@ -158,6 +159,7 @@
   };
 
   nixpkgs.config.allowUnfree = true;
+  nixpkgs.overlays = [inputs.affinity-nix.overlays.default];
 
   environment.systemPackages = let
     selfPkgs = inputs.self.packages.${pkgs.system};
