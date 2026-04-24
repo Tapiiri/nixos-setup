@@ -12,7 +12,6 @@
     };
     shell.bash.enable = true;
     hmSwitch.enable = true;
-    affinity.enable = true;
   };
 
   home.sessionVariables = {
