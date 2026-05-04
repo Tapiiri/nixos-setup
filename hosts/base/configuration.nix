@@ -1,5 +1,5 @@
 # Base developer machine configuration — used by CI to pre-build and cache
-# the shared closure. All developer hosts (nixos/fw12, fw16, …) extend this.
+# the shared closure. All developer hosts (fw12, fw16, …) extend this.
 #
 # No hardware-specific config, no private project dependencies.
 # Build with: nix build .#nixosConfigurations.base.config.system.build.toplevel

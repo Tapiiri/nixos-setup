@@ -83,7 +83,7 @@
   in {
     nixosConfigurations = {
       base = mkNixosSystem ./hosts/base/configuration.nix;
-      nixos = mkNixosSystem ./hosts/nixos/configuration.nix;
+      fw12 = mkNixosSystem ./hosts/fw12/configuration.nix;
       fw16 = mkNixosSystem ./hosts/fw16/configuration.nix;
     };
 
