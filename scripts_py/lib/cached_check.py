@@ -208,6 +208,19 @@ KNOWN_CHECKS: tuple[CheckDef, ...] = (
         name="nix-flake-check",
         globs=("**/*.nix",),
         files=("flake.lock",),
+        # Evaluates nixosConfigurations.base + packages — CI-safe (no private inputs).
+    ),
+    CheckDef(
+        name="nix-host-fw12",
+        globs=("**/*.nix",),
+        files=("flake.lock",),
+        ci_check=False,  # local-only — requires private vaisala-pilot input
+    ),
+    CheckDef(
+        name="nix-host-fw16",
+        globs=("**/*.nix",),
+        files=("flake.lock",),
+        ci_check=False,  # local-only — requires private vaisala-pilot input
     ),
     CheckDef(
         name="pytest",

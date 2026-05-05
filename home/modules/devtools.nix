@@ -35,6 +35,7 @@ in {
     home.packages = with pkgs; [
       cachix
       devenv
+      direnv
       cloudflared
       secretspec
       nodejs_latest

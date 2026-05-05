@@ -65,10 +65,13 @@
       cacheName = "nix-flake-check";
       globs = ["**/*.nix"];
       extraFiles = ["flake.lock"];
-      cmd = "nix flake check --no-build";
+      # Scoped to CI-safe outputs: base host + packages.
+      # fw12/fw16 are evaluated by check:nix:host:fw12/fw16 (local-only,
+      # requires the private vaisala-pilot input).
+      cmd = "bash -c 'nix eval .#nixosConfigurations.base.config.system.build.toplevel --no-write-lock-file && nix eval .#packages.x86_64-linux --apply builtins.attrNames --no-write-lock-file'";
       hook = {
         key = "nix-flake-check";
-        name = "nix flake check (cached)";
+        name = "nix eval base + packages (cached)";
         files = "(\\.nix$|^flake\\.nix$|^flake\\.lock$)";
       };
       process = {
@@ -82,7 +85,43 @@
       };
       task = {
         key = "check:nix:flake";
-        description = "nix flake check --no-build (with attestation)";
+        description = "Evaluate base NixOS config and packages (CI-safe, with attestation)";
+      };
+    }
+    {
+      # Local-only: evaluates fw12 NixOS config.
+      # Requires the private vaisala-pilot flake input — never runs in CI.
+      cacheName = "nix-host-fw12";
+      globs = ["**/*.nix"];
+      extraFiles = ["flake.lock"];
+      cmd = "nix eval .#nixosConfigurations.fw12.config.system.build.toplevel --no-write-lock-file";
+      hook = {
+        key = "nix-host-fw12";
+        name = "nix eval nixosConfigurations.fw12 (cached)";
+        files = "(\\.nix$|^flake\\.lock$)";
+      };
+      process = null;
+      task = {
+        key = "check:nix:host:fw12";
+        description = "Evaluate fw12 NixOS configuration (local-only, requires vaisala-pilot)";
+      };
+    }
+    {
+      # Local-only: evaluates fw16 NixOS config.
+      # Requires the private vaisala-pilot flake input — never runs in CI.
+      cacheName = "nix-host-fw16";
+      globs = ["**/*.nix"];
+      extraFiles = ["flake.lock"];
+      cmd = "nix eval .#nixosConfigurations.fw16.config.system.build.toplevel --no-write-lock-file";
+      hook = {
+        key = "nix-host-fw16";
+        name = "nix eval nixosConfigurations.fw16 (cached)";
+        files = "(\\.nix$|^flake\\.lock$)";
+      };
+      process = null;
+      task = {
+        key = "check:nix:host:fw16";
+        description = "Evaluate fw16 NixOS configuration (local-only, requires vaisala-pilot)";
       };
     }
     {
