@@ -16,5 +16,7 @@
     # codeRoot defaults to /home/ilmari/Koodit
   };
 
+  vaisala.localDev.developerUsers = ["tapiiri"];
+
   system.stateVersion = "25.05";
 }
