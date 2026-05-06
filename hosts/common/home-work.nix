@@ -1,7 +1,22 @@
-{flakeRoot, ...}: {
+{
+  flakeRoot,
+  pkgs,
+  ...
+}: {
   imports = [
     (flakeRoot + "/home/modules/core-work.nix")
     (flakeRoot + "/home/modules/default.nix")
+  ];
+
+  # Comfort runtimes available at login — mirrors the subset of vaisala-pilot's
+  # devenv that is useful outside `nix develop` (task runner, fuzzy finder,
+  # Python package manager for nwave). Services (PostgreSQL, Caddy) are managed
+  # by systemd via infra/nixos/modules/local-dev.nix; runtimes provided by
+  # devtools.nix (node, python, etc.) are already covered.
+  home.packages = with pkgs; [
+    just
+    fzf
+    uv
   ];
 
   my = {

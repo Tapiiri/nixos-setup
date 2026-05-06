@@ -3,6 +3,7 @@
 # belong in each host's configuration.nix.
 {
   config,
+  lib,
   pkgs,
   inputs,
   cachixCaches,
@@ -107,7 +108,7 @@
   # One-time seed: copy tapiiri's Claude Code settings to ilmari on first use.
   # Runs on every rebuild but is a no-op once the target files exist.
   # The hooks in settings.json use $HOME so they resolve correctly for ilmari.
-  system.activationScripts.ilmari-claude-seed = ''
+  system.activationScripts.ilmari-claude-seed = lib.stringAfter ["users" "groups"] ''
     for f in settings.json settings.local.json; do
       if [ ! -f /home/ilmari/.claude/"$f" ] && [ -f /home/tapiiri/.claude/"$f" ]; then
         mkdir -p /home/ilmari/.claude
