@@ -75,7 +75,7 @@
     extraGroups = ["networkmanager"];
   };
 
-  nix.settings.trusted-users = ["root" "tapiiri"];
+  nix.settings.trusted-users = ["root" "tapiiri" "ilmari"];
   nix.settings.substituters = [
     cachixCaches.nixos.url
     cachixCaches.nixCommunity.url
@@ -103,6 +103,20 @@
     "d /var/lib/nixos-setup 2775 root nixos-setup - -"
     "z /var/lib/nixos-setup 2775 root nixos-setup - -"
   ];
+
+  # One-time seed: copy tapiiri's Claude Code settings to ilmari on first use.
+  # Runs on every rebuild but is a no-op once the target files exist.
+  # The hooks in settings.json use $HOME so they resolve correctly for ilmari.
+  system.activationScripts.ilmari-claude-seed = ''
+    for f in settings.json settings.local.json; do
+      if [ ! -f /home/ilmari/.claude/"$f" ] && [ -f /home/tapiiri/.claude/"$f" ]; then
+        mkdir -p /home/ilmari/.claude
+        cp /home/tapiiri/.claude/"$f" /home/ilmari/.claude/"$f"
+        chown ilmari:ilmari /home/ilmari/.claude /home/ilmari/.claude/"$f"
+        chmod 644 /home/ilmari/.claude/"$f"
+      fi
+    done
+  '';
 
   security.sudo.extraRules = [
     {

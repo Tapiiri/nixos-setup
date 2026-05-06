@@ -12,8 +12,8 @@
 
   vaisala.devHost = {
     enable = true;
-    user = "tapiiri";
-    # codeRoot defaults to /home/tapiiri/Koodit
+    user = "ilmari";
+    # codeRoot defaults to /home/ilmari/Koodit
   };
 
   system.stateVersion = "25.05";
