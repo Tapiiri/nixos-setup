@@ -24,6 +24,8 @@
   CopilotExt = pkgs.vscode-extensions.github.copilot;
   ActionsExt = pkgs.vscode-extensions.github.vscode-github-actions;
 
+  DirenvExt = pkgs.vscode-extensions.mkhl.direnv;
+
   # Other repo/devtools helpers.
   PythonExt = pkgs.vscode-extensions.ms-python.python;
   PylanceExt = pkgs.vscode-extensions.ms-python.vscode-pylance;
@@ -236,6 +238,7 @@ in {
         YamlExt
         TomlExt
         EditorConfigExt
+        DirenvExt
         OnePasswordExt
         RuffExt
         ActionsExt
