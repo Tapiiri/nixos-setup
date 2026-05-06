@@ -10,6 +10,7 @@
     browsers.enable = true;
     shell.bash.enable = true;
     thunderbird.enable = true;
+    slack.enable = true;
     userSwitch.enable = true;
     # Personal modules intentionally disabled:
     # telegram.enable = false;   (default)

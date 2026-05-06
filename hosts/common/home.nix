@@ -5,6 +5,7 @@
     browsers.enable = true;
     shell.bash.enable = true;
     telegram.enable = true;
+    slack.enable = true;
     onepassword.enable = true;
     thunderbird.enable = true;
     userSwitch.enable = true;

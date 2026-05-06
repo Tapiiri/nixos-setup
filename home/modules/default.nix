@@ -16,6 +16,7 @@
     (flakeRoot + "/home/modules/browsers.nix")
     (flakeRoot + "/home/modules/tailscale.nix")
     (flakeRoot + "/home/modules/telegram.nix")
+    (flakeRoot + "/home/modules/slack.nix")
     (flakeRoot + "/home/modules/shell-bash.nix")
     (flakeRoot + "/home/modules/thunderbird.nix")
     (flakeRoot + "/home/modules/scripts.nix")
