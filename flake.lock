@@ -650,8 +650,8 @@
         "nixpkgs": "nixpkgs_5"
       },
       "locked": {
-        "lastModified": 1778063725,
-        "narHash": "sha256-b7YsmYTU7/PvXv+QaIct+C+VEKoyPD2yedgP8c2bUr4=",
+        "lastModified": 1778142785,
+        "narHash": "sha256-z2GHU5yuSx3BGwu8Oum5WatB8At0DUwYC8RXteyIfYk=",
         "path": "/home/tapiiri/Koodit/vaisala-pilot",
         "type": "path"
       },

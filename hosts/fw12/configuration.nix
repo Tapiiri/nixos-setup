@@ -12,11 +12,10 @@
 
   vaisala.devHost = {
     enable = true;
-    user = "ilmari";
-    # codeRoot defaults to /home/ilmari/Koodit
+    users = ["tapiiri" "ilmari"];
+    # codeRoot defaults to ~/Koodit for each user
+    # Migrations run against whichever checkout has .sql files at service-start time.
   };
-
-  vaisala.localDev.developerUsers = ["tapiiri"];
 
   system.stateVersion = "25.05";
 }

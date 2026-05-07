@@ -54,7 +54,7 @@
 
   vaisala.devHost = {
     enable = true;
-    user = "tapiiri";
+    users = ["tapiiri"];
     # codeRoot defaults to /home/tapiiri/Koodit
   };
 
