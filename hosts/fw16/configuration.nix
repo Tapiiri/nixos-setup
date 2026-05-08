@@ -57,6 +57,10 @@
     users = ["tapiiri"];
     # codeRoot defaults to /home/tapiiri/Koodit
   };
+  # Resolved from the vaisala-pilot devShell: the atex-engine is built in a
+  # sibling checkout and its store path is stable across rebuilds. Update with:
+  #   readlink -f ../atex-engine/result/bin/atex-engine
+  vaisala.localDev.atexEngineBin = "/nix/store/d4gyz5l7cxmj10vjzvmvnz7kpfdhh8ys-atex-engine-0.1.0/bin/atex-engine";
 
   networking.hostName = "fw16";
 

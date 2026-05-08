@@ -16,6 +16,7 @@
     # codeRoot defaults to ~/Koodit for each user
     # Migrations run against whichever checkout has .sql files at service-start time.
   };
+  vaisala.localDev.atexEngineBin = "/nix/store/d4gyz5l7cxmj10vjzvmvnz7kpfdhh8ys-atex-engine-0.1.0/bin/atex-engine";
 
   system.stateVersion = "25.05";
 }
