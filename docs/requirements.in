@@ -1,3 +1,4 @@
 mkdocs
 mkdocs-material
 pygments>=2.20.0
+urllib3>=2.7.0  # CVE fix: GHSA-mf9v-mfxr-j63j, GHSA-qccp-gfcp-xxvc
