@@ -27,6 +27,11 @@ in {
     my.vscode.enable = config.my.devtools.vscode.enable;
     programs.vscode.enable = config.my.devtools.vscode.enable;
 
+    programs.direnv = {
+      enable = true;
+      nix-direnv.enable = true;
+    };
+
     # Development tooling.
     #
     # Note: We pin Python explicitly (instead of pkgs.python3) so:
