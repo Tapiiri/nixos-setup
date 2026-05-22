@@ -29,6 +29,8 @@
     };
 
     vaisala-pilot.url = "path:/home/tapiiri/Koodit/vaisala-pilot";
+
+    xtdb-test.url = "path:/home/tapiiri/Koodit/xtdb-test";
   };
 
   outputs = {
