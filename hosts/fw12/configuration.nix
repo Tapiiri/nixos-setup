@@ -11,17 +11,26 @@
 
   networking.hostName = "fw12";
 
-  vaisala.devHost = {
-    enable = true;
-    users = ["tapiiri" "ilmari"];
-    # codeRoot defaults to ~/Koodit for each user
-    # Migrations run against whichever checkout has .sql files at service-start time.
-  };
-  vaisala.localDev.atexEngineBin = "/nix/store/d4gyz5l7cxmj10vjzvmvnz7kpfdhh8ys-atex-engine-0.1.0/bin/atex-engine";
+  # ── Project specialisations ──────────────────────────────────────
+  # Each project owns its full service stack. Switch with:
+  #   sudo /run/current-system/specialisation/<name>/bin/switch-to-configuration switch
+  # Return to base (no project services):
+  #   sudo /run/current-system/bin/switch-to-configuration switch
+  specialisation = {
+    vaisala.configuration = {
+      vaisala.devHost = {
+        enable = true;
+        users = ["tapiiri" "ilmari"];
+      };
+      vaisala.localDev.atexEngineBin = "/nix/store/d4gyz5l7cxmj10vjzvmvnz7kpfdhh8ys-atex-engine-0.1.0/bin/atex-engine";
+    };
 
-  catalys.devHost = {
-    enable = true;
-    users = ["tapiiri" "ilmari"];
+    catalys.configuration = {
+      catalys.devHost = {
+        enable = true;
+        users = ["tapiiri" "ilmari"];
+      };
+    };
   };
 
   system.stateVersion = "25.05";
