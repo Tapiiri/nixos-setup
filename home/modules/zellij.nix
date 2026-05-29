@@ -14,7 +14,7 @@ in {
 
     programs.zellij = {
       enable = true;
-      enableBashIntegration = config.my.shell.bash.enable;
+      enableBashIntegration = false;
     };
   };
 }
