@@ -30,6 +30,10 @@
       optionPath = ["my" "setupWslNix" "enable"];
       description = "Ubuntu WSL Nix daemon setup helper (setup-wsl-nix)";
     };
+    "rebuild" = {
+      optionPath = ["my" "rebuild" "enable"];
+      description = "NixOS rebuild dispatcher (rebuild)";
+    };
     "switch-user" = {
       optionPath = ["my" "userSwitch" "enable"];
       description = "User switch command (switch-user)";
@@ -38,11 +42,6 @@
       optionPath = ["my" "switchSpecialisation" "enable"];
       description = "NixOS specialisation switcher (switch-specialisation)";
     };
-    # To add a new script, just add an entry here. For example:
-    # rebuild = {
-    #   optionPath = ["my" "rebuild" "enable"];
-    #   description = "NixOS rebuild helper";
-    # };
   };
 
   scriptOptions = foldl' recursiveUpdate {} (
@@ -65,6 +64,30 @@
     scriptPackages
   );
 
+  rebuildCompletion = ''
+    _rebuild_complete() {
+      local cur="''${COMP_WORDS[COMP_CWORD]}"
+      local hosts=""
+      if [[ -d /etc/nixos/hosts ]]; then
+        hosts=$(ls /etc/nixos/hosts/ 2>/dev/null \
+          | grep -Ev '^(base|common|installer|standalone)$' \
+          | tr '\n' ' ')
+      fi
+      # shellcheck disable=SC2207
+      COMPREPLY=($(compgen -W "$hosts --dev --offline-ok" -- "$cur"))
+    }
+    complete -F _rebuild_complete rebuild
+  '';
+
+  switchUserCompletion = ''
+    _switch_user_complete() {
+      local cur="''${COMP_WORDS[COMP_CWORD]}"
+      # shellcheck disable=SC2207
+      COMPREPLY=($(compgen -W "$(ls /home/ 2>/dev/null | tr '\n' ' ')" -- "$cur"))
+    }
+    complete -F _switch_user_complete switch-user
+  '';
+
   switchSpecialisationCompletion = ''
     _switch_specialisation_complete() {
       local cur="''${COMP_WORDS[COMP_CWORD]}"
@@ -82,6 +105,12 @@ in {
   options = scriptOptions;
   config = mkMerge [
     scriptConfigs
+    (mkIf config.my.rebuild.enable {
+      programs.bash.initExtra = rebuildCompletion;
+    })
+    (mkIf config.my.userSwitch.enable {
+      programs.bash.initExtra = switchUserCompletion;
+    })
     (mkIf config.my.switchSpecialisation.enable {
       programs.bash.initExtra = switchSpecialisationCompletion;
     })

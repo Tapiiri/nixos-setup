@@ -26,6 +26,7 @@
     shell.bash.enable = true;
     thunderbird.enable = true;
     slack.enable = true;
+    rebuild.enable = true;
     userSwitch.enable = true;
     switchSpecialisation.enable = true;
     # Personal modules intentionally disabled:

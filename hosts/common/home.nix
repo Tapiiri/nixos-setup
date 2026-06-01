@@ -8,6 +8,7 @@
     slack.enable = true;
     onepassword.enable = true;
     thunderbird.enable = true;
+    rebuild.enable = true;
     userSwitch.enable = true;
     switchSpecialisation.enable = true;
     zellij.enable = true;
