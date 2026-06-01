@@ -9,6 +9,7 @@
     onepassword.enable = true;
     thunderbird.enable = true;
     userSwitch.enable = true;
+    switchSpecialisation.enable = true;
     zellij.enable = true;
   };
 

@@ -27,6 +27,7 @@
     thunderbird.enable = true;
     slack.enable = true;
     userSwitch.enable = true;
+    switchSpecialisation.enable = true;
     # Personal modules intentionally disabled:
     # telegram.enable = false;   (default)
     onepassword.enable = true;
