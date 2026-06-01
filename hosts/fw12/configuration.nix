@@ -4,6 +4,7 @@
     ./hardware-configuration.nix
     inputs.vaisala-pilot.nixosModules.devHost
     inputs.xtdb-test.nixosModules.devHost
+    inputs.document-ingest-proto.nixosModules.devHost
   ];
 
   boot.loader.systemd-boot.enable = true;
@@ -27,6 +28,13 @@
 
     catalys.configuration = {
       catalys.devHost = {
+        enable = true;
+        users = ["tapiiri" "ilmari"];
+      };
+    };
+
+    document-ingest.configuration = {
+      document-ingest.devHost = {
         enable = true;
         users = ["tapiiri" "ilmari"];
       };

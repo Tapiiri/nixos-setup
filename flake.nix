@@ -31,6 +31,8 @@
     vaisala-pilot.url = "path:/home/tapiiri/Koodit/vaisala-pilot";
 
     xtdb-test.url = "path:/home/tapiiri/Koodit/xtdb-test";
+
+    document-ingest-proto.url = "path:/home/tapiiri/Koodit/document-ingest-proto";
   };
 
   outputs = {
@@ -178,6 +180,15 @@
           wrapperArgs = "";
           extraSrc = [];
           mainProgram = "switch-user";
+        };
+        "switch-specialisation" = {
+          pname = "nixos-setup-switch-specialisation";
+          description = "nixos-setup NixOS specialisation switcher";
+          scripts = ["switch-specialisation"];
+          runtimeDeps = [];
+          wrapperArgs = "";
+          extraSrc = [];
+          mainProgram = "switch-specialisation";
         };
         "ts-connect" = {
           pname = "nixos-setup-ts-connect";

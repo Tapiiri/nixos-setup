@@ -1,0 +1,31 @@
+#!/usr/bin/env -S python3
+"""Executable entrypoint for `switch-specialisation`.
+
+Switches between NixOS specialisations (or returns to the base system) by
+running the appropriate switch-to-configuration binary with sudo.
+
+Implementation lives in `scripts_py.cli.switch_specialisation` for unit testing.
+"""
+
+from __future__ import annotations
+
+import sys
+
+
+def _bootstrap() -> None:
+    from pathlib import Path
+
+    here = Path(__file__).resolve()
+    sys.path.insert(0, str(here.parent.parent))
+
+    from scripts_py.utils import RepoMarkers, bootstrap_repo_import_path
+
+    bootstrap_repo_import_path(script_file=here, markers=RepoMarkers())
+
+
+_bootstrap()
+
+from scripts_py.cli.switch_specialisation import main  # noqa: E402
+
+if __name__ == "__main__":
+    raise SystemExit(main())

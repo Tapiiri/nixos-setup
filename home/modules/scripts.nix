@@ -34,6 +34,10 @@
       optionPath = ["my" "userSwitch" "enable"];
       description = "User switch command (switch-user)";
     };
+    "switch-specialisation" = {
+      optionPath = ["my" "switchSpecialisation" "enable"];
+      description = "NixOS specialisation switcher (switch-specialisation)";
+    };
     # To add a new script, just add an entry here. For example:
     # rebuild = {
     #   optionPath = ["my" "rebuild" "enable"];
