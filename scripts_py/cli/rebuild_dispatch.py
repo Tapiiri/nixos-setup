@@ -173,7 +173,7 @@ def _exec(argv: Sequence[str]) -> NoReturn:
 
 
 def build_remote_cmd(argv: Sequence[str]) -> list[str]:
-    return ["nix", "run", "github:Tapiiri/nixos-setup#rebuild-inner", "--", *argv]
+    return ["nix", "run", "--refresh", "github:Tapiiri/nixos-setup#rebuild-inner", "--", *argv]
 
 
 def build_local_cmd(argv: Sequence[str]) -> list[str]:
