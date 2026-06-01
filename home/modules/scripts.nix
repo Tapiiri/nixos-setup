@@ -64,7 +64,26 @@
     )
     scriptPackages
   );
+
+  switchSpecialisationCompletion = ''
+    _switch_specialisation_complete() {
+      local cur="''${COMP_WORDS[COMP_CWORD]}"
+      local spec_dir="/run/current-system/specialisation"
+      local names=""
+      if [[ -d "$spec_dir" ]]; then
+        names=$(ls "$spec_dir" 2>/dev/null | tr '\n' ' ')
+      fi
+      # shellcheck disable=SC2207
+      COMPREPLY=($(compgen -W "base $names --list" -- "$cur"))
+    }
+    complete -F _switch_specialisation_complete switch-specialisation
+  '';
 in {
   options = scriptOptions;
-  config = scriptConfigs;
+  config = mkMerge [
+    scriptConfigs
+    (mkIf config.my.switchSpecialisation.enable {
+      programs.bash.initExtra = switchSpecialisationCompletion;
+    })
+  ];
 }
