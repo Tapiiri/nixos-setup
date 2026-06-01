@@ -62,6 +62,24 @@
 
   cachedChecks = [
     {
+      # Fast pure-Python check: verifies every flake.nix input has a flake.lock entry.
+      # Catches the failure mode where a new input is staged without running `nix flake lock`.
+      cacheName = "check-flake-lock";
+      globs = [];
+      extraFiles = ["flake.nix" "flake.lock"];
+      cmd = "scripts/check-flake-lock";
+      hook = {
+        key = "check-flake-lock";
+        name = "check flake.lock completeness";
+        files = "(^flake\\.nix$|^flake\\.lock$)";
+      };
+      process = null;
+      task = {
+        key = "lint:nix:flake-lock";
+        description = "Check that flake.lock has entries for all flake.nix inputs";
+      };
+    }
+    {
       cacheName = "nix-flake-check";
       globs = ["**/*.nix"];
       extraFiles = ["flake.lock"];
@@ -595,6 +613,7 @@ in {
           "lint:md:markdownlint"
           "lint:toml:taplo"
           "lint:json:check-jsonschema"
+          "lint:nix:flake-lock"
         ];
         exec = "true";
       };

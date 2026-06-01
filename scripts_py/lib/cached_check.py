@@ -205,6 +205,11 @@ class CheckDef:
 # Every check that participates in the generic caching system.
 KNOWN_CHECKS: tuple[CheckDef, ...] = (
     CheckDef(
+        name="check-flake-lock",
+        files=("flake.nix", "flake.lock"),
+        # Pure Python check — verifies flake.lock has entries for all flake.nix inputs.
+    ),
+    CheckDef(
         name="nix-flake-check",
         globs=("**/*.nix",),
         files=("flake.lock",),
