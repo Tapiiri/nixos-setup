@@ -80,6 +80,7 @@
           ./modules/tailscale.nix
           ./modules/rebuild.nix
           ./modules/esp32-dev.nix
+          ./modules/qemu-test-host.nix
           inputs.home-manager.nixosModules.default
           hostModule
         ];

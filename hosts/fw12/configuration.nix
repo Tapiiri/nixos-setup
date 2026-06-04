@@ -39,6 +39,16 @@
         users = ["tapiiri" "ilmari"];
       };
     };
+
+    # shared-infra: enables the QEMU boot-test prerequisites from ADR-002.
+    # Provides tap-qemu (192.168.100.1/24) and /dev/kvm access for tapiiri.
+    # Required before running `just test-image` in the shared-infra devShell.
+    shared-infra.configuration = {
+      my.qemu-test-host = {
+        enable = true;
+        users = ["tapiiri"];
+      };
+    };
   };
 
   system.stateVersion = "25.05";
