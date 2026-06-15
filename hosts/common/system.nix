@@ -8,7 +8,10 @@
   inputs,
   cachixCaches,
   ...
-}: {
+}: let
+  userRegistry = import ../../users.nix;
+  userNames = builtins.attrNames userRegistry;
+in {
   my.tailscale = {
     enable = true;
     operator = "ilmari";
@@ -65,21 +68,17 @@
     pulse.enable = true;
   };
 
-  users.users.tapiiri = {
-    isNormalUser = true;
-    description = "Ilmari Tarpila";
-    extraGroups = ["networkmanager" "wheel" "nixos-setup"];
-    packages = with pkgs; [];
-  };
+  users.users =
+    lib.mapAttrs (name: entry: {
+      isNormalUser = true;
+      inherit (entry) description extraGroups;
+      home = "/home/${name}";
+    })
+    userRegistry;
 
-  users.users.ilmari = {
-    isNormalUser = true;
-    description = "Ilmari (Catalys)";
-    home = "/home/ilmari";
-    extraGroups = ["networkmanager"];
-  };
-
-  nix.settings.trusted-users = ["root" "tapiiri" "ilmari"];
+  nix.settings.trusted-users =
+    ["root"]
+    ++ lib.filter (n: userRegistry.${n}.isTrusted) userNames;
   nix.settings.substituters = [
     cachixCaches.nixos.url
     cachixCaches.nixCommunity.url
@@ -108,19 +107,23 @@
     "z /var/lib/nixos-setup 2775 root nixos-setup - -"
   ];
 
-  # One-time seed: copy tapiiri's Claude Code settings to ilmari on first use.
+  # One-time seed: copy Claude Code settings from a source user on first use.
   # Runs on every rebuild but is a no-op once the target files exist.
-  # The hooks in settings.json use $HOME so they resolve correctly for ilmari.
-  system.activationScripts.ilmari-claude-seed = lib.stringAfter ["users" "groups"] ''
-    for f in settings.json settings.local.json; do
-      if [ ! -f /home/ilmari/.claude/"$f" ] && [ -f /home/tapiiri/.claude/"$f" ]; then
-        mkdir -p /home/ilmari/.claude
-        cp /home/tapiiri/.claude/"$f" /home/ilmari/.claude/"$f"
-        chown ilmari:ilmari /home/ilmari/.claude /home/ilmari/.claude/"$f"
-        chmod 644 /home/ilmari/.claude/"$f"
-      fi
-    done
-  '';
+  # The hooks in settings.json use $HOME so they resolve correctly per user.
+  system.activationScripts = lib.concatMapAttrs (name: entry:
+    lib.optionalAttrs (entry ? claudeSeedFrom) {
+      "${name}-claude-seed" = lib.stringAfter ["users" "groups"] ''
+        for f in settings.json settings.local.json; do
+          if [ ! -f /home/${name}/.claude/"$f" ] && [ -f /home/${entry.claudeSeedFrom}/.claude/"$f" ]; then
+            mkdir -p /home/${name}/.claude
+            cp /home/${entry.claudeSeedFrom}/.claude/"$f" /home/${name}/.claude/"$f"
+            chown ${name}:${name} /home/${name}/.claude /home/${name}/.claude/"$f"
+            chmod 644 /home/${name}/.claude/"$f"
+          fi
+        done
+      '';
+    })
+  userRegistry;
 
   security.sudo.extraRules = [
     {
@@ -157,16 +160,13 @@
       inherit inputs cachixCaches;
       flakeRoot = inputs.self;
     };
-    users = {
-      tapiiri = import ./home.nix;
-      ilmari = import ./home-work.nix;
-    };
+    users = lib.mapAttrs (_: entry: import entry.nixosHome) userRegistry;
   };
 
   programs._1password.enable = true;
   programs._1password-gui = {
     enable = true;
-    polkitPolicyOwners = ["tapiiri" "ilmari"];
+    polkitPolicyOwners = userNames;
   };
 
   services.earlyoom = {

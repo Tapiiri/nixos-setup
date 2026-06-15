@@ -5,7 +5,7 @@
   ...
 }: {
   imports = [
-    (flakeRoot + "/home/modules/core.nix")
+    (import (flakeRoot + "/home/modules/core.nix") "tapiiri" {})
     (flakeRoot + "/home/modules/nix-caches.nix")
     (flakeRoot + "/home/modules/scripts.nix")
   ];

@@ -1,6 +1,6 @@
 {flakeRoot, ...}: {
   imports = [
-    (flakeRoot + "/home/modules/core-work.nix")
+    (import (flakeRoot + "/home/modules/core.nix") "ilmari" {NIXOS_PROFILE = "work";})
     (flakeRoot + "/home/modules/default.nix")
   ];
 

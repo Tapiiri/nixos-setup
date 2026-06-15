@@ -1,6 +1,6 @@
 {flakeRoot, ...}: {
   imports = [
-    (flakeRoot + "/home/modules/core.nix")
+    (import (flakeRoot + "/home/modules/core.nix") "tapiiri" {})
     (flakeRoot + "/home/modules/default.nix")
   ];
 

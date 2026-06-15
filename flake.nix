@@ -92,20 +92,11 @@
       fw16 = mkNixosSystem ./hosts/fw16/configuration.nix;
     };
 
-    homeConfigurations = {
-      tapiiri = mkHomeConfiguration {
-        system = "x86_64-linux";
-        module = ./hosts/standalone/tapiiri/home.nix;
-      };
-      "tapiiri-wsl" = mkHomeConfiguration {
-        system = "x86_64-linux";
-        module = ./hosts/standalone/tapiiri-wsl/home.nix;
-      };
-      ilmari = mkHomeConfiguration {
-        system = "x86_64-linux";
-        module = ./hosts/standalone/ilmari/home.nix;
-      };
-    };
+    homeConfigurations = let
+      userRegistry = import ./users.nix;
+      allStandalone = lib.concatMapAttrs (_: entry: entry.standalone) userRegistry;
+    in
+      lib.mapAttrs (_: cfg: mkHomeConfiguration {inherit (cfg) system module;}) allStandalone;
 
     packages = forAllSystems (system: let
       pkgs = mkPkgs system;

@@ -21,7 +21,7 @@
   # - Group modules are also fine when configs are tightly related
   #   (`browsers.nix`, `devtools.nix`, `desktop-gnome.nix`, ...).
   imports = [
-    (flakeRoot + "/home/modules/core.nix")
+    (import (flakeRoot + "/home/modules/core.nix") "tapiiri" {})
     (flakeRoot + "/home/modules/default.nix")
   ];
 }

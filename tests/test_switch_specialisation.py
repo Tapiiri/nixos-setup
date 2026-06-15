@@ -73,10 +73,10 @@ class TestBuildSwitchArgv(unittest.TestCase):
 class TestListSpecialisations(unittest.TestCase):
     def test_returns_sorted_directory_names(self) -> None:
         with tempfile.TemporaryDirectory() as d:
-            for name in ("vaisala", "catalys", "document-ingest"):
+            for name in ("vaisala", "guest", "document-ingest"):
                 (Path(d) / name).mkdir()
             result = list_specialisations(d)
-        self.assertEqual(result, ["catalys", "document-ingest", "vaisala"])
+        self.assertEqual(result, ["document-ingest", "guest", "vaisala"])
 
     def test_empty_directory_returns_empty_list(self) -> None:
         with tempfile.TemporaryDirectory() as d:

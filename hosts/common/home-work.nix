@@ -4,7 +4,7 @@
   ...
 }: {
   imports = [
-    (flakeRoot + "/home/modules/core-work.nix")
+    (import (flakeRoot + "/home/modules/core.nix") "ilmari" {NIXOS_PROFILE = "work";})
     (flakeRoot + "/home/modules/default.nix")
   ];
 
@@ -38,6 +38,5 @@
   # Override git identity for work commits.
   programs.git.settings = {
     user.name = "Ilmari Tarpila";
-    user.email = "ilmari@catalys-engineering.com";
   };
 }

@@ -26,7 +26,7 @@
       vaisala.localDev.atexEngineBin = "/nix/store/d4gyz5l7cxmj10vjzvmvnz7kpfdhh8ys-atex-engine-0.1.0/bin/atex-engine";
     };
 
-    catalys.configuration = {
+    guest.configuration = {
       catalys.devHost = {
         enable = true;
         users = ["tapiiri" "ilmari"];
