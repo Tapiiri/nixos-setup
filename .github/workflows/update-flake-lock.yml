@@ -44,9 +44,17 @@ jobs:
           name: tapiiri-nixos-setup
           extraPullNames: nix-community
 
+      - name: Discover remote inputs
+        id: inputs
+        run: |
+          remote=$(python3 scripts/remote-flake-inputs)
+          echo "names=$remote" >> "$GITHUB_OUTPUT"
+
       - name: Update flake.lock
         uses: DeterminateSystems/update-flake-lock@834c491b2ece4de0bbd00d85214bb5e83b4da5c6 # v28
         with:
+          # Only update remote inputs; skip local path: inputs that don't exist on CI.
+          inputs: ${{ steps.inputs.outputs.names }}
           pr-title: "chore: update flake.lock"
           pr-labels: |
             dependencies
