@@ -12,6 +12,7 @@
     userSwitch.enable = true;
     switchSpecialisation.enable = true;
     zellij.enable = true;
+    moonlight.enable = true;
   };
 
   # Home Manager module hub.
