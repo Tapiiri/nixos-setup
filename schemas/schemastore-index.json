@@ -14,8 +14,8 @@
   "schemaStore": {
     "catalogUrl": "https://www.schemastore.org/api/json/catalog.json",
     "catalogVersion": 1,
-    "fetchedAt": "2026-05-03T06:53:49+00:00",
-    "schemaCount": 1148
+    "fetchedAt": "2026-08-02T06:55:24+00:00",
+    "schemaCount": 1276
   },
   "schemas": {
     "https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/pyproject.json": {
@@ -37,8 +37,10 @@
       "url": "https://www.schemastore.org/claude-code-settings.json"
     },
     "https://www.schemastore.org/dependabot-2.0.json": {
-      "description": "GitHub Actions' dependabot.yml files",
+      "description": "Dependabot v2 configuration files",
       "fileMatch": [
+        "**/.azuredevops/dependabot.yml",
+        "**/.azuredevops/dependabot.yaml",
         "**/.github/dependabot.yml",
         "**/.github/dependabot.yaml"
       ],
