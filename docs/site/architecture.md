@@ -65,6 +65,13 @@ Reusable, focused modules that each manage one concern:
 | `onepassword.nix` | 1Password integration |
 | `tailscale.nix` | Tailscale VPN |
 | `telegram.nix` | Telegram desktop |
+| `slack.nix` | Slack desktop |
+| `thunderbird.nix` | Thunderbird email client |
+| `outlook-web.nix` | Outlook on the web (Chrome app) |
+| `cursor.nix` | Cursor editor |
+| `teams.nix` | Microsoft Teams (`teams-for-linux`) |
+| `notion.nix` | Notion desktop (unofficial Linux build) |
+| `linear.nix` | Linear (Chrome app; no official Linux client) |
 
 Modules are enabled via host configs — not all modules are active on every host.
 
