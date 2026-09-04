@@ -82,13 +82,13 @@ in {
   nix.settings.substituters = [
     cachixCaches.nixos.url
     cachixCaches.nixCommunity.url
-    cachixCaches.garnix.url
+    cachixCaches.forallSystems.url
     "https://cache.nixos.org"
   ];
   nix.settings.trusted-public-keys = [
     cachixCaches.nixos.publicKey
     cachixCaches.nixCommunity.publicKey
-    cachixCaches.garnix.publicKey
+    cachixCaches.forallSystems.publicKey
     "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
   ];
 
@@ -180,7 +180,7 @@ in {
   nixpkgs.overlays = [inputs.affinity-nix.overlays.default];
 
   environment.systemPackages = let
-    selfPkgs = inputs.self.packages.${pkgs.system};
+    selfPkgs = inputs.self.packages.${pkgs.stdenv.hostPlatform.system};
   in [
     selfPkgs.rebuild
     selfPkgs.switch-user

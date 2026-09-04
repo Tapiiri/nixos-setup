@@ -32,13 +32,13 @@
   nixCommunity = {
     name = "nix-community";
     url = "https://nix-community.cachix.org";
-    publicKey = "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCUSeBc=";
+    publicKey = "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=";
   };
-  # Garnix CI cache — provides pre-built binaries for flakes built by Garnix CI,
-  # including affinity-nix (Affinity v3 via Wine).
-  garnix = {
-    name = "garnix";
-    url = "https://cache.garnix.io";
-    publicKey = "cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g=";
+  # forall.systems cache — provides pre-built binaries for affinity-nix
+  # (Affinity v3 via Wine).  Replaces the former Garnix CI cache.
+  forallSystems = {
+    name = "forall-systems";
+    url = "https://cache.forall.systems";
+    publicKey = "cache.forall.systems:5PmD7QO4MSF8YgyRZtkSGXRDo96H3bybIf2SsQh8ScI=";
   };
 }

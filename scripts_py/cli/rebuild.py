@@ -727,6 +727,14 @@ def main(
                 else:
                     return rc
 
+        # Pre-flight: check that binary caches are healthy before starting
+        # the (potentially long) nixos-rebuild.
+        from scripts_py.lib.cache_health import run_preflight_check
+
+        if not run_preflight_check(repo_root=cfg.flake_dir, stderr=_stderr):
+            print("Aborting rebuild.", file=_stderr)
+            return 1
+
         cmd = build_nixos_rebuild_command(cfg, passthrough)
         exec_cmd = build_exec_command(cmd)
     except SystemExit:
