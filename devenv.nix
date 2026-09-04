@@ -85,7 +85,7 @@
       extraFiles = ["flake.lock"];
       # Scoped to CI-safe outputs: base host + packages.
       # fw12/fw16 are evaluated by check:nix:host:fw12/fw16 (local-only,
-      # requires the private vaisala-pilot input).
+      # requires local path inputs not available in CI).
       cmd = "bash -c 'nix eval .#nixosConfigurations.base.config.system.build.toplevel --no-write-lock-file && nix eval .#packages.x86_64-linux --apply builtins.attrNames --no-write-lock-file'";
       hook = {
         key = "nix-flake-check";
@@ -108,7 +108,6 @@
     }
     {
       # Local-only: evaluates fw12 NixOS config.
-      # Requires the private vaisala-pilot flake input — never runs in CI.
       cacheName = "nix-host-fw12";
       globs = ["**/*.nix"];
       extraFiles = ["flake.lock"];
@@ -121,12 +120,12 @@
       process = null;
       task = {
         key = "check:nix:host:fw12";
-        description = "Evaluate fw12 NixOS configuration (local-only, requires vaisala-pilot)";
+        description = "Evaluate fw12 NixOS configuration (local-only)";
       };
     }
     {
       # Local-only: evaluates fw16 NixOS config.
-      # Requires the private vaisala-pilot flake input — never runs in CI.
+      # Local-only: evaluates fw16 NixOS config.
       cacheName = "nix-host-fw16";
       globs = ["**/*.nix"];
       extraFiles = ["flake.lock"];
@@ -139,7 +138,7 @@
       process = null;
       task = {
         key = "check:nix:host:fw16";
-        description = "Evaluate fw16 NixOS configuration (local-only, requires vaisala-pilot)";
+        description = "Evaluate fw16 NixOS configuration (local-only)";
       };
     }
     {

@@ -30,15 +30,15 @@ class CapturingRunner:
 
 class TestBuildSwitchArgv(unittest.TestCase):
     def test_named_specialisation_uses_specialisation_path(self) -> None:
-        argv = build_switch_argv("vaisala")
-        self.assertIn(f"{FAKE_SPEC_DIR}/vaisala/bin/switch-to-configuration", argv)
+        argv = build_switch_argv("alpha")
+        self.assertIn(f"{FAKE_SPEC_DIR}/alpha/bin/switch-to-configuration", argv)
 
     def test_named_specialisation_starts_with_sudo(self) -> None:
-        argv = build_switch_argv("vaisala")
+        argv = build_switch_argv("alpha")
         self.assertEqual(argv[0], "sudo")
 
     def test_named_specialisation_ends_with_switch(self) -> None:
-        argv = build_switch_argv("vaisala")
+        argv = build_switch_argv("alpha")
         self.assertEqual(argv[-1], "switch")
 
     def test_none_uses_base_binary(self) -> None:
@@ -73,10 +73,10 @@ class TestBuildSwitchArgv(unittest.TestCase):
 class TestListSpecialisations(unittest.TestCase):
     def test_returns_sorted_directory_names(self) -> None:
         with tempfile.TemporaryDirectory() as d:
-            for name in ("vaisala", "guest", "document-ingest"):
+            for name in ("alpha", "charlie", "bravo"):
                 (Path(d) / name).mkdir()
             result = list_specialisations(d)
-        self.assertEqual(result, ["document-ingest", "guest", "vaisala"])
+        self.assertEqual(result, ["alpha", "bravo", "charlie"])
 
     def test_empty_directory_returns_empty_list(self) -> None:
         with tempfile.TemporaryDirectory() as d:
@@ -89,17 +89,17 @@ class TestListSpecialisations(unittest.TestCase):
 
     def test_ignores_files(self) -> None:
         with tempfile.TemporaryDirectory() as d:
-            (Path(d) / "vaisala").mkdir()
+            (Path(d) / "alpha").mkdir()
             (Path(d) / "readme.txt").write_text("hi")
             result = list_specialisations(d)
-        self.assertEqual(result, ["vaisala"])
+        self.assertEqual(result, ["alpha"])
 
 
 class TestSwitchSpecialisation(unittest.TestCase):
     def test_runs_correct_argv_for_named(self) -> None:
         runner = CapturingRunner(return_codes=[0])
-        switch_specialisation("vaisala", runner)
-        self.assertIn(f"{FAKE_SPEC_DIR}/vaisala/bin/switch-to-configuration", runner.calls[0])
+        switch_specialisation("alpha", runner)
+        self.assertIn(f"{FAKE_SPEC_DIR}/alpha/bin/switch-to-configuration", runner.calls[0])
 
     def test_runs_correct_argv_for_base(self) -> None:
         runner = CapturingRunner(return_codes=[0])
@@ -108,21 +108,21 @@ class TestSwitchSpecialisation(unittest.TestCase):
 
     def test_returns_runner_exit_code(self) -> None:
         runner = CapturingRunner(return_codes=[42])
-        rc = switch_specialisation("vaisala", runner)
+        rc = switch_specialisation("alpha", runner)
         self.assertEqual(rc, 42)
 
     def test_only_one_subprocess_call(self) -> None:
         runner = CapturingRunner(return_codes=[0])
-        switch_specialisation("vaisala", runner)
+        switch_specialisation("alpha", runner)
         self.assertEqual(len(runner.calls), 1)
 
 
 class TestMain(unittest.TestCase):
     def test_switches_named_specialisation(self) -> None:
         runner = CapturingRunner(return_codes=[0])
-        rc = main(["vaisala"], runner=runner)
+        rc = main(["alpha"], runner=runner)
         self.assertEqual(rc, 0)
-        self.assertIn("vaisala", " ".join(runner.calls[0]))
+        self.assertIn("alpha", " ".join(runner.calls[0]))
 
     def test_no_args_switches_to_base(self) -> None:
         runner = CapturingRunner(return_codes=[0])
@@ -137,12 +137,12 @@ class TestMain(unittest.TestCase):
 
     def test_returns_nonzero_exit_code(self) -> None:
         runner = CapturingRunner(return_codes=[1])
-        rc = main(["vaisala"], runner=runner)
+        rc = main(["alpha"], runner=runner)
         self.assertEqual(rc, 1)
 
     def test_list_flag_prints_specialisations(self) -> None:
         with tempfile.TemporaryDirectory() as d:
-            for name in ("vaisala", "document-ingest"):
+            for name in ("alpha", "bravo"):
                 (Path(d) / name).mkdir()
             import io
             from contextlib import redirect_stdout
@@ -151,7 +151,7 @@ class TestMain(unittest.TestCase):
                 rc = main(["--list"], specialisation_dir=d)
         self.assertEqual(rc, 0)
         lines = buf.getvalue().strip().splitlines()
-        self.assertEqual(lines, ["document-ingest", "vaisala"])
+        self.assertEqual(lines, ["alpha", "bravo"])
 
     def test_list_flag_empty_dir(self) -> None:
         with tempfile.TemporaryDirectory() as d:

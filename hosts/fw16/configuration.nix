@@ -9,7 +9,6 @@
       inputs.nixos-hardware.nixosModules.framework-16-7040-amd
       inputs.disko.nixosModules.disko
       inputs.lanzaboote.nixosModules.lanzaboote
-      inputs.vaisala-pilot.nixosModules.devHost
       ../common/system.nix
       ./disk-config.nix
       ./hardware-configuration.nix
@@ -51,16 +50,6 @@
   # port 11434 on the tailscale0 interface — it stays closed on Wi-Fi/ethernet.
   services.ollama.host = "0.0.0.0";
   networking.firewall.interfaces."tailscale0".allowedTCPPorts = [11434];
-
-  vaisala.devHost = {
-    enable = true;
-    users = ["tapiiri"];
-    # codeRoot defaults to /home/tapiiri/Koodit
-  };
-  # Resolved from the vaisala-pilot devShell: the atex-engine is built in a
-  # sibling checkout and its store path is stable across rebuilds. Update with:
-  #   readlink -f ../atex-engine/result/bin/atex-engine
-  vaisala.localDev.atexEngineBin = "/nix/store/d4gyz5l7cxmj10vjzvmvnz7kpfdhh8ys-atex-engine-0.1.0/bin/atex-engine";
 
   networking.hostName = "fw16";
 

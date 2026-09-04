@@ -73,7 +73,7 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
         nargs="?",
         default=None,
         metavar="NAME",
-        help='Specialisation name (e.g. "vaisala", "document-ingest"). '
+        help='Specialisation name (e.g. "my-project"). '
              'Omit or use "base" to return to the base system.',
     )
     p.add_argument(

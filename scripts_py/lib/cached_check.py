@@ -219,13 +219,13 @@ KNOWN_CHECKS: tuple[CheckDef, ...] = (
         name="nix-host-fw12",
         globs=("**/*.nix",),
         files=("flake.lock",),
-        ci_check=False,  # local-only — requires private vaisala-pilot input
+        ci_check=False,  # local-only
     ),
     CheckDef(
         name="nix-host-fw16",
         globs=("**/*.nix",),
         files=("flake.lock",),
-        ci_check=False,  # local-only — requires private vaisala-pilot input
+        ci_check=False,  # local-only
     ),
     CheckDef(
         name="pytest",

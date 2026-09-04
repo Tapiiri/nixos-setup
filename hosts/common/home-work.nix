@@ -8,11 +8,8 @@
     (flakeRoot + "/home/modules/default.nix")
   ];
 
-  # Comfort runtimes available at login — mirrors the subset of vaisala-pilot's
-  # devenv that is useful outside `nix develop` (task runner, fuzzy finder,
-  # Python package manager for nwave). Services (PostgreSQL, Caddy) are managed
-  # by systemd via infra/nixos/modules/local-dev.nix; runtimes provided by
-  # devtools.nix (node, python, etc.) are already covered.
+  # Comfort runtimes available at login (task runner, fuzzy finder,
+  # Python package manager).
   home.packages = with pkgs; [
     just
     fzf

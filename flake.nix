@@ -27,12 +27,6 @@
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
-    vaisala-pilot.url = "path:/home/tapiiri/Koodit/vaisala-pilot";
-
-    xtdb-test.url = "path:/home/tapiiri/Koodit/xtdb-test";
-
-    document-ingest-proto.url = "path:/home/tapiiri/Koodit/document-ingest-proto";
   };
 
   outputs = {
