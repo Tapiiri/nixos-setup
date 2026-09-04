@@ -1,3 +1,4 @@
+# pyright: reportPrivateUsage=false
 from __future__ import annotations
 
 import io
@@ -7,9 +8,12 @@ import tempfile
 import unittest
 from collections.abc import Sequence
 from pathlib import Path
+from typing import Any
 
 from scripts_py.cli.rebuild import (
     RebuildConfig,
+    _read_cache_overrides,
+    _run_preflight_from_source,
     build_exec_command,
     build_nixos_rebuild_command,
     compute_config,
@@ -492,6 +496,109 @@ class TestRebuild(unittest.TestCase):
             )
             # argparse prints help to stdout (lowercase 'usage:' by default)
             self.assertIn("usage: rebuild", cp.stdout.lower())
+
+
+class TestReadCacheOverrides(unittest.TestCase):
+    def test_reads_caches_from_nix_eval(self) -> None:
+        import json
+
+        sample = {
+            "nixos": {
+                "name": "nixos",
+                "url": "https://nixos.cachix.org",
+                "publicKey": "nixos-key",
+            },
+            "community": {
+                "name": "community",
+                "url": "https://community.cachix.org",
+                "publicKey": "community-key",
+            },
+        }
+
+        orig_run = subprocess.run
+
+        def fake_run(cmd: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+            if cmd[:3] == ["nix", "eval", "--json"]:
+                return subprocess.CompletedProcess(cmd, 0, stdout=json.dumps(sample))
+            return orig_run(cmd, **kwargs)  # type: ignore[return-value]
+
+        subprocess.run = fake_run  # type: ignore[assignment]
+        try:
+            with tempfile.TemporaryDirectory() as td:
+                tmp = Path(td)
+                (tmp / "cachix-caches.nix").write_text("{}", encoding="utf-8")
+                result = _read_cache_overrides(tmp)
+        finally:
+            subprocess.run = orig_run  # type: ignore[assignment]
+
+        assert result is not None
+        urls, keys = result
+        self.assertIn("https://nixos.cachix.org", urls)
+        self.assertIn("https://community.cachix.org", urls)
+        self.assertIn("https://cache.nixos.org", urls)
+        self.assertIn("nixos-key", keys)
+        self.assertIn("community-key", keys)
+        self.assertIn("cache.nixos.org-1:", keys)
+
+    def test_missing_file_returns_none(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            result = _read_cache_overrides(Path(td))
+        self.assertIsNone(result)
+
+    def test_nix_eval_failure_returns_none(self) -> None:
+        orig_run = subprocess.run
+
+        def fake_run(cmd: Any, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+            if cmd[:3] == ["nix", "eval", "--json"]:
+                return subprocess.CompletedProcess(cmd, 1, stdout="", stderr="error")
+            return orig_run(cmd, **kwargs)  # type: ignore[return-value]
+
+        subprocess.run = fake_run  # type: ignore[assignment]
+        try:
+            with tempfile.TemporaryDirectory() as td:
+                tmp = Path(td)
+                (tmp / "cachix-caches.nix").write_text("{}", encoding="utf-8")
+                result = _read_cache_overrides(tmp)
+        finally:
+            subprocess.run = orig_run  # type: ignore[assignment]
+
+        self.assertIsNone(result)
+
+
+class TestRunPreflightFromSource(unittest.TestCase):
+    def test_loads_from_source_tree(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            lib_dir = tmp / "scripts_py" / "lib"
+            lib_dir.mkdir(parents=True)
+            (lib_dir / "cache_health.py").write_text(
+                "def run_preflight_check(*, repo_root, stderr):\n"
+                "    return True\n",
+                encoding="utf-8",
+            )
+            result = _run_preflight_from_source(tmp, stderr=io.StringIO())
+            self.assertTrue(result)
+
+    def test_source_returns_false_aborts(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            lib_dir = tmp / "scripts_py" / "lib"
+            lib_dir.mkdir(parents=True)
+            (lib_dir / "cache_health.py").write_text(
+                "def run_preflight_check(*, repo_root, stderr):\n"
+                "    return False\n",
+                encoding="utf-8",
+            )
+            result = _run_preflight_from_source(tmp, stderr=io.StringIO())
+            self.assertFalse(result)
+
+    def test_missing_source_falls_back_gracefully(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            # No source tree, and installed package has the function.
+            # This test just ensures it doesn't crash.
+            result = _run_preflight_from_source(Path(td), stderr=io.StringIO())
+            # Falls back to installed package or returns True if unavailable.
+            self.assertIsInstance(result, bool)
 
 
 if __name__ == "__main__":

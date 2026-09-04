@@ -607,6 +607,83 @@ def sync_worktree(
     return int(cp.returncode)
 
 
+_NIXOS_CACHE_URL = "https://cache.nixos.org"
+_NIXOS_CACHE_KEY = "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+
+
+def _read_cache_overrides(flake_dir: Path) -> tuple[str, str] | None:
+    """Read cachix-caches.nix from *flake_dir* and return (substituters, keys).
+
+    This is intentionally self-contained (no imports from cache_health) so it
+    works even when the installed rebuild package is older than the source tree.
+    """
+    import json as _json
+
+    caches_file = flake_dir / "cachix-caches.nix"
+    if not caches_file.is_file():
+        return None
+
+    try:
+        cp = subprocess.run(
+            ["nix", "eval", "--json", "--file", str(caches_file)],
+            text=True,
+            capture_output=True,
+            timeout=30,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+
+    if cp.returncode != 0:
+        return None
+
+    try:
+        data = _json.loads(cp.stdout)
+    except (ValueError, TypeError):
+        return None
+
+    if not data:
+        return None
+
+    urls = [e["url"] for e in data.values()] + [_NIXOS_CACHE_URL]
+    keys = [e["publicKey"] for e in data.values()] + [_NIXOS_CACHE_KEY]
+    return (" ".join(urls), " ".join(keys))
+
+
+def _run_preflight_from_source(flake_dir: Path, *, stderr: TextIO) -> bool:
+    """Try to run the cache health preflight from the synced source tree.
+
+    Falls back to the installed package, then to skipping the check entirely.
+    Returns True if the rebuild should proceed.
+    """
+    import importlib.util
+
+    source_path = flake_dir / "scripts_py" / "lib" / "cache_health.py"
+    mod = None
+
+    # Try the source tree first (always up-to-date after sync).
+    if source_path.is_file():
+        spec = importlib.util.spec_from_file_location("cache_health_live", str(source_path))
+        if spec and spec.loader:
+            mod = importlib.util.module_from_spec(spec)
+            try:
+                spec.loader.exec_module(mod)
+            except Exception:
+                mod = None
+
+    # Fall back to the installed package.
+    if mod is None:
+        try:
+            from scripts_py.lib import cache_health as mod  # type: ignore[no-redef]
+        except ImportError:
+            return True  # No preflight available — continue.
+
+    run_fn = getattr(mod, "run_preflight_check", None)
+    if run_fn is None:
+        return True
+
+    return run_fn(repo_root=flake_dir, stderr=stderr)  # type: ignore[no-any-return]
+
+
 def build_nixos_rebuild_command(
     cfg: RebuildConfig,
     passthrough: Sequence[str],
@@ -737,10 +814,10 @@ def main(
                     return rc
 
         # Pre-flight: check that binary caches are healthy before starting
-        # the (potentially long) nixos-rebuild.
-        from scripts_py.lib.cache_health import load_caches_from_nix, run_preflight_check
-
-        if not run_preflight_check(repo_root=cfg.flake_dir, stderr=_stderr):
+        # the (potentially long) nixos-rebuild.  Load the check from the
+        # synced source tree so it works even when the installed rebuild
+        # package is older than the repo.
+        if not _run_preflight_from_source(cfg.flake_dir, stderr=_stderr):
             print("Aborting rebuild.", file=_stderr)
             return 1
 
@@ -748,14 +825,7 @@ def main(
         # cachix-caches.nix take effect immediately, avoiding a chicken-and-egg
         # problem where the running system's /etc/nix/nix.conf still has stale
         # values until after a successful rebuild.
-        cache_overrides: tuple[str, str] | None = None
-        caches = load_caches_from_nix(cfg.flake_dir)
-        if caches:
-            nixos_cache_url = "https://cache.nixos.org"
-            nixos_cache_key = "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
-            urls = [c.url for c in caches] + [nixos_cache_url]
-            keys = [c.public_key for c in caches] + [nixos_cache_key]
-            cache_overrides = (" ".join(urls), " ".join(keys))
+        cache_overrides = _read_cache_overrides(cfg.flake_dir)
 
         cmd = build_nixos_rebuild_command(cfg, passthrough, cache_overrides=cache_overrides)
         exec_cmd = build_exec_command(cmd)
