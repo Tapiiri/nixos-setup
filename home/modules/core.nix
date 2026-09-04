@@ -2,6 +2,7 @@
 # Usage in imports:
 #   (import (flakeRoot + "/home/modules/core.nix") "tapiiri" {})
 #   (import (flakeRoot + "/home/modules/core.nix") "ilmari" { NIXOS_PROFILE = "work"; })
+#   (import (flakeRoot + "/home/modules/core.nix") "ilmari-offeri" { NIXOS_PROFILE = "offeri"; })
 username: extraSessionVariables: {...}: {
   home.username = username;
   home.homeDirectory = "/home/${username}";

@@ -146,7 +146,7 @@
       cacheName = "nix-homes-eval";
       globs = ["**/*.nix"];
       extraFiles = ["flake.lock"];
-      cmd = "bash -c 'nix eval .#homeConfigurations.tapiiri.activationPackage --no-write-lock-file && nix eval \".#homeConfigurations.tapiiri-wsl.activationPackage\" --no-write-lock-file && nix eval .#homeConfigurations.ilmari.activationPackage --no-write-lock-file'";
+      cmd = "bash -c 'nix eval .#homeConfigurations.tapiiri.activationPackage --no-write-lock-file && nix eval \".#homeConfigurations.tapiiri-wsl.activationPackage\" --no-write-lock-file && nix eval .#homeConfigurations.ilmari.activationPackage --no-write-lock-file && nix eval \".#homeConfigurations.ilmari-offeri.activationPackage\" --no-write-lock-file'";
       hook = {
         key = "nix-homes-eval";
         name = "nix eval homeConfigurations (cached)";
