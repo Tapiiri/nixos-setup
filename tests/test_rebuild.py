@@ -183,6 +183,50 @@ class TestRebuild(unittest.TestCase):
         self.assertEqual(cmd[:4], ["nixos-rebuild", "switch", "--flake", "/etc/nixos/.#h"])
         self.assertEqual(cmd[4:], ["--show-trace"])
 
+    def test_build_command_with_cache_overrides(self):
+        cfg = RebuildConfig(
+            hostname="h",
+            flake_dir=Path("/etc/nixos"),
+            repo_root=Path("/x"),
+            use_mirror=False,
+            mirror_dir=Path("/var/lib/nixos-setup/mirror.git"),
+            offline_ok=False,
+            upstream_url=None,
+            ref="origin/main",
+            bootstrap_permissions=False,
+        )
+        overrides = (
+            "https://example.cachix.org https://cache.nixos.org",
+            "example-key cache.nixos.org-key",
+        )
+        cmd = build_nixos_rebuild_command(cfg, ["--show-trace"], cache_overrides=overrides)
+        self.assertEqual(cmd[:4], ["nixos-rebuild", "switch", "--flake", "/etc/nixos/.#h"])
+        # --option flags should come before passthrough args
+        option_part = cmd[4:-1]  # everything between flake arg and --show-trace
+        self.assertEqual(
+            option_part,
+            [
+                "--option", "substituters", "https://example.cachix.org https://cache.nixos.org",
+                "--option", "trusted-public-keys", "example-key cache.nixos.org-key",
+            ],
+        )
+        self.assertEqual(cmd[-1], "--show-trace")
+
+    def test_build_command_no_cache_overrides(self):
+        cfg = RebuildConfig(
+            hostname="h",
+            flake_dir=Path("/etc/nixos"),
+            repo_root=Path("/x"),
+            use_mirror=False,
+            mirror_dir=Path("/var/lib/nixos-setup/mirror.git"),
+            offline_ok=False,
+            upstream_url=None,
+            ref="origin/main",
+            bootstrap_permissions=False,
+        )
+        cmd = build_nixos_rebuild_command(cfg, [], cache_overrides=None)
+        self.assertEqual(cmd, ["nixos-rebuild", "switch", "--flake", "/etc/nixos/.#h"])
+
     def test_compute_config_resolves_upstream_from_env_and_ref_default(self):
         with tempfile.TemporaryDirectory() as td:
             tmp_path = Path(td)

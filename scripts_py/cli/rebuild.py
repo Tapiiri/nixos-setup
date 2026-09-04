@@ -607,8 +607,17 @@ def sync_worktree(
     return int(cp.returncode)
 
 
-def build_nixos_rebuild_command(cfg: RebuildConfig, passthrough: Sequence[str]) -> list[str]:
+def build_nixos_rebuild_command(
+    cfg: RebuildConfig,
+    passthrough: Sequence[str],
+    *,
+    cache_overrides: tuple[str, str] | None = None,
+) -> list[str]:
     cmd = ["nixos-rebuild", "switch", "--flake", f"{cfg.flake_dir}/.#{cfg.hostname}"]
+    if cache_overrides is not None:
+        substituters, trusted_keys = cache_overrides
+        cmd.extend(["--option", "substituters", substituters])
+        cmd.extend(["--option", "trusted-public-keys", trusted_keys])
     cmd.extend(passthrough)
     return cmd
 
@@ -729,13 +738,26 @@ def main(
 
         # Pre-flight: check that binary caches are healthy before starting
         # the (potentially long) nixos-rebuild.
-        from scripts_py.lib.cache_health import run_preflight_check
+        from scripts_py.lib.cache_health import load_caches_from_nix, run_preflight_check
 
         if not run_preflight_check(repo_root=cfg.flake_dir, stderr=_stderr):
             print("Aborting rebuild.", file=_stderr)
             return 1
 
-        cmd = build_nixos_rebuild_command(cfg, passthrough)
+        # Always pass substituters/keys from the source tree so changes to
+        # cachix-caches.nix take effect immediately, avoiding a chicken-and-egg
+        # problem where the running system's /etc/nix/nix.conf still has stale
+        # values until after a successful rebuild.
+        cache_overrides: tuple[str, str] | None = None
+        caches = load_caches_from_nix(cfg.flake_dir)
+        if caches:
+            nixos_cache_url = "https://cache.nixos.org"
+            nixos_cache_key = "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+            urls = [c.url for c in caches] + [nixos_cache_url]
+            keys = [c.public_key for c in caches] + [nixos_cache_key]
+            cache_overrides = (" ".join(urls), " ".join(keys))
+
+        cmd = build_nixos_rebuild_command(cfg, passthrough, cache_overrides=cache_overrides)
         exec_cmd = build_exec_command(cmd)
     except SystemExit:
         raise
