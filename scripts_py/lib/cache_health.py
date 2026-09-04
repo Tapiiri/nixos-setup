@@ -95,7 +95,10 @@ def check_reachable(cache: CacheEntry) -> CacheIssue | None:
 
 
 def _is_cachix_url(url: str) -> bool:
-    return ".cachix.org" in url
+    from urllib.parse import urlparse
+
+    hostname = urlparse(url).hostname or ""
+    return hostname == "cachix.org" or hostname.endswith(".cachix.org")
 
 
 def _cachix_cache_name(url: str) -> str | None:

@@ -1,4 +1,6 @@
 mkdocs
-mkdocs-material
+mkdocs-material>=9.7.7  # CVE fix: GHSA-xvg9-69gf-fjrf (XSS in search suggestions)
+pymdown-extensions>=11.0.1  # CVE fix: PYSEC-2026-3609 (path traversal), PYSEC-2026-3654 (ReDoS)
+click>=8.3.3  # CVE fix: PYSEC-2026-2132 (command injection in click.edit)
 pygments>=2.20.0
 urllib3>=2.7.0  # CVE fix: GHSA-mf9v-mfxr-j63j, GHSA-qccp-gfcp-xxvc
