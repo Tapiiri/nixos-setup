@@ -13,6 +13,7 @@
     switchSpecialisation.enable = true;
     zellij.enable = true;
     moonlight.enable = true;
+    emoji.enable = true;
   };
 
   # Home Manager module hub.
