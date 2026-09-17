@@ -30,6 +30,7 @@
     userSwitch.enable = true;
     switchSpecialisation.enable = true;
     onepassword.enable = true;
+    grok-bot.enable = true;
   };
 
   programs.git.settings = {
