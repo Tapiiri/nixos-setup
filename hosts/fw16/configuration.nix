@@ -42,8 +42,27 @@
     ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="339a", ATTR{idProduct}=="1701", ATTR{power/autosuspend_delay_ms}="-1"
   '';
 
-  # Fingerprint reader (Goodix sensor on the Framework 16 input module).
+  # Fingerprint reader (Goodix 27c6:609c on the Framework 16 power button).
+  # Driven by libfprint's goodixmoc driver — no TOD blob needed.
+  #
+  # Enabling fprintd is enough for GDM: services/display-managers/gdm.nix
+  # defines a `gdm-fingerprint` PAM stack whenever fprintd is on, and GDM runs
+  # it in parallel with `gdm-password`, so the greeter and the GNOME lock
+  # screen both accept a finger or the password. (The same module forces
+  # `login.fprintAuth = false` on purpose — pam_fprintd inside `login` would
+  # block the password prompt that `gdm-password` substacks.)
+  #
+  # sudo/polkit are pinned explicitly below. They only inherit fingerprint auth
+  # from `security.pam.services.<name>.fprintAuth`, whose default happens to be
+  # `services.fprintd.enable`; stating it here keeps the behaviour deliberate
+  # rather than a side effect of an upstream default. Safe on this host because
+  # fw16 runs no sshd, so there is no remote session for pam_fprintd to stall.
+  #
+  # Enrollment is per-user and inherently imperative (templates live in
+  # /var/lib/fprint/<user>) — see docs/site/guides/fingerprint.md.
   services.fprintd.enable = true;
+  security.pam.services.sudo.fprintAuth = true;
+  security.pam.services.polkit-1.fprintAuth = true;
 
   # Expose Ollama to the tailnet so other devices can use it as a remote LLM
   # backend. Listening on 0.0.0.0 is safe here because the firewall only opens
