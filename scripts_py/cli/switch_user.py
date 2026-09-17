@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import argparse
+import json
 import subprocess
 import sys
-from typing import Protocol, Sequence
+from typing import Any, Protocol, Sequence, cast
 
 
 class SubprocessRunner(Protocol):
@@ -24,7 +25,7 @@ class DefaultRunner:
 
 
 def build_list_sessions_argv() -> list[str]:
-    return ["loginctl", "list-sessions", "--no-legend"]
+    return ["loginctl", "list-sessions", "--json=short"]
 
 
 def build_activate_argv(session_id: str) -> list[str]:
@@ -36,16 +37,31 @@ def build_lock_argv() -> list[str]:
 
 
 def parse_sessions_output(output: str, target_user: str) -> str | None:
-    """Return the first session ID for target_user from loginctl list-sessions output.
+    """Return target_user's activatable session ID from loginctl JSON output.
 
-    loginctl list-sessions --no-legend format:
-      SESSION  UID  USER     SEAT   TTY
-      3        1001 ilmari   seat0
+    Only sessions attached to a seat can be activated. systemd lists a seatless
+    `manager` session per logged-in user (their `user@<uid>.service`) alongside
+    the real graphical one, and `loginctl activate` on a seatless session fails
+    with "Operation not supported". Session IDs are not ordered such that the
+    graphical one comes first, so the seat must be checked rather than assumed.
     """
-    for line in output.splitlines():
-        parts = line.split()
-        if len(parts) >= 3 and parts[2] == target_user:
-            return parts[0]
+    try:
+        parsed: object = json.loads(output)
+    except (json.JSONDecodeError, TypeError):
+        return None
+    if not isinstance(parsed, list):
+        return None
+    for entry in cast(list[Any], parsed):
+        if not isinstance(entry, dict):
+            continue
+        session = cast(dict[str, Any], entry)
+        if session.get("user") != target_user:
+            continue
+        if not session.get("seat"):
+            continue
+        session_id: object = session.get("session")
+        if session_id is not None:
+            return str(session_id)
     return None
 
 

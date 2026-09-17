@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import unittest
 from collections.abc import Sequence
 
@@ -12,7 +13,36 @@ from scripts_py.cli.switch_user import (
     switch_to_user,
 )
 
-SAMPLE_SESSIONS = "3 1001 ilmari  seat0 tty3\n2 1000 tapiiri seat0 tty2\n"
+
+def _session(
+    session: str,
+    uid: int,
+    user: str,
+    seat: str | None = "seat0",
+    klass: str = "user",
+    tty: str | None = "tty1",
+) -> dict[str, object]:
+    return {
+        "session": session,
+        "uid": uid,
+        "user": user,
+        "seat": seat,
+        "leader": 1000 + int(session),
+        "class": klass,
+        "tty": tty,
+        "idle": False,
+        "since": None,
+    }
+
+
+def _sessions_json(*sessions: dict[str, object]) -> str:
+    return json.dumps(list(sessions))
+
+
+SAMPLE_SESSIONS = _sessions_json(
+    _session("3", 1001, "ilmari", tty="tty3"),
+    _session("2", 1000, "tapiiri", tty="tty2"),
+)
 
 
 class CapturingRunner:
@@ -68,11 +98,32 @@ class TestParseSessionsOutput(unittest.TestCase):
         self.assertIsNone(parse_sessions_output("", "ilmari"))
 
     def test_returns_first_session_when_multiple(self) -> None:
-        output = "5 1001 ilmari seat0 tty5\n6 1001 ilmari seat1 tty6\n"
+        output = _sessions_json(
+            _session("5", 1001, "ilmari", tty="tty5"),
+            _session("6", 1001, "ilmari", seat="seat1", tty="tty6"),
+        )
         self.assertEqual(parse_sessions_output(output, "ilmari"), "5")
 
     def test_no_partial_username_match(self) -> None:
         self.assertIsNone(parse_sessions_output(SAMPLE_SESSIONS, "ilmar"))
+
+    def test_skips_seatless_manager_session(self) -> None:
+        """systemd lists the seatless user@<uid>.service manager session first
+        when its ID sorts below the graphical one; activating it fails."""
+        output = _sessions_json(
+            _session("10", 1002, "ilmari-offeri", seat=None, klass="manager", tty=None),
+            _session("12", 1002, "ilmari-offeri", tty="tty2"),
+        )
+        self.assertEqual(parse_sessions_output(output, "ilmari-offeri"), "12")
+
+    def test_seatless_only_returns_none(self) -> None:
+        output = _sessions_json(
+            _session("10", 1002, "ilmari-offeri", seat=None, klass="manager", tty=None),
+        )
+        self.assertIsNone(parse_sessions_output(output, "ilmari-offeri"))
+
+    def test_malformed_json_returns_none(self) -> None:
+        self.assertIsNone(parse_sessions_output("not json at all", "ilmari"))
 
 
 class TestSwitchToUser(unittest.TestCase):
@@ -90,7 +141,8 @@ class TestSwitchToUser(unittest.TestCase):
         self.assertNotIn("lock-session", runner.calls[0])
 
     def test_locks_when_no_session_found(self) -> None:
-        runner = CapturingRunner(return_codes=[0], outputs=[(0, "2 1000 tapiiri seat0\n")])
+        output = _sessions_json(_session("2", 1000, "tapiiri"))
+        runner = CapturingRunner(return_codes=[0], outputs=[(0, output)])
         switch_to_user("ilmari", runner)
         self.assertIn("lock-session", runner.calls[0])
 
