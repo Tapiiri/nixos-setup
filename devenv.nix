@@ -634,5 +634,25 @@ in {
         after = ["check:nix:flake" "check:nix:homes" "lint:all" "tests:all" "docs:all"];
         exec = "true";
       };
+
+      # --- Git hook self-repair ---
+      #
+      # devenv's installer runs `<tool> install -t <stage>` without -f.  When
+      # the hook tool changes underneath the repo (devenv's default prek vs the
+      # pinned pkgs.pre-commit above, or a pre-commit release that rotates its
+      # hook-template hash), pre-commit no longer recognises the installed shim
+      # as its own, moves it to <stage>.legacy and writes a fresh one.  Since
+      # that backup is itself a shim, every later commit recurses and dies with
+      # "bug: pre-commit's script is installed in migration mode" — exit 1 even
+      # though all hooks passed.
+      #
+      # Running immediately after the installer means the broken state is
+      # cleared on shell entry rather than surfacing at the next commit.
+      "repair:git-hooks" = {
+        description = "Clear pre-commit migration mode left by hook reinstalls";
+        after = ["devenv:git-hooks:install"];
+        before = ["devenv:enterShell"];
+        exec = "scripts/repair-git-hooks";
+      };
     };
 }
