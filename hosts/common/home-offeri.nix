@@ -31,6 +31,7 @@
     switchSpecialisation.enable = true;
     onepassword.enable = true;
     grok-bot.enable = true;
+    posthog-desktop.enable = true;
   };
 
   programs.git.settings = {
