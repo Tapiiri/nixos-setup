@@ -72,6 +72,8 @@ Reusable, focused modules that each manage one concern:
 | `teams.nix` | Microsoft Teams (`teams-for-linux`) |
 | `notion.nix` | Notion desktop (unofficial Linux build) |
 | `linear.nix` | Linear (Chrome app; no official Linux client) |
+| `grok-bot.nix` | Grok Bot desktop (repackaged upstream `.deb`) |
+| `posthog-desktop.nix` | PostHog Desktop (repackaged upstream `.deb`) |
 
 Modules are enabled via host configs — not all modules are active on every host.
 

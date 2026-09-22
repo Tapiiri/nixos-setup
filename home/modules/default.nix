@@ -22,6 +22,7 @@
     (flakeRoot + "/home/modules/outlook-web.nix")
     (flakeRoot + "/home/modules/cursor.nix")
     (flakeRoot + "/home/modules/grok-bot.nix")
+    (flakeRoot + "/home/modules/posthog-desktop.nix")
     (flakeRoot + "/home/modules/teams.nix")
     (flakeRoot + "/home/modules/notion.nix")
     (flakeRoot + "/home/modules/linear.nix")
