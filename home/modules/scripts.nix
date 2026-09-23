@@ -83,7 +83,7 @@
     _switch_user_complete() {
       local cur="''${COMP_WORDS[COMP_CWORD]}"
       # shellcheck disable=SC2207
-      COMPREPLY=($(compgen -W "$(ls /home/ 2>/dev/null | tr '\n' ' ')" -- "$cur"))
+      COMPREPLY=($(compgen -W "$(ls /home/ 2>/dev/null | tr '\n' ' ') --no-lock" -- "$cur"))
     }
     complete -F _switch_user_complete switch-user
   '';

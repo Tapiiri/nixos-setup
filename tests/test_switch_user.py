@@ -6,9 +6,11 @@ from collections.abc import Sequence
 
 from scripts_py.cli.switch_user import (
     build_activate_argv,
+    build_greeter_argv,
     build_list_sessions_argv,
     build_lock_argv,
     main,
+    parse_greeter_session,
     parse_sessions_output,
     switch_to_user,
 )
@@ -83,6 +85,12 @@ class TestBuildArgvHelpers(unittest.TestCase):
         self.assertEqual(argv[0], "loginctl")
         self.assertIn("lock-session", argv)
 
+    def test_greeter_calls_gdm_transient_display(self) -> None:
+        argv = build_greeter_argv()
+        self.assertEqual(argv[0], "busctl")
+        self.assertIn("org.gnome.DisplayManager", argv)
+        self.assertIn("CreateTransientDisplay", argv)
+
 
 class TestParseSessionsOutput(unittest.TestCase):
     def test_finds_session_id_for_user(self) -> None:
@@ -126,6 +134,24 @@ class TestParseSessionsOutput(unittest.TestCase):
         self.assertIsNone(parse_sessions_output("not json at all", "ilmari"))
 
 
+class TestParseGreeterSession(unittest.TestCase):
+    def test_finds_running_greeter(self) -> None:
+        output = _sessions_json(
+            _session("2", 1000, "tapiiri"),
+            _session("7", 993, "gdm", klass="greeter", tty="tty1"),
+        )
+        self.assertEqual(parse_greeter_session(output), "7")
+
+    def test_no_greeter_returns_none(self) -> None:
+        self.assertIsNone(parse_greeter_session(SAMPLE_SESSIONS))
+
+    def test_skips_seatless_greeter(self) -> None:
+        output = _sessions_json(
+            _session("7", 993, "gdm", seat=None, klass="greeter", tty=None),
+        )
+        self.assertIsNone(parse_greeter_session(output))
+
+
 class TestSwitchToUser(unittest.TestCase):
     def test_activates_existing_session_directly(self) -> None:
         runner = CapturingRunner(return_codes=[0], outputs=[(0, SAMPLE_SESSIONS)])
@@ -140,9 +166,39 @@ class TestSwitchToUser(unittest.TestCase):
         switch_to_user("ilmari", runner)
         self.assertNotIn("lock-session", runner.calls[0])
 
-    def test_locks_when_no_session_found(self) -> None:
+    def test_opens_greeter_when_no_session_found(self) -> None:
         output = _sessions_json(_session("2", 1000, "tapiiri"))
-        runner = CapturingRunner(return_codes=[0], outputs=[(0, output)])
+        runner = CapturingRunner(return_codes=[0], outputs=[(0, output), (0, "")])
+        rc = switch_to_user("ilmari", runner)
+        self.assertEqual(rc, 0)
+        self.assertIn("CreateTransientDisplay", runner.output_calls[1])
+
+    def test_locks_own_session_after_opening_greeter(self) -> None:
+        output = _sessions_json(_session("2", 1000, "tapiiri"))
+        runner = CapturingRunner(return_codes=[0], outputs=[(0, output), (0, "")])
+        switch_to_user("ilmari", runner)
+        self.assertIn("lock-session", runner.calls[0])
+
+    def test_no_lock_leaves_own_session_unlocked(self) -> None:
+        output = _sessions_json(_session("2", 1000, "tapiiri"))
+        runner = CapturingRunner(outputs=[(0, output), (0, "")])
+        switch_to_user("ilmari", runner, lock=False)
+        self.assertEqual(runner.calls, [])
+
+    def test_reuses_running_greeter_instead_of_creating_one(self) -> None:
+        output = _sessions_json(
+            _session("2", 1000, "tapiiri"),
+            _session("7", 993, "gdm", klass="greeter", tty="tty1"),
+        )
+        runner = CapturingRunner(return_codes=[0, 0], outputs=[(0, output)])
+        switch_to_user("ilmari", runner)
+        self.assertIn("activate", runner.calls[0])
+        self.assertIn("7", runner.calls[0])
+        self.assertEqual(len(runner.output_calls), 1)
+
+    def test_falls_back_to_lock_when_greeter_fails(self) -> None:
+        output = _sessions_json(_session("2", 1000, "tapiiri"))
+        runner = CapturingRunner(return_codes=[0], outputs=[(0, output), (1, "")])
         switch_to_user("ilmari", runner)
         self.assertIn("lock-session", runner.calls[0])
 
@@ -150,8 +206,8 @@ class TestSwitchToUser(unittest.TestCase):
         runner = CapturingRunner(return_codes=[42], outputs=[(0, SAMPLE_SESSIONS)])
         self.assertEqual(switch_to_user("ilmari", runner), 42)
 
-    def test_returns_lock_exit_code(self) -> None:
-        runner = CapturingRunner(return_codes=[1], outputs=[(0, "")])
+    def test_returns_lock_exit_code_when_greeter_fails(self) -> None:
+        runner = CapturingRunner(return_codes=[1], outputs=[(0, ""), (1, "")])
         self.assertEqual(switch_to_user("ilmari", runner), 1)
 
     def test_queries_list_sessions_first(self) -> None:
@@ -168,13 +224,27 @@ class TestMain(unittest.TestCase):
 
     def test_switches_to_given_user(self) -> None:
         runner = CapturingRunner(return_codes=[0], outputs=[(0, SAMPLE_SESSIONS)])
-        rc = main(["ilmari"], runner=runner)
+        rc = main(["ilmari"], runner=runner, exists=lambda _: True)
         self.assertEqual(rc, 0)
 
     def test_uses_custom_runner(self) -> None:
         runner = CapturingRunner(return_codes=[0], outputs=[(0, SAMPLE_SESSIONS)])
-        main(["ilmari"], runner=runner)
+        main(["ilmari"], runner=runner, exists=lambda _: True)
         self.assertEqual(len(runner.output_calls), 1)
+
+    def test_unknown_user_errors_without_touching_the_session(self) -> None:
+        runner = CapturingRunner()
+        rc = main(["nosuchuser"], runner=runner, exists=lambda _: False)
+        self.assertEqual(rc, 2)
+        self.assertEqual(runner.calls, [])
+        self.assertEqual(runner.output_calls, [])
+
+    def test_no_lock_flag_is_accepted(self) -> None:
+        output = _sessions_json(_session("2", 1000, "tapiiri"))
+        runner = CapturingRunner(outputs=[(0, output), (0, "")])
+        rc = main(["ilmari", "--no-lock"], runner=runner, exists=lambda _: True)
+        self.assertEqual(rc, 0)
+        self.assertEqual(runner.calls, [])
 
 
 if __name__ == "__main__":
