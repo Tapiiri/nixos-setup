@@ -75,6 +75,7 @@
           ./modules/rebuild.nix
           ./modules/esp32-dev.nix
           ./modules/qemu-test-host.nix
+          ./modules/efi-boot-order.nix
           inputs.home-manager.nixosModules.default
           hostModule
         ];

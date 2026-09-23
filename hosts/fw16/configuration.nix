@@ -28,6 +28,20 @@
   };
   boot.loader.efi.canTouchEfiVariables = true;
 
+  # Boot the enclosure by default instead of the internal Windows disk.
+  #
+  # The firmware has never created a "Linux Boot Manager" NVRAM entry for this
+  # machine — it boots through its own auto-generated "EFI Hard Drive (...)"
+  # entry via the ESP's \EFI\BOOT\BOOTX64.EFI fallback — so both labels are
+  # listed, most specific first, and matched as regexes at boot time.
+  #
+  # Windows stays in BootOrder behind this entry, which is what makes pulling
+  # the enclosure fall back to Windows automatically.
+  my.efiBootOrder = {
+    enable = true;
+    preferMatching = ["Linux Boot Manager" "Corsair MP600 ELITE"];
+  };
+
   # Work around USB4/Thunderbolt PCIe tunneling I/O errors with the HYPER
   # enclosure — prevents the host from resetting the Thunderbolt controller,
   # which can drop NVMe transactions mid-flight.
