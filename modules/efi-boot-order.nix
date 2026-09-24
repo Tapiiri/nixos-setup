@@ -67,8 +67,16 @@ in {
       in ''
         set -euo pipefail
 
-        efibootmgr=${lib.getExe' pkgs.efibootmgr "efibootmgr"}
-        listing=$("$efibootmgr")
+        # $EFIBOOTMGR lets the script be exercised against a stub that records
+        # calls instead of writing NVRAM. systemd units get no ambient
+        # environment, so this is never set in production.
+        efibootmgr=''${EFIBOOTMGR:-${lib.getExe' pkgs.efibootmgr "efibootmgr"}}
+
+        if ! listing=$("$efibootmgr" 2>&1); then
+          echo "efibootmgr failed to read the boot entries:" >&2
+          printf '%s\n' "$listing" >&2
+          exit 1
+        fi
 
         current=$(printf '%s\n' "$listing" | sed -n 's/^BootOrder: //p')
         if [ -z "$current" ]; then
@@ -76,15 +84,17 @@ in {
           exit 0
         fi
 
+        # Real entry lines only (e.g. "Boot0000* Label"), never the BootOrder or
+        # BootCurrent header lines. Trailing `|| true` throughout: a pattern that
+        # matches nothing is an expected outcome, not an error, and grep's exit 1
+        # would otherwise trip `set -e` via `pipefail`.
+        entries=$(printf '%s\n' "$listing" | grep -E "^Boot[0-9A-Fa-f]{4}\*?[[:space:]]" || true)
+
         target=""
         for pattern in ${patterns}; do
-          # Match only real entry lines (Boot0001* Label), never BootOrder/BootCurrent.
-          target=$(printf '%s\n' "$listing" \
-            | grep -E "^Boot[0-9A-Fa-f]{4}\*?[[:space:]]" \
-            | grep -E -- "$pattern" \
-            | head -n1 \
-            | sed -E 's/^Boot([0-9A-Fa-f]{4}).*/\1/')
-          if [ -n "$target" ]; then
+          match=$(printf '%s\n' "$entries" | grep -E -- "$pattern" | head -n1 || true)
+          if [ -n "$match" ]; then
+            target=$(printf '%s\n' "$match" | sed -E 's/^Boot([0-9A-Fa-f]{4}).*/\1/')
             echo "matched boot entry Boot$target via pattern: $pattern"
             break
           fi
@@ -105,7 +115,7 @@ in {
         rest=$(printf '%s' "$current" \
           | tr ',' '\n' \
           | grep -v -x -- "$target" \
-          | paste -sd, -)
+          | paste -sd, - || true)
 
         if [ -n "$rest" ]; then
           new="$target,$rest"
