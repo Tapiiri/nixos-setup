@@ -23,6 +23,7 @@
     thunderbird.enable = true;
     outlookWeb.enable = true;
     teams.enable = true;
+    slack.enable = true;
     cursor.enable = true;
     notion.enable = true;
     linear.enable = true;
