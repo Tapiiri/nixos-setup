@@ -21,7 +21,7 @@
     browsers.enable = true;
     shell.bash.enable = true;
     thunderbird.enable = true;
-    outlookWeb.enable = true;
+    outlook.enable = true;
     teams.enable = true;
     cursor.enable = true;
     notion.enable = true;
