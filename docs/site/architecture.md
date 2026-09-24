@@ -68,6 +68,7 @@ Reusable, focused modules that each manage one concern:
 | `slack.nix` | Slack desktop |
 | `thunderbird.nix` | Thunderbird email client |
 | `outlook-web.nix` | Outlook on the web (Chrome app) |
+| `outlook.nix` | Outlook desktop (`outlook-for-linux`, repackaged upstream `.deb`) |
 | `cursor.nix` | Cursor editor |
 | `teams.nix` | Microsoft Teams (`teams-for-linux`) |
 | `notion.nix` | Notion desktop (unofficial Linux build) |

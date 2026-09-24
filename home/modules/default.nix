@@ -20,6 +20,7 @@
     (flakeRoot + "/home/modules/shell-bash.nix")
     (flakeRoot + "/home/modules/thunderbird.nix")
     (flakeRoot + "/home/modules/outlook-web.nix")
+    (flakeRoot + "/home/modules/outlook.nix")
     (flakeRoot + "/home/modules/cursor.nix")
     (flakeRoot + "/home/modules/grok-bot.nix")
     (flakeRoot + "/home/modules/posthog-desktop.nix")
