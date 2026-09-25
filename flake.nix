@@ -233,7 +233,14 @@
 
       scriptPackages = lib.mapAttrs mkScriptPackage scriptSpecs;
     in
-      scriptPackages // {default = scriptPackages.rebuild;});
+      scriptPackages
+      // {
+        default = scriptPackages.rebuild;
+        # The devenv CLI that home/modules/devtools.nix installs locally,
+        # pinned by this flake.lock.  CI runs `.#devenv` so it never drifts
+        # ahead of the local CLI (or of the modules pinned in devenv.lock).
+        inherit (pkgs) devenv;
+      });
 
     # installer-iso lives here rather than in `packages` because `nix flake
     # check` deeply evaluates every packages.* derivation and the full ISO

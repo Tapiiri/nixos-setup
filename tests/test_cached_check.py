@@ -445,7 +445,7 @@ class TestBuildSubprocessCommand(unittest.TestCase):
                 [
                     str(nix_exe),
                     "run",
-                    "nixpkgs#devenv",
+                    f"{root}#devenv",
                     "--",
                     "shell",
                     "--",
