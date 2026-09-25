@@ -20,6 +20,7 @@
     devtools.enable = true;
     browsers.enable = true;
     shell.bash.enable = true;
+    neovim.enable = true;
     thunderbird.enable = true;
     outlook.enable = true;
     teams.enable = true;

@@ -4,6 +4,7 @@
     devtools.enable = true;
     browsers.enable = true;
     shell.bash.enable = true;
+    neovim.enable = true;
     telegram.enable = true;
     slack.enable = true;
     onepassword.enable = true;
