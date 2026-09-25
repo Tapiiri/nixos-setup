@@ -128,7 +128,10 @@ def build_subprocess_command(
     if nix_exe is None:
         return list(command)
 
-    return [nix_exe, "run", "nixpkgs#devenv", "--", "shell", "--", *command]
+    # The repo flake's devenv, not the registry's: `nixpkgs#devenv` follows
+    # whatever nixpkgs the host registry points at, which on CI runners is
+    # a newer CLI than the modules pinned in devenv.lock support.
+    return [nix_exe, "run", f"{repo_root}#devenv", "--", "shell", "--", *command]
 
 
 # ------------------------------------------------------------------
