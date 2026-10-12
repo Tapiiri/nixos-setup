@@ -48,7 +48,39 @@ in {
   services.desktopManager.gnome.enable = true;
 
   services.gnome.gnome-keyring.enable = true;
-  security.pam.services.gdm.enableGnomeKeyring = true;
+
+  # Keep pam_gnome_keyring out of the login stack, so the GNOME login
+  # keyring rests on LUKS alone and can never be silently re-keyed.
+  #
+  # pam_gnome_keyring hands PAM's authtok to the daemon as the keyring
+  # master password. When that fails — which it always does for a
+  # keyring with an empty password — gnome-keyring stashes the rejected
+  # password (gkd-login.c:211 → gkm-wrap-login.c:53). The next unlock
+  # prompt that succeeds then *adopts* that stash as the new master
+  # (gkm-wrap-prompt.c:1033 → :724, "fixed login keyring password to
+  # match login password"). The keyring therefore drifts to whatever
+  # PAM last offered, with no user action and no warning.
+  #
+  # On fingerprint logins what PAM offers is worse than the account
+  # password: gdm's pam_gdm.so reads the cached LUKS passphrase out of
+  # the kernel keyring and sets it as the authtok, so the keyring could
+  # end up sealed with the disk passphrase. See the password-cache=no
+  # crypttab option in hosts/fw16/disk-config.nix, which removes that
+  # cache; this setting removes the adoption mechanism itself.
+  #
+  # Nothing else needs pam_gnome_keyring here. gnome-keyring stays
+  # D-Bus activatable via services.dbus.packages, and an empty-password
+  # keyring is opened without any prompt by the Secret Service's first
+  # unlock attempt, which passes a zero-length credential
+  # (gkd-secret-unlock.c:281 → gkm-secret-binary.c:394).
+  #
+  # mkForce is required: services.gnome.gnome-keyring.enable sets this
+  # to true unconditionally.
+  #
+  # Consequence: every user's keyring must have an empty password. A
+  # password-protected keyring will prompt once per session instead,
+  # because nothing auto-unlocks it any more.
+  security.pam.services.login.enableGnomeKeyring = lib.mkForce false;
 
   services.xserver.xkb = {
     layout = "fi";

@@ -147,14 +147,28 @@ belongs to which user.
 
 ## Caveats
 
-**The GNOME login keyring stays locked.** `pam_gnome_keyring` unlocks the login
-keyring using your password. A fingerprint login has no password to hand over,
-so the keyring is still locked when the session starts and the first consumer
-(Chrome, Evolution, some `libsecret` users) pops an "unlock keyring" dialog.
-Fingerprint unlock of an already-running session does not have this problem —
-only the initial GDM login does. If it becomes annoying, the options are to
-enter the password at GDM instead, or to set an empty keyring password
-(which stores the keyring unencrypted — not recommended).
+**The GNOME login keyring is not unlocked by PAM at all, by design.**
+`pam_gnome_keyring` is force-disabled in `hosts/common/system.nix`, so no login
+method — password or fingerprint — hands a password to the keyring. Every user's
+login keyring instead carries an *empty* password and rests on LUKS full-disk
+encryption alone. The Secret Service opens it with no prompt, because its first
+unlock attempt passes a zero-length credential (`gkd-secret-unlock.c:281` →
+`gkm-secret-binary.c:394`, "No password is set, try an null password").
+
+This is deliberate, and reversing it is a trap. While `pam_gnome_keyring` was
+enabled, the keyring silently re-keyed itself: a failed PAM unlock stashes the
+rejected password (`gkd-login.c:211`), and the next unlock prompt that succeeds
+adopts that stash as the new master (`gkm-wrap-prompt.c:1033` → `:724`). On a
+fingerprint login the stashed value was the **LUKS disk passphrase**, which
+`gdm`'s `pam_gdm.so` reads out of the kernel keyring and sets as `PAM_AUTHTOK`.
+The keyring therefore drifted between the account password and the disk
+passphrase depending on the last login method, and became unopenable by anything
+the user thought to type. `password-cache=no` in `hosts/fw16/disk-config.nix`
+removes the cached passphrase; disabling `pam_gnome_keyring` removes the
+adoption mechanism.
+
+Consequence: a keyring that *does* have a password will prompt once per session,
+since nothing auto-unlocks it any more. Keep them empty.
 
 **1Password is unaffected.** Its system-authentication integration goes through
 polkit, which accepts a fingerprint here.
