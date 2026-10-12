@@ -5,6 +5,7 @@
     browsers.enable = true;
     shell.bash.enable = true;
     neovim.enable = true;
+    openspec.enable = true;
     telegram.enable = true;
     slack.enable = true;
     onepassword.enable = true;

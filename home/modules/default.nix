@@ -23,6 +23,7 @@
     (flakeRoot + "/home/modules/outlook.nix")
     (flakeRoot + "/home/modules/cursor.nix")
     (flakeRoot + "/home/modules/neovim.nix")
+    (flakeRoot + "/home/modules/openspec.nix")
     (flakeRoot + "/home/modules/grok-bot.nix")
     (flakeRoot + "/home/modules/posthog-desktop.nix")
     (flakeRoot + "/home/modules/teams.nix")

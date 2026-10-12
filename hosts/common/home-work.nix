@@ -21,6 +21,7 @@
     devtools.enable = true;
     browsers.enable = true;
     shell.bash.enable = true;
+    openspec.enable = true;
     thunderbird.enable = true;
     slack.enable = true;
     rebuild.enable = true;
