@@ -166,7 +166,7 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
         prog="switch-user",
         description="Switch to another user's GNOME session via GDM.",
     )
-    p.add_argument("target_user", help="Username to switch to (e.g. ilmari, tapiiri)")
+    p.add_argument("target_user", help="Username to switch to (e.g. ilmari-offeri, tapiiri)")
     p.add_argument(
         "--no-lock",
         dest="lock",

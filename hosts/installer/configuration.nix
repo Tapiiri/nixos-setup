@@ -98,7 +98,7 @@
     echo
     echo "  Set user passwords before rebooting:"
     echo "    sudo nixos-enter --root /mnt -c 'passwd tapiiri'"
-    echo "    sudo nixos-enter --root /mnt -c 'passwd ilmari'"
+    echo "    sudo nixos-enter --root /mnt -c 'passwd ilmari-offeri'"
     echo
     echo "  Then: sudo reboot"
     echo "=================================================="

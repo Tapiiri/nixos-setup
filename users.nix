@@ -22,21 +22,6 @@
     };
   };
 
-  ilmari = {
-    description = "Ilmari (work)";
-    extraGroups = ["networkmanager"];
-    isTrusted = true;
-    sessionVariables = {NIXOS_PROFILE = "work";};
-    nixosHome = ./hosts/common/home-work.nix;
-    claudeSeedFrom = "tapiiri";
-    standalone = {
-      ilmari = {
-        system = "x86_64-linux";
-        module = ./hosts/standalone/ilmari/home.nix;
-      };
-    };
-  };
-
   ilmari-offeri = {
     description = "Ilmari (Offeri)";
     extraGroups = ["networkmanager"];

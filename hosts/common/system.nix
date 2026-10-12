@@ -14,7 +14,7 @@
 in {
   my.tailscale = {
     enable = true;
-    operator = "ilmari";
+    operator = "tapiiri";
   };
 
   services.ollama.enable = true;

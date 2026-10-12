@@ -22,7 +22,7 @@ in {
     operator = mkOption {
       type = types.nullOr types.str;
       default = null;
-      example = "ilmari";
+      example = "tapiiri";
       description = "Unix user allowed to operate tailscaled without sudo (only one supported by Tailscale).";
     };
 
