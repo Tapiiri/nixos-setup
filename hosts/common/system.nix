@@ -216,6 +216,9 @@ in {
   in [
     selfPkgs.rebuild
     selfPkgs.switch-user
+    # Inspect wifi link rate, band and signal when a connection is slow;
+    # NetworkManager alone will not show the negotiated PHY rate.
+    pkgs.iw
   ];
 
   nix.settings.experimental-features = "nix-command flakes";
