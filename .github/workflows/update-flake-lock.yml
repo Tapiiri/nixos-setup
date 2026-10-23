@@ -30,16 +30,16 @@ jobs:
       CACHIX_CACHE: ${{ vars.CACHIX_CACHE }}-devenv
     steps:
       - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install Nix
-        uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3 # v31.10.6
+        uses: cachix/install-nix-action@448cde739abec1eaf0646249e3d25bb8d9bc7702 # v31.11.2
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
 
       - name: Use Cachix
-        uses: cachix/cachix-action@f495f3ffa2f3810a92e5cc0abc2c5d6a2a07ec82 # v17
+        uses: cachix/cachix-action@38b082610b782e7e93e209c35fd730d399dee866 # v17
         with:
           name: tapiiri-nixos-setup
           extraPullNames: nix-community
@@ -51,7 +51,7 @@ jobs:
           echo "names=$remote" >> "$GITHUB_OUTPUT"
 
       - name: Update flake.lock
-        uses: DeterminateSystems/update-flake-lock@834c491b2ece4de0bbd00d85214bb5e83b4da5c6 # v28
+        uses: DeterminateSystems/update-flake-lock@da03c0f078bc4b2c37ee4f7e072d34bf8f188bb3 # v29
         with:
           # Only update remote inputs; skip local path: inputs that don't exist on CI.
           inputs: ${{ steps.inputs.outputs.names }}
@@ -62,7 +62,7 @@ jobs:
 
       # Sanity-check the update using the same checks as CI.
       - name: Run checks (devenv tasks)
-        run: nix run nixpkgs#devenv -- shell -- devenv tasks run -m all check:all
+        run: nix run .#devenv -- shell -- devenv tasks run -m all check:all
 
   refresh-schemastore-cache:
     permissions:
@@ -76,23 +76,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install Nix
-        uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3 # v31.10.6
+        uses: cachix/install-nix-action@448cde739abec1eaf0646249e3d25bb8d9bc7702 # v31.11.2
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
 
       - name: Use Cachix
-        uses: cachix/cachix-action@f495f3ffa2f3810a92e5cc0abc2c5d6a2a07ec82 # v17
+        uses: cachix/cachix-action@38b082610b782e7e93e209c35fd730d399dee866 # v17
         with:
           name: tapiiri-nixos-setup
           extraPullNames: nix-community
 
       - name: Refresh SchemaStore index + schemas
         run: |
-          nix run nixpkgs#devenv -- shell -- \
+          nix run .#devenv -- shell -- \
           devenv tasks run sync:schemastore:index
 
       # Run jq over every file in schemas/ so the pre-commit jq-fmt hook sees

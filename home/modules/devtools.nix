@@ -39,10 +39,9 @@ in {
     # - unit tests and linters come from the same interpreter set
     home.packages = with pkgs; [
       cachix
-      devenv
+      devenv # bundles secretspec since 2.2.0
       direnv
       cloudflared
-      secretspec
       nodejs_latest
       claude-code
       bottom # system monitor (btm) — per-process CPU/RAM/disk/network

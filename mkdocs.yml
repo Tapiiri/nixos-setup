@@ -62,6 +62,7 @@ nav:
       - Rebuild & System Updates: guides/rebuild.md
       - Ubuntu WSL Setup: guides/wsl.md
       - Secrets Management: guides/secrets.md
+      - Fingerprint Login: guides/fingerprint.md
       - CI & Attestation: guides/ci-attestation.md
   - Development:
       - Dev Environment: dev-environment.md

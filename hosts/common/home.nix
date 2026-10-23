@@ -4,6 +4,8 @@
     devtools.enable = true;
     browsers.enable = true;
     shell.bash.enable = true;
+    neovim.enable = true;
+    openspec.enable = true;
     telegram.enable = true;
     slack.enable = true;
     onepassword.enable = true;
@@ -13,6 +15,7 @@
     switchSpecialisation.enable = true;
     zellij.enable = true;
     moonlight.enable = true;
+    emoji.enable = true;
   };
 
   # Home Manager module hub.

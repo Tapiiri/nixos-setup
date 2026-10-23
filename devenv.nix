@@ -85,7 +85,7 @@
       extraFiles = ["flake.lock"];
       # Scoped to CI-safe outputs: base host + packages.
       # fw12/fw16 are evaluated by check:nix:host:fw12/fw16 (local-only,
-      # requires the private vaisala-pilot input).
+      # requires local path inputs not available in CI).
       cmd = "bash -c 'nix eval .#nixosConfigurations.base.config.system.build.toplevel --no-write-lock-file && nix eval .#packages.x86_64-linux --apply builtins.attrNames --no-write-lock-file'";
       hook = {
         key = "nix-flake-check";
@@ -108,7 +108,6 @@
     }
     {
       # Local-only: evaluates fw12 NixOS config.
-      # Requires the private vaisala-pilot flake input — never runs in CI.
       cacheName = "nix-host-fw12";
       globs = ["**/*.nix"];
       extraFiles = ["flake.lock"];
@@ -121,12 +120,12 @@
       process = null;
       task = {
         key = "check:nix:host:fw12";
-        description = "Evaluate fw12 NixOS configuration (local-only, requires vaisala-pilot)";
+        description = "Evaluate fw12 NixOS configuration (local-only)";
       };
     }
     {
       # Local-only: evaluates fw16 NixOS config.
-      # Requires the private vaisala-pilot flake input — never runs in CI.
+      # Local-only: evaluates fw16 NixOS config.
       cacheName = "nix-host-fw16";
       globs = ["**/*.nix"];
       extraFiles = ["flake.lock"];
@@ -139,14 +138,14 @@
       process = null;
       task = {
         key = "check:nix:host:fw16";
-        description = "Evaluate fw16 NixOS configuration (local-only, requires vaisala-pilot)";
+        description = "Evaluate fw16 NixOS configuration (local-only)";
       };
     }
     {
       cacheName = "nix-homes-eval";
       globs = ["**/*.nix"];
       extraFiles = ["flake.lock"];
-      cmd = "bash -c 'nix eval .#homeConfigurations.tapiiri.activationPackage --no-write-lock-file && nix eval \".#homeConfigurations.tapiiri-wsl.activationPackage\" --no-write-lock-file && nix eval .#homeConfigurations.ilmari.activationPackage --no-write-lock-file'";
+      cmd = "bash -c 'nix eval .#homeConfigurations.tapiiri.activationPackage --no-write-lock-file && nix eval \".#homeConfigurations.tapiiri-wsl.activationPackage\" --no-write-lock-file && nix eval \".#homeConfigurations.ilmari-offeri.activationPackage\" --no-write-lock-file'";
       hook = {
         key = "nix-homes-eval";
         name = "nix eval homeConfigurations (cached)";
@@ -634,6 +633,26 @@ in {
         description = "Full repository check (CI equivalent)";
         after = ["check:nix:flake" "check:nix:homes" "lint:all" "tests:all" "docs:all"];
         exec = "true";
+      };
+
+      # --- Git hook self-repair ---
+      #
+      # devenv's installer runs `<tool> install -t <stage>` without -f.  When
+      # the hook tool changes underneath the repo (devenv's default prek vs the
+      # pinned pkgs.pre-commit above, or a pre-commit release that rotates its
+      # hook-template hash), pre-commit no longer recognises the installed shim
+      # as its own, moves it to <stage>.legacy and writes a fresh one.  Since
+      # that backup is itself a shim, every later commit recurses and dies with
+      # "bug: pre-commit's script is installed in migration mode" — exit 1 even
+      # though all hooks passed.
+      #
+      # Running immediately after the installer means the broken state is
+      # cleared on shell entry rather than surfacing at the next commit.
+      "repair:git-hooks" = {
+        description = "Clear pre-commit migration mode left by hook reinstalls";
+        after = ["devenv:git-hooks:install"];
+        before = ["devenv:enterShell"];
+        exec = "scripts/repair-git-hooks";
       };
     };
 }

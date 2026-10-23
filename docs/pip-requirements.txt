@@ -1,0 +1,18 @@
+#
+# Hand-maintained -- NOT pip-compile output. Bootstrap pin for pip itself.
+#
+# pip ships its own bundled certifi trust store and uses that rather than the
+# runner's system trust store, so a stale pip keeps accepting certificates
+# chaining to the compromised eMudhra emSign intermediates (trivially
+# recoverable P-384 keys; the eight affected intermediates were revoked
+# 2026-10-18). Updating the OS trust store does not fix it -- pip must be
+# upgraded. pip 26.2.2 is the first release that drops emSign Root CA - G3,
+# via bundled certifi 2026.10.19.
+#
+# Installed with --require-hashes so this bootstrap step is integrity-checked
+# against hashes committed here, rather than trusting TLS validation performed
+# by the very pip we are trying to replace. Hashes verified against PyPI.
+#
+pip==26.2.2 \
+    --hash=sha256:3a8e5c800492787f33a4114ef54444546c340df428974ebba17e0fd47e11af2f \
+    --hash=sha256:fd7f4dfa8190e014013b9f08f3e973f4e4c26ffd179a204895533a7254813a70

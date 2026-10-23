@@ -40,6 +40,22 @@
                 settings = {
                   # TRIM pass-through — safe for NVMe, recoverable if needed.
                   allowDiscards = true;
+
+                  # Do not leave the LUKS passphrase in the kernel keyring
+                  # after boot. systemd-cryptsetup caches it there as the
+                  # `user` key named "cryptsetup" so it can reuse it across
+                  # volumes; we only have one, so the cache buys nothing.
+                  #
+                  # It is not inert: gdm's pam_gdm.so looks that key up
+                  # (find_key_by_type_and_desc("user", "cryptsetup", 0)) and
+                  # sets it as PAM_AUTHTOK on fingerprint logins, which hands
+                  # the full-disk-encryption passphrase to gnome-keyring as a
+                  # candidate keyring password. See the matching comment on
+                  # security.pam.services.login.enableGnomeKeyring in
+                  # hosts/common/system.nix.
+                  #
+                  # password-cache= is systemd >= 254; this host runs 261.
+                  crypttabExtraOpts = ["password-cache=no"];
                 };
                 content = {
                   type = "filesystem";

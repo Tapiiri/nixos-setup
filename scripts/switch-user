@@ -1,8 +1,8 @@
 #!/usr/bin/env -S python3
 """Executable entrypoint for `switch-user`.
 
-Switches to another user's GNOME/GDM session via D-Bus, with a
-loginctl lock-session fallback.
+Activates another user's session via loginctl, or opens a GDM login
+screen on a spare VT when they are not logged in yet.
 
 Implementation lives in `scripts_py.cli.switch_user` for unit testing.
 """

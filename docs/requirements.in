@@ -1,4 +1,7 @@
 mkdocs
-mkdocs-material
+mkdocs-material>=9.7.7  # CVE fix: GHSA-xvg9-69gf-fjrf (XSS in search suggestions)
+pymdown-extensions>=11.0.1  # CVE fix: PYSEC-2026-3609 (path traversal), PYSEC-2026-3654 (ReDoS)
+click>=8.3.3  # CVE fix: PYSEC-2026-2132 (command injection in click.edit)
 pygments>=2.20.0
-urllib3>=2.7.0  # CVE fix: GHSA-mf9v-mfxr-j63j, GHSA-qccp-gfcp-xxvc
+urllib3>=2.8.0  # CVE fix: GHSA-8988-9cw3-xx77 (proxy TLS config ignored), GHSA-vxq7-64xx-v4gw (unbounded chunk-size line), GHSA-gh4c-6fx4-qh6g (deflate infinite loop)
+certifi>=2026.10.19  # Trust-store fix: drops emSign Root CA - G3 after the eMudhra intermediate CA key compromise (intermediates revoked 2026-10-18)

@@ -1,0 +1,33 @@
+#!/usr/bin/env -S python3
+"""Executable entrypoint for `repair-git-hooks`.
+
+Clears the pre-commit "migration mode" state that devenv's hook installer
+creates when it reinstalls hooks without `-f`, which breaks every commit with
+`bug: pre-commit's script is installed in migration mode` even though all
+hooks pass.
+
+Implementation lives in `scripts_py.cli.repair_git_hooks` for unit testing.
+"""
+
+from __future__ import annotations
+
+import sys
+
+
+def _bootstrap() -> None:
+    from pathlib import Path
+
+    here = Path(__file__).resolve()
+    sys.path.insert(0, str(here.parent.parent))
+
+    from scripts_py.utils import RepoMarkers, bootstrap_repo_import_path
+
+    bootstrap_repo_import_path(script_file=here, markers=RepoMarkers())
+
+
+_bootstrap()
+
+from scripts_py.cli.repair_git_hooks import main  # noqa: E402
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -90,7 +90,7 @@ Current standalone profiles:
 |---------|--------------|
 | `tapiiri` | Personal standalone Linux / WSL home environment |
 | `tapiiri-wsl` | Minimal WSL profile with Claude Code, Tailscale CLI, and WSL SSH helper |
-| `ilmari` | Work standalone Linux / WSL home environment |
+| `ilmari-offeri` | Offeri work standalone Linux home environment |
 
 Examples:
 

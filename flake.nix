@@ -27,12 +27,6 @@
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
-    vaisala-pilot.url = "path:/home/tapiiri/Koodit/vaisala-pilot";
-
-    xtdb-test.url = "path:/home/tapiiri/Koodit/xtdb-test";
-
-    document-ingest-proto.url = "path:/home/tapiiri/Koodit/document-ingest-proto";
   };
 
   outputs = {
@@ -81,6 +75,7 @@
           ./modules/rebuild.nix
           ./modules/esp32-dev.nix
           ./modules/qemu-test-host.nix
+          ./modules/efi-boot-order.nix
           inputs.home-manager.nixosModules.default
           hostModule
         ];
@@ -238,7 +233,14 @@
 
       scriptPackages = lib.mapAttrs mkScriptPackage scriptSpecs;
     in
-      scriptPackages // {default = scriptPackages.rebuild;});
+      scriptPackages
+      // {
+        default = scriptPackages.rebuild;
+        # The devenv CLI that home/modules/devtools.nix installs locally,
+        # pinned by this flake.lock.  CI runs `.#devenv` so it never drifts
+        # ahead of the local CLI (or of the modules pinned in devenv.lock).
+        inherit (pkgs) devenv;
+      });
 
     # installer-iso lives here rather than in `packages` because `nix flake
     # check` deeply evaluates every packages.* derivation and the full ISO

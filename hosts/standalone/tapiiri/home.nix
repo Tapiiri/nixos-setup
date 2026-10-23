@@ -11,6 +11,7 @@
       vscode.enable = false;
     };
     shell.bash.enable = true;
+    neovim.enable = true;
     hmSwitch.enable = true;
   };
 

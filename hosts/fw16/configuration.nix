@@ -9,7 +9,6 @@
       inputs.nixos-hardware.nixosModules.framework-16-7040-amd
       inputs.disko.nixosModules.disko
       inputs.lanzaboote.nixosModules.lanzaboote
-      inputs.vaisala-pilot.nixosModules.devHost
       ../common/system.nix
       ./disk-config.nix
       ./hardware-configuration.nix
@@ -29,6 +28,20 @@
   };
   boot.loader.efi.canTouchEfiVariables = true;
 
+  # Boot the enclosure by default instead of the internal Windows disk.
+  #
+  # The firmware has never created a "Linux Boot Manager" NVRAM entry for this
+  # machine — it boots through its own auto-generated "EFI Hard Drive (...)"
+  # entry via the ESP's \EFI\BOOT\BOOTX64.EFI fallback — so both labels are
+  # listed, most specific first, and matched as regexes at boot time.
+  #
+  # Windows stays in BootOrder behind this entry, which is what makes pulling
+  # the enclosure fall back to Windows automatically.
+  my.efiBootOrder = {
+    enable = true;
+    preferMatching = ["Linux Boot Manager" "Corsair MP600 ELITE"];
+  };
+
   # Work around USB4/Thunderbolt PCIe tunneling I/O errors with the HYPER
   # enclosure — prevents the host from resetting the Thunderbolt controller,
   # which can drop NVMe transactions mid-flight.
@@ -43,24 +56,33 @@
     ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="339a", ATTR{idProduct}=="1701", ATTR{power/autosuspend_delay_ms}="-1"
   '';
 
-  # Fingerprint reader (Goodix sensor on the Framework 16 input module).
+  # Fingerprint reader (Goodix 27c6:609c on the Framework 16 power button).
+  # Driven by libfprint's goodixmoc driver — no TOD blob needed.
+  #
+  # Enabling fprintd is enough for GDM: services/display-managers/gdm.nix
+  # defines a `gdm-fingerprint` PAM stack whenever fprintd is on, and GDM runs
+  # it in parallel with `gdm-password`, so the greeter and the GNOME lock
+  # screen both accept a finger or the password. (The same module forces
+  # `login.fprintAuth = false` on purpose — pam_fprintd inside `login` would
+  # block the password prompt that `gdm-password` substacks.)
+  #
+  # sudo/polkit are pinned explicitly below. They only inherit fingerprint auth
+  # from `security.pam.services.<name>.fprintAuth`, whose default happens to be
+  # `services.fprintd.enable`; stating it here keeps the behaviour deliberate
+  # rather than a side effect of an upstream default. Safe on this host because
+  # fw16 runs no sshd, so there is no remote session for pam_fprintd to stall.
+  #
+  # Enrollment is per-user and inherently imperative (templates live in
+  # /var/lib/fprint/<user>) — see docs/site/guides/fingerprint.md.
   services.fprintd.enable = true;
+  security.pam.services.sudo.fprintAuth = true;
+  security.pam.services.polkit-1.fprintAuth = true;
 
   # Expose Ollama to the tailnet so other devices can use it as a remote LLM
   # backend. Listening on 0.0.0.0 is safe here because the firewall only opens
   # port 11434 on the tailscale0 interface — it stays closed on Wi-Fi/ethernet.
   services.ollama.host = "0.0.0.0";
   networking.firewall.interfaces."tailscale0".allowedTCPPorts = [11434];
-
-  vaisala.devHost = {
-    enable = true;
-    users = ["tapiiri"];
-    # codeRoot defaults to /home/tapiiri/Koodit
-  };
-  # Resolved from the vaisala-pilot devShell: the atex-engine is built in a
-  # sibling checkout and its store path is stable across rebuilds. Update with:
-  #   readlink -f ../atex-engine/result/bin/atex-engine
-  vaisala.localDev.atexEngineBin = "/nix/store/d4gyz5l7cxmj10vjzvmvnz7kpfdhh8ys-atex-engine-0.1.0/bin/atex-engine";
 
   networking.hostName = "fw16";
 
