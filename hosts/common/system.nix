@@ -140,19 +140,35 @@ in {
   ];
 
   # One-time seed: copy Claude Code settings from a source user on first use.
-  # Runs on every rebuild but is a no-op once the target files exist.
+  # The copy is a no-op once the target files exist, but the chown is not:
+  # ownership is re-asserted on every rebuild so an earlier bad run heals.
   # The hooks in settings.json use $HOME so they resolve correctly per user.
+  #
+  # The group must come from the account definition, not from the user name.
+  # Every account here shares the `users` group — no per-user group exists —
+  # so `chown ilmari-offeri:ilmari-offeri` failed with "invalid group". The
+  # activation snippet only records that failure (ERR trap, no `set -e`), so
+  # the copy still happened and left ~/.claude owned by root:root. Claude
+  # Code could read the seeded settings but not write ~/.claude, so the
+  # OAuth handshake succeeded in the browser and then failed to persist
+  # .credentials.json, which surfaces as "Not logged in".
   system.activationScripts = lib.concatMapAttrs (name: entry:
     lib.optionalAttrs (entry ? claudeSeedFrom) {
       "${name}-claude-seed" = lib.stringAfter ["users" "groups"] ''
+        owner=${name}:${config.users.users.${name}.group}
         for f in settings.json settings.local.json; do
           if [ ! -f /home/${name}/.claude/"$f" ] && [ -f /home/${entry.claudeSeedFrom}/.claude/"$f" ]; then
             mkdir -p /home/${name}/.claude
             cp /home/${entry.claudeSeedFrom}/.claude/"$f" /home/${name}/.claude/"$f"
-            chown ${name}:${name} /home/${name}/.claude /home/${name}/.claude/"$f"
             chmod 644 /home/${name}/.claude/"$f"
           fi
+          if [ -f /home/${name}/.claude/"$f" ]; then
+            chown "$owner" /home/${name}/.claude/"$f"
+          fi
         done
+        if [ -d /home/${name}/.claude ]; then
+          chown "$owner" /home/${name}/.claude
+        fi
       '';
     })
   userRegistry;
