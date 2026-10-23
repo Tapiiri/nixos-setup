@@ -62,7 +62,7 @@ jobs:
 
       # Sanity-check the update using the same checks as CI.
       - name: Run checks (devenv tasks)
-        run: nix run nixpkgs#devenv -- shell -- devenv tasks run -m all check:all
+        run: nix run .#devenv -- shell -- devenv tasks run -m all check:all
 
   refresh-schemastore-cache:
     permissions:
@@ -92,7 +92,7 @@ jobs:
 
       - name: Refresh SchemaStore index + schemas
         run: |
-          nix run nixpkgs#devenv -- shell -- \
+          nix run .#devenv -- shell -- \
           devenv tasks run sync:schemastore:index
 
       # Run jq over every file in schemas/ so the pre-commit jq-fmt hook sees
