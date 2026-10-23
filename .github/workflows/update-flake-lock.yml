@@ -50,12 +50,24 @@ jobs:
           remote=$(python3 scripts/remote-flake-inputs)
           echo "names=$remote" >> "$GITHUB_OUTPUT"
 
+      # Bump the devenv modules alongside the CLI that flake.lock pins, so the
+      # two move together in one PR.  Committed here because the next step
+      # opens the PR from HEAD (create-pull-request keeps local commits).
+      - name: Update devenv.lock
+        run: |
+          nix run .#devenv -- update
+          if ! git diff --quiet -- devenv.lock; then
+            git -c user.name="github-actions[bot]" \
+                -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+                commit -m "devenv.lock: Update" -- devenv.lock
+          fi
+
       - name: Update flake.lock
         uses: DeterminateSystems/update-flake-lock@da03c0f078bc4b2c37ee4f7e072d34bf8f188bb3 # v29
         with:
           # Only update remote inputs; skip local path: inputs that don't exist on CI.
           inputs: ${{ steps.inputs.outputs.names }}
-          pr-title: "chore: update flake.lock"
+          pr-title: "chore: update flake.lock and devenv.lock"
           pr-labels: |
             dependencies
             nix
