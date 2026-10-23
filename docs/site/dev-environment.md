@@ -116,6 +116,22 @@ executes:
 devenv tasks run -m all check:all
 ```
 
+### When `devenv tasks run` does nothing
+
+A devenv CLI older than the modules pinned in `devenv.lock` does not fail —
+`devenv tasks run -m all check:all` prints `{}` and exits 0 without running a
+single check. The CLI comes from `flake.lock` (via `home/modules/devtools.nix`
+locally, `nix profile install .#devenv` in CI), so the two drift apart between
+a `flake.lock` bump and the next Home Manager switch. Run the pinned CLI
+directly until you switch:
+
+```bash
+nix run .#devenv -- tasks run -m all check:all
+```
+
+Git hooks are unaffected — pre-commit invokes `scripts/cached-check` itself —
+so the attestation gate cannot be fooled by a no-op task run.
+
 ### Skipping CI with attestation
 
 If you've already run the full check locally, the

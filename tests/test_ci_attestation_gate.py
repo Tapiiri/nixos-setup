@@ -1,6 +1,6 @@
 import os
 import tempfile
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Sequence
@@ -12,7 +12,7 @@ from scripts_py.ci.ci_attestation_gate import SimpleCompletedProcess
 
 
 @contextmanager
-def _temp_path() -> Iterator[Path]:
+def _temp_path() -> Generator[Path]:
     fd, name = tempfile.mkstemp()
     os.close(fd)
     Path(name).unlink(missing_ok=True)

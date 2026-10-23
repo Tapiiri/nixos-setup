@@ -6,6 +6,20 @@
 }: let
   cachixCaches = import ./cachix-caches.nix;
 
+  # The one interpreter every Python entrypoint in this repo runs on: the
+  # `#!/usr/bin/env python3` scripts, pytest, and pyright's import
+  # resolution.  Its position in `packages` below is load-bearing.
+  pythonEnv = pkgs.python313.withPackages (ps:
+    with ps; [
+      pytest
+      ruff
+      tomlkit
+
+      # MkDocs documentation site
+      mkdocs
+      mkdocs-material
+    ]);
+
   renderCachedCheckArgs = flag: values:
     lib.concatMapStrings (value: " ${flag} ${lib.escapeShellArg value}") values;
 
@@ -386,6 +400,9 @@
       cacheName = "pyright";
       globs = ["scripts_py/**/*.py" "tests/**/*.py"];
       extraFiles = ["pyproject.toml"];
+      # Resolves imports through the `python3` on PATH — kept honest by
+      # tests/test_python_env.py, since a shadowing interpreter would
+      # silently turn every project import into reportMissingImports.
       cmd = "pyright scripts_py tests";
       hook = {
         key = "pyright-check";
@@ -469,6 +486,12 @@ in {
   dotenv.disableHint = true;
 
   packages = with pkgs; [
+    # First on purpose: pkgs.pre-commit (and yamllint, and anything else
+    # built from Python) propagates its own bare interpreter into PATH, and
+    # PATH follows this list's order.  Declared later, `python3` resolved to
+    # that interpreter — which has none of the packages below, so every
+    # `#!/usr/bin/env python3` script and pyright's import resolution broke.
+    pythonEnv
     git
     pre-commit
     alejandra
@@ -482,18 +505,6 @@ in {
     taplo
     jq
     pyright
-
-    # Python tooling pinned together (works even without devenv python module).
-    (python313.withPackages (ps:
-      with ps; [
-        pytest
-        ruff
-        tomlkit
-
-        # MkDocs documentation site
-        mkdocs
-        mkdocs-material
-      ]))
   ];
 
   # Keep pre-commit as the runner (instead of the default prek).
