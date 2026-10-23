@@ -74,9 +74,13 @@ jobs:
     permissions:
       contents: read
     runs-on: ubuntu-latest
-    needs: [ci]
-    # Run when ci succeeds OR was skipped (attestation), but only on push.
-    if: github.event_name == 'push' && !failure() && !cancelled()
+    needs: [attestation]
+    # Deliberately independent of the `ci` job: when that job breaks for a
+    # toolchain reason (a devenv CLI/module mismatch, say), gating this one
+    # on it turned the only NixOS evaluation in CI into a silent skip, and a
+    # broken host config reached `rebuild` unnoticed.  Push-only because it
+    # needs the Cachix push token.
+    if: github.event_name == 'push' && !cancelled()
     environment: production
     env:
       CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
@@ -101,6 +105,18 @@ jobs:
         with:
           name: ${{ env.CACHIX_CACHE }}
           authToken: ${{ env.CACHIX_AUTH_TOKEN }}
+
+      - name: Evaluate every host configuration
+        # base alone does not cover the real hosts: they import hardware,
+        # bootloader and disk modules it never sees.  Eval is cheap next to
+        # the closure build below, so run it first and name the host.
+        run: |
+          for host in base fw12 fw16; do
+            echo "::group::nix eval $host"
+            nix eval ".#nixosConfigurations.$host.config.system.build.toplevel" \
+              --accept-flake-config
+            echo "::endgroup::"
+          done
 
       - name: Build system closure
         run: |

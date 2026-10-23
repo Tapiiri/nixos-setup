@@ -219,13 +219,13 @@ KNOWN_CHECKS: tuple[CheckDef, ...] = (
         name="nix-host-fw12",
         globs=("**/*.nix",),
         files=("flake.lock",),
-        ci_check=False,  # local-only
+        # Evaluates nixosConfigurations.fw12 — a check:all leaf.
     ),
     CheckDef(
         name="nix-host-fw16",
         globs=("**/*.nix",),
         files=("flake.lock",),
-        ci_check=False,  # local-only
+        # Evaluates nixosConfigurations.fw16 — a check:all leaf.
     ),
     CheckDef(
         name="pytest",

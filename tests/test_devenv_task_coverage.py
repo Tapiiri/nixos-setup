@@ -30,6 +30,8 @@ HOOK_TASK_OVERRIDES: dict[str, str] = {
     # --- All hooks below use scripts/cached-check for input-hash caching ---
     "check-flake-lock": "lint:nix:flake-lock",
     "nix-flake-check": "check:nix:flake",
+    "nix-host-fw12": "check:nix:host:fw12",
+    "nix-host-fw16": "check:nix:host:fw16",
     "nix-homes-eval": "check:nix:homes",
     "python-pytest": "tests:python:pytest",
     "yamllint": "lint:yaml:yamllint",

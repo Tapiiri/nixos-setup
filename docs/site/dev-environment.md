@@ -40,7 +40,10 @@ and CI both delegate to these tasks.
 
 ```text
 check:all
-├── check:nix:flake
+├── check:nix:flake          # base host + packages
+├── check:nix:host:fw12
+├── check:nix:host:fw16
+├── check:nix:homes
 ├── lint:all
 │   ├── lint:python:ruff
 │   └── (other linters)

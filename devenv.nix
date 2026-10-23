@@ -97,9 +97,8 @@
       cacheName = "nix-flake-check";
       globs = ["**/*.nix"];
       extraFiles = ["flake.lock"];
-      # Scoped to CI-safe outputs: base host + packages.
-      # fw12/fw16 are evaluated by check:nix:host:fw12/fw16 (local-only,
-      # requires local path inputs not available in CI).
+      # Scoped to base host + packages; fw12/fw16 get their own tasks below
+      # so a failure names the host that broke.
       cmd = "bash -c 'nix eval .#nixosConfigurations.base.config.system.build.toplevel --no-write-lock-file && nix eval .#packages.x86_64-linux --apply builtins.attrNames --no-write-lock-file'";
       hook = {
         key = "nix-flake-check";
@@ -121,7 +120,9 @@
       };
     }
     {
-      # Local-only: evaluates fw12 NixOS config.
+      # Evaluates the fw12 NixOS config.  Part of check:all: the real
+      # hosts import modules base does not, so skipping them lets a
+      # host-only eval error reach `rebuild` unseen.
       cacheName = "nix-host-fw12";
       globs = ["**/*.nix"];
       extraFiles = ["flake.lock"];
@@ -134,12 +135,11 @@
       process = null;
       task = {
         key = "check:nix:host:fw12";
-        description = "Evaluate fw12 NixOS configuration (local-only)";
+        description = "Evaluate fw12 NixOS configuration";
       };
     }
     {
-      # Local-only: evaluates fw16 NixOS config.
-      # Local-only: evaluates fw16 NixOS config.
+      # Evaluates the fw16 NixOS config (see check:nix:host:fw12).
       cacheName = "nix-host-fw16";
       globs = ["**/*.nix"];
       extraFiles = ["flake.lock"];
@@ -152,7 +152,7 @@
       process = null;
       task = {
         key = "check:nix:host:fw16";
-        description = "Evaluate fw16 NixOS configuration (local-only)";
+        description = "Evaluate fw16 NixOS configuration";
       };
     }
     {
@@ -642,7 +642,7 @@ in {
 
       "check:all" = {
         description = "Full repository check (CI equivalent)";
-        after = ["check:nix:flake" "check:nix:homes" "lint:all" "tests:all" "docs:all"];
+        after = ["check:nix:flake" "check:nix:host:fw12" "check:nix:host:fw16" "check:nix:homes" "lint:all" "tests:all" "docs:all"];
         exec = "true";
       };
 
