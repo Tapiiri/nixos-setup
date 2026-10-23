@@ -79,11 +79,22 @@
     complete -F _rebuild_complete rebuild
   '';
 
+  # Completion reads the account database, not /home/. Listing directories
+  # offered removed users for as long as their home survived the removal (a
+  # deleted account leaves /home/<name> behind), and would have missed any
+  # user whose home lives outside /home. switch-user itself resolves the
+  # target with getpwnam, so passwd is the source that agrees with it.
+  # The uid range is NixOS's normal-user window: it keeps system accounts and
+  # the nixbld* build users (30001+) out of the list.
   switchUserCompletion = ''
     _switch_user_complete() {
       local cur="''${COMP_WORDS[COMP_CWORD]}"
+      local users=""
+      users=$(getent passwd 2>/dev/null \
+        | awk -F: '$3 >= 1000 && $3 < 30000 { print $1 }' \
+        | tr '\n' ' ')
       # shellcheck disable=SC2207
-      COMPREPLY=($(compgen -W "$(ls /home/ 2>/dev/null | tr '\n' ' ') --no-lock" -- "$cur"))
+      COMPREPLY=($(compgen -W "$users --no-lock" -- "$cur"))
     }
     complete -F _switch_user_complete switch-user
   '';
