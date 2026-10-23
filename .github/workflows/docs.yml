@@ -37,8 +37,14 @@ jobs:
               with:
                   python-version: "3.13"
 
+            # Must run before any other pip install: the pip bundled with
+            # setup-python still trusts the compromised eMudhra emSign
+            # intermediates. See docs/pip-requirements.txt.
+            - name: Upgrade pip to a build that distrusts emSign
+              run: python -m pip install --upgrade --require-hashes -r docs/pip-requirements.txt
+
             - name: Install mkdocs
-              run: pip install --require-hashes -r docs/requirements.txt
+              run: python -m pip install --require-hashes -r docs/requirements.txt
 
             - name: Build docs
               run: mkdocs build --strict
