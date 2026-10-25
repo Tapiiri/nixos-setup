@@ -14,8 +14,8 @@
   "schemaStore": {
     "catalogUrl": "https://www.schemastore.org/api/json/catalog.json",
     "catalogVersion": 1,
-    "fetchedAt": "2026-09-13T06:17:47+00:00",
-    "schemaCount": 1325
+    "fetchedAt": "2026-10-25T06:11:29+00:00",
+    "schemaCount": 1380
   },
   "schemas": {
     "https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/pyproject.json": {
