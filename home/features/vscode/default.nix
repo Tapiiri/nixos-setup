@@ -19,6 +19,7 @@
   # Extension IDs are `publisher.extensionName`.
   nixIdeExt = pkgs.vscode-extensions.jnoortheen.nix-ide;
   markdownlintExt = pkgs.vscode-extensions.davidanson.vscode-markdownlint;
+  MarkdownPreviewEnhancedExt = pkgs.vscode-extensions.shd101wyy.markdown-preview-enhanced;
   GHActionsExt = pkgs.vscode-extensions.github.vscode-github-actions;
   GHPullRequestsExt = pkgs.vscode-extensions.github.vscode-pull-request-github;
   CopilotExt = pkgs.vscode-extensions.github.copilot;
@@ -228,6 +229,7 @@ in {
       profiles.default.extensions = [
         nixIdeExt
         markdownlintExt
+        MarkdownPreviewEnhancedExt
         GHActionsExt
         GHPullRequestsExt
         CopilotExt

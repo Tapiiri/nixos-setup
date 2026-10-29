@@ -62,6 +62,7 @@ def discover_from_pyproject(repo_root: Path) -> list[ToolEntry]:
 _VSCODE_EXT_FILE_TYPE: dict[str, str] = {
     "jnoortheen.nix-ide": "nix",
     "davidanson.vscode-markdownlint": "markdown",
+    "shd101wyy.markdown-preview-enhanced": "markdown",
     "github.vscode-github-actions": "github-actions",
     "ms-python.python": "python",
     "charliermarsh.ruff": "python",
