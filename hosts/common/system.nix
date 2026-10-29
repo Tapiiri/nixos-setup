@@ -82,32 +82,6 @@ in {
   # because nothing auto-unlocks it any more.
   security.pam.services.login.enableGnomeKeyring = lib.mkForce false;
 
-  # Distrust emSign ECC Root CA - G3 for server authentication.
-  #
-  # eMudhra disclosed on 2026-10-20 that eight intermediate CAs chaining to
-  # this root had trivially recoverable P-384 private keys; the intermediates
-  # were revoked 2026-10-18. Anyone holding those keys can mint a valid-looking
-  # certificate for any host, so the root has to come out of the trust store.
-  #
-  # This cannot be fixed by bumping inputs: the root was still a trusted
-  # serverAuth CA in nss-cacert 3.126 — what these hosts build, and what
-  # nixos-unstable also carried as of 2026-10-23. The option feeds
-  # pkgs.cacert's `blacklist`
-  # override, which drops the certificate's PEM block from ca-bundle.crt and
-  # records it as "Rejected for: 1.3.6.1.5.5.7.3.1" instead (121 roots -> 120).
-  #
-  # Note when verifying: the CA *name* still appears in the bundle after this
-  # takes effect, because the rejection record keeps the label. The thing to
-  # grep for is "Traditional PEM block omitted", not the name.
-  #
-  # Only G3 is affected. emSign ECC Root CA - C3, emSign Root CA - C1 and
-  # emSign Root CA - G1 stay trusted, matching upstream certifi 2026.10.19,
-  # which removed G3 alone and kept the other three.
-  #
-  # Remove this once nss-cacert ships a bundle without the root, at which
-  # point the entry becomes a harmless no-op rather than a behaviour change.
-  security.pki.caCertificateBlacklist = ["emSign ECC Root CA - G3"];
-
   services.xserver.xkb = {
     layout = "fi";
     variant = "";
