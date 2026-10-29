@@ -76,11 +76,12 @@ jobs:
       - name: Run checks (devenv tasks)
         run: nix run .#devenv -- shell -- devenv tasks run -m all check:all
 
+  # Pure data refresh with no review value, so it commits straight to main
+  # rather than opening a PR.
   refresh-schemastore-cache:
+    if: github.ref == 'refs/heads/main'
     permissions:
       contents: write
-      pull-requests: write
-      issues: write
     environment: production
     env:
       CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
@@ -107,24 +108,23 @@ jobs:
           nix run .#devenv -- shell -- \
           devenv tasks run sync:schemastore:index
 
-      # Run jq over every file in schemas/ so the pre-commit jq-fmt hook sees
-      # nothing to reformat when create-pull-request makes its internal commit.
+      # Run jq over every file in schemas/ so the committed files match what
+      # the pre-commit jq-fmt hook would produce.
       - name: Format schemas with jq
         run: |
           find schemas/ -name "*.json" | while IFS= read -r f; do
             jq . "$f" > "$f.tmp" && mv "$f.tmp" "$f"
           done
 
-      - name: Create PR (only if schemas/ changed)
-        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8
-        with:
-          commit-message: "chore(schemastore): refresh schema cache"
-          title: "chore(schemastore): refresh schema cache"
-          body: |
-            Automated refresh of the SchemaStore index and vendored schemas.
-          branch: chore/refresh-schemastore-cache
-          delete-branch: true
-          add-paths: |
-            schemas/
-          labels: |
-            dependencies
+      - name: Commit and push to main (only if schemas/ changed)
+        run: |
+          git add schemas/
+          if git diff --cached --quiet; then
+            echo "SchemaStore cache unchanged; nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(schemastore): refresh schema cache"
+          git pull --rebase origin main
+          git push origin HEAD:main
