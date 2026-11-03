@@ -26,6 +26,13 @@ in {
 
   networking.networkmanager.enable = true;
 
+  # GNOME normally takes the power key via a handle-power-key inhibitor and
+  # suspends. Since systemd 262 logind has been acting on the key itself, and
+  # its default is "poweroff", so a short press shut the laptop down instead of
+  # sleeping. Make logind's own fallback suspend too; a long press still forces
+  # a firmware power-off.
+  services.logind.settings.Login.HandlePowerKey = "suspend";
+
   time.timeZone = "Europe/Helsinki";
 
   i18n.defaultLocale = "fi_FI.UTF-8";
