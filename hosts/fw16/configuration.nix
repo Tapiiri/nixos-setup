@@ -25,6 +25,9 @@
   boot.lanzaboote = {
     enable = true;
     pkiBundle = "/var/lib/sbctl";
+    # The ESP is only 512M; without a limit every generation's kernel and
+    # initrd stays on it until installs fail with ENOSPC.
+    configurationLimit = 5;
   };
   boot.loader.efi.canTouchEfiVariables = true;
 
