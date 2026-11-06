@@ -16,6 +16,7 @@
     zellij.enable = true;
     moonlight.enable = true;
     emoji.enable = true;
+    claude-desktop.enable = true;
   };
 
   # Home Manager module hub.

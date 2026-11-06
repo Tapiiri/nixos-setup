@@ -16,6 +16,11 @@
 
     affinity-nix.url = "github:mrshmllow/affinity-nix";
 
+    claude-desktop = {
+      url = "github:poeck/claude-desktop-nix-flake";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
 
     lanzaboote = {

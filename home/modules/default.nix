@@ -32,6 +32,7 @@
     (flakeRoot + "/home/modules/scripts.nix")
     (flakeRoot + "/home/modules/zellij.nix")
     (flakeRoot + "/home/modules/affinity.nix")
+    (flakeRoot + "/home/modules/claude-desktop.nix")
     (flakeRoot + "/home/modules/moonlight.nix")
     (flakeRoot + "/home/modules/emoji.nix")
   ];
