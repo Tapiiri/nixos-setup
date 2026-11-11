@@ -87,6 +87,12 @@
   services.ollama.host = "0.0.0.0";
   networking.firewall.interfaces."tailscale0".allowedTCPPorts = [11434];
 
+  # Docker for Offeri development. Membership in the `docker` group is
+  # root-equivalent (the daemon socket can mount the host filesystem), so only
+  # the work account gets it.
+  virtualisation.docker.enable = true;
+  users.users.ilmari-offeri.extraGroups = ["docker"];
+
   networking.hostName = "fw16";
 
   # Set to the NixOS version used for the initial install.
