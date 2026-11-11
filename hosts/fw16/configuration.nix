@@ -87,11 +87,16 @@
   services.ollama.host = "0.0.0.0";
   networking.firewall.interfaces."tailscale0".allowedTCPPorts = [11434];
 
-  # Docker for Offeri development. Membership in the `docker` group is
-  # root-equivalent (the daemon socket can mount the host filesystem), so only
-  # the work account gets it.
-  virtualisation.docker.enable = true;
-  users.users.ilmari-offeri.extraGroups = ["docker"];
+  # Rootless Docker for Offeri development. Each user gets their own daemon
+  # under their systemd user session. The rootful daemon's `docker` group would
+  # be root-equivalent and give the non-wheel work account a way into the
+  # personal account, which is why it isn't used here.
+  virtualisation.docker.rootless = {
+    enable = true;
+    setSocketVariable = true;
+  };
+  # Keep the user daemon (and its containers) running after logout.
+  users.users.ilmari-offeri.linger = true;
 
   networking.hostName = "fw16";
 
